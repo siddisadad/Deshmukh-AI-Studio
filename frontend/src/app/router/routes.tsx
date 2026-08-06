@@ -14,6 +14,7 @@ import { AiChatPage } from '../../features/chat/pages/AiChatPage';
 import { DocumentsPage } from '../../features/documents/pages/DocumentsPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { BillingSettingsPage } from '../../features/settings/pages/BillingSettingsPage';
+import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
           { path: '/settings/billing', element: <BillingSettingsPage /> },
+          { path: '/settings/plugins', element: <PluginsSettingsPage /> },
         ],
       },
     ],

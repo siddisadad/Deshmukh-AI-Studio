@@ -92,6 +92,7 @@ uvicorn main:app --reload --port 8000
 - [x] Background AI jobs (reindex + document generate queue)
 - [x] Billing plans + entitlements (FREE/PRO/TEAM, mock Stripe checkout, project & AI daily limits)
 - [x] SSO (OIDC-shaped port + mock provider, identity linking, login callback)
+- [x] Plugin / assistant-tool SPI (built-in assistants as plugins, sample tool, org enablement)
 
 ## Docs
 

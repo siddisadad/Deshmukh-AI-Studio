@@ -58,9 +58,11 @@ public class AssistantController {
         return new AssistantsResponse(assistantRegistry.all().stream()
                 .map(a -> new AssistantsResponse.AssistantDto(
                         a.role().name(),
+                        a.pluginId(),
                         a.name(),
                         a.capabilities(),
-                        a.limitations()
+                        a.limitations(),
+                        a.toolIds()
                 ))
                 .toList());
     }

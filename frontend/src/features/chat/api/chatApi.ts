@@ -4,9 +4,11 @@ import { ApiError } from '../../../shared/api/types';
 
 export interface Assistant {
   role: string;
+  pluginId?: string;
   name: string;
   capabilities: string[];
   limitations: string[];
+  tools?: string[];
 }
 
 export interface ChatMessage {

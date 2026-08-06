@@ -1,5 +1,6 @@
 package com.aistudio.api.ai;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -36,7 +38,7 @@ class AssistantControllerIT {
     }
 
     @Test
-    void listAssistantsAndChatWithSharedContext() throws Exception {
+    void listAssistantsAndChatAcrossMultipleThreads() throws Exception {
         mockMvc.perform(get("/api/v1/assistants")
                         .header("Authorization", "Bearer " + registerToken()))
                 .andExpect(status().isOk())
@@ -62,7 +64,10 @@ class AssistantControllerIT {
                                 """))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/DEVELOPER/messages")
+        UUID thread1 = createThread(token, projectId, "DEVELOPER", "API design");
+        UUID thread2 = createThread(token, projectId, "DEVELOPER", "Password reset");
+
+        mockMvc.perform(post("/api/v1/conversations/" + thread1 + "/messages")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -73,10 +78,34 @@ class AssistantControllerIT {
                 .andExpect(jsonPath("$.userMessage.sender").value("USER"))
                 .andExpect(jsonPath("$.assistantMessage.sender").value("ASSISTANT"));
 
-        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/DEVELOPER")
+        mockMvc.perform(post("/api/v1/conversations/" + thread2 + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Outline auth middleware"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
+                        .param("assistantRole", "DEVELOPER")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        mockMvc.perform(get("/api/v1/conversations/" + thread1)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages.length()").value(2));
+
+        mockMvc.perform(delete("/api/v1/conversations/" + thread2)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
+                        .param("assistantRole", "DEVELOPER")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -93,7 +122,9 @@ class AssistantControllerIT {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString()).get("id").asText());
 
-        MvcResult mvcResult = mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/DEVELOPER/messages/stream")
+        UUID conversationId = createThread(token, projectId, "DEVELOPER", null);
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/v1/conversations/" + conversationId + "/messages/stream")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.TEXT_EVENT_STREAM)
@@ -104,17 +135,29 @@ class AssistantControllerIT {
                 .andExpect(request().asyncStarted())
                 .andReturn();
 
-        // Wait for SseEmitter completion without re-entering the security filter chain.
         mvcResult.getAsyncResult(60_000);
         String body = mvcResult.getResponse().getContentAsString();
-        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:user"), body);
-        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:delta"), body);
-        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:done"), body);
+        Assertions.assertTrue(body.contains("event:user"), body);
+        Assertions.assertTrue(body.contains("event:delta"), body);
+        Assertions.assertTrue(body.contains("event:done"), body);
 
-        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/DEVELOPER")
+        mockMvc.perform(get("/api/v1/conversations/" + conversationId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages.length()").value(2));
+    }
+
+    private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {
+        String payload = title == null
+                ? "{\"assistantRole\":\"%s\"}".formatted(role)
+                : "{\"assistantRole\":\"%s\",\"title\":\"%s\"}".formatted(role, title);
+        MvcResult result = mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return UUID.fromString(objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText());
     }
 
     private String registerToken() throws Exception {

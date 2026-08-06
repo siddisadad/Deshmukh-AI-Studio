@@ -87,6 +87,7 @@ uvicorn main:app --reload --port 8000
 - [x] Prod compose + nginx security headers + backup/restore scripts
 - [x] Empty-state / first-run cues on core pages
 - [x] Streaming AI chat (SSE) with progressive tokens
+- [x] Multi-thread conversations per assistant
 
 ## Docs
 

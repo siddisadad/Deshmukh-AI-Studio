@@ -74,7 +74,16 @@ class ContextAssetControllerIT {
                 .andExpect(jsonPath("$[0].assetType").value("API_SPEC"))
                 .andExpect(jsonPath("$.length()").value(1));
 
-        mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/DEVELOPER/messages")
+        UUID conversationId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"assistantRole":"DEVELOPER","title":"Context check"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(post("/api/v1/conversations/" + conversationId + "/messages")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

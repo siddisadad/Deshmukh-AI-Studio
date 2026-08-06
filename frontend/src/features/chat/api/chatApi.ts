@@ -16,8 +16,18 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface ConversationSummary {
+  id: string;
+  projectId: string;
+  assistantRole: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+}
+
 export interface Conversation {
-  id: string | null;
+  id: string;
   projectId: string;
   assistantRole: string;
   title: string | null;
@@ -90,15 +100,25 @@ async function parseSseStream(response: Response, handlers: StreamHandlers): Pro
 export const chatApi = {
   listAssistants: () =>
     http.get<{ assistants: Assistant[] }>('/assistants').then((r) => r.data.assistants),
-  getConversation: (projectId: string, role: string) =>
-    http.get<Conversation>(`/projects/${projectId}/conversations/${role}`).then((r) => r.data),
-  sendMessage: (projectId: string, role: string, content: string) =>
+  listConversations: (projectId: string, assistantRole?: string) =>
     http
-      .post<ChatResponse>(`/projects/${projectId}/conversations/${role}/messages`, { content })
+      .get<ConversationSummary[]>(`/projects/${projectId}/conversations`, {
+        params: assistantRole ? { assistantRole } : undefined,
+      })
       .then((r) => r.data),
-  streamMessage: async (projectId: string, role: string, content: string, handlers: StreamHandlers) => {
+  createConversation: (projectId: string, body: { assistantRole: string; title?: string }) =>
+    http.post<ConversationSummary>(`/projects/${projectId}/conversations`, body).then((r) => r.data),
+  getConversation: (conversationId: string) =>
+    http.get<Conversation>(`/conversations/${conversationId}`).then((r) => r.data),
+  updateConversation: (conversationId: string, title: string) =>
+    http.patch<ConversationSummary>(`/conversations/${conversationId}`, { title }).then((r) => r.data),
+  deleteConversation: (conversationId: string) =>
+    http.delete(`/conversations/${conversationId}`).then(() => undefined),
+  sendMessage: (conversationId: string, content: string) =>
+    http.post<ChatResponse>(`/conversations/${conversationId}/messages`, { content }).then((r) => r.data),
+  streamMessage: async (conversationId: string, content: string, handlers: StreamHandlers) => {
     const token = useAuthStore.getState().accessToken;
-    const response = await fetch(`${baseURL}/projects/${projectId}/conversations/${role}/messages/stream`, {
+    const response = await fetch(`${baseURL}/conversations/${conversationId}/messages/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

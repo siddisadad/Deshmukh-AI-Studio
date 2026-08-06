@@ -2,6 +2,9 @@ package com.aistudio.application.ai;
 
 import com.aistudio.api.ai.dto.ChatMessageResponse;
 import com.aistudio.api.ai.dto.ConversationResponse;
+import com.aistudio.api.ai.dto.ConversationSummaryResponse;
+import com.aistudio.api.ai.dto.CreateConversationRequest;
+import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.ai.AssistantRole;
 import com.aistudio.domain.ai.MessageSender;
@@ -61,32 +64,81 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public ConversationResponse getConversation(UUID projectId, String roleValue, UUID userId) {
+    public List<ConversationSummaryResponse> listConversations(UUID projectId, String roleValue, UUID userId) {
         authorizationService.requireProjectAccess(projectId, userId);
-        AssistantRole role = parseRole(roleValue);
-        ConversationEntity conversation = conversationRepository.findByProjectIdAndAssistantRole(projectId, role)
-                .orElse(null);
-        if (conversation == null) {
-            return new ConversationResponse(null, projectId, role.name(), null, List.of());
+        List<ConversationEntity> conversations;
+        if (roleValue == null || roleValue.isBlank()) {
+            conversations = conversationRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        } else {
+            conversations = conversationRepository.findByProjectIdAndAssistantRoleOrderByUpdatedAtDesc(
+                    projectId, parseRole(roleValue));
         }
+        return conversations.stream().map(this::toSummary).toList();
+    }
+
+    @Transactional
+    public ConversationSummaryResponse createConversation(
+            UUID projectId,
+            UUID userId,
+            CreateConversationRequest request
+    ) {
+        authorizationService.requireProjectEdit(projectId, userId);
+        AssistantRole role = parseRole(request.assistantRole());
+        AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(role);
+
+        ConversationEntity created = new ConversationEntity();
+        created.setProjectId(projectId);
+        created.setAssistantRole(role);
+        created.setCreatedBy(userId);
+        String title = request.title() == null || request.title().isBlank()
+                ? "New " + assistant.name() + " thread"
+                : request.title().trim();
+        created.setTitle(title);
+        conversationRepository.save(created);
+        return toSummary(created);
+    }
+
+    @Transactional(readOnly = true)
+    public ConversationResponse getConversation(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = requireConversationAccess(conversationId, userId);
         List<ConversationResponse.MessageDto> messages = messageRepository
                 .findByConversationIdOrderByCreatedAtAsc(conversation.getId()).stream()
                 .map(this::toMessageDto)
                 .toList();
         return new ConversationResponse(
                 conversation.getId(),
-                projectId,
-                role.name(),
+                conversation.getProjectId(),
+                conversation.getAssistantRole().name(),
                 conversation.getTitle(),
                 messages
         );
     }
 
     @Transactional
-    public ChatMessageResponse sendMessage(UUID projectId, String roleValue, UUID userId, String content) {
-        PreparedChat prepared = prepareChat(projectId, roleValue, userId, content);
+    public ConversationSummaryResponse updateConversation(
+            UUID conversationId,
+            UUID userId,
+            UpdateConversationRequest request
+    ) {
+        ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        if (request.title() != null && !request.title().isBlank()) {
+            conversation.setTitle(request.title().trim());
+        }
+        conversationRepository.save(conversation);
+        return toSummary(conversation);
+    }
+
+    @Transactional
+    public void deleteConversation(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        conversationRepository.delete(conversation);
+    }
+
+    @Transactional
+    public ChatMessageResponse sendMessage(UUID conversationId, UUID userId, String content) {
+        PreparedChat prepared = prepareChat(conversationId, userId, content);
         AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
-        MessageEntity assistantMessage = persistAssistant(prepared.conversationId(), result);
+        MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result);
         return new ChatMessageResponse(
                 toChatDto(prepared.userMessage()),
                 toChatDto(assistantMessage),
@@ -95,10 +147,10 @@ public class ConversationService {
         );
     }
 
-    public void streamMessage(UUID projectId, String roleValue, UUID userId, String content, SseEmitter emitter) {
+    public void streamMessage(UUID conversationId, UUID userId, String content, SseEmitter emitter) {
         try {
             PreparedChat prepared = transactionTemplate.execute(status ->
-                    prepareChat(projectId, roleValue, userId, content));
+                    prepareChat(conversationId, userId, content));
             if (prepared == null) {
                 throw new IllegalStateException("Failed to prepare chat");
             }
@@ -118,7 +170,7 @@ public class ConversationService {
             });
 
             MessageEntity assistantMessage = transactionTemplate.execute(status ->
-                    persistAssistant(prepared.conversationId(), result));
+                    persistAssistant(prepared.conversation(), result));
             if (assistantMessage == null) {
                 throw new IllegalStateException("Failed to persist assistant message");
             }
@@ -146,20 +198,9 @@ public class ConversationService {
         }
     }
 
-    private PreparedChat prepareChat(UUID projectId, String roleValue, UUID userId, String content) {
-        authorizationService.requireProjectEdit(projectId, userId);
-        AssistantRole role = parseRole(roleValue);
-        AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(role);
-
-        ConversationEntity conversation = conversationRepository.findByProjectIdAndAssistantRole(projectId, role)
-                .orElseGet(() -> {
-                    ConversationEntity created = new ConversationEntity();
-                    created.setProjectId(projectId);
-                    created.setAssistantRole(role);
-                    created.setTitle(assistant.name() + " chat");
-                    created.setCreatedBy(userId);
-                    return conversationRepository.save(created);
-                });
+    private PreparedChat prepareChat(UUID conversationId, UUID userId, String content) {
+        ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(conversation.getAssistantRole());
 
         MessageEntity userMessage = new MessageEntity();
         userMessage.setConversationId(conversation.getId());
@@ -168,7 +209,9 @@ public class ConversationService {
         userMessage.setMetadata("{}");
         messageRepository.save(userMessage);
 
-        String context = contextBuilder.buildForProject(projectId);
+        maybeAutoTitle(conversation, userMessage.getContent());
+
+        String context = contextBuilder.buildForProject(conversation.getProjectId());
         String systemPrompt = promptTemplateManager.systemPrompt(assistant.promptKey())
                 + "\n\n## Shared project context\n" + context;
 
@@ -189,14 +232,36 @@ public class ConversationService {
                 aiMessages,
                 0.3,
                 2000,
-                Map.of("assistantRole", role.name())
+                Map.of("assistantRole", conversation.getAssistantRole().name())
         );
-        return new PreparedChat(conversation.getId(), userMessage, request);
+        return new PreparedChat(conversation, userMessage, request);
     }
 
-    private MessageEntity persistAssistant(UUID conversationId, AiProviderPort.AiGenerationResult result) {
+    private void maybeAutoTitle(ConversationEntity conversation, String firstUserContent) {
+        String title = conversation.getTitle();
+        boolean isDefault = title == null
+                || title.startsWith("New ")
+                || title.endsWith(" chat")
+                || title.endsWith(" thread");
+        long count = messageRepository.countByConversationId(conversation.getId());
+        if (isDefault && count <= 1) {
+            String trimmed = firstUserContent.replace('\n', ' ').trim();
+            if (trimmed.length() > 60) {
+                trimmed = trimmed.substring(0, 57) + "…";
+            }
+            if (!trimmed.isBlank()) {
+                conversation.setTitle(trimmed);
+                conversationRepository.save(conversation);
+            }
+        }
+    }
+
+    private MessageEntity persistAssistant(
+            ConversationEntity conversation,
+            AiProviderPort.AiGenerationResult result
+    ) {
         MessageEntity assistantMessage = new MessageEntity();
-        assistantMessage.setConversationId(conversationId);
+        assistantMessage.setConversationId(conversation.getId());
         assistantMessage.setSender(MessageSender.ASSISTANT);
         assistantMessage.setContent(result.text());
         assistantMessage.setMetadata("""
@@ -204,11 +269,23 @@ public class ConversationService {
                 """.formatted(aiProviderPort.providerId(), result.model()).trim());
         messageRepository.save(assistantMessage);
 
-        conversationRepository.findById(conversationId).ifPresent(conversation -> {
-            conversation.setUpdatedAt(Instant.now());
-            conversationRepository.save(conversation);
-        });
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.save(conversation);
         return assistantMessage;
+    }
+
+    private ConversationEntity requireConversationAccess(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Conversation not found"));
+        authorizationService.requireProjectAccess(conversation.getProjectId(), userId);
+        return conversation;
+    }
+
+    private ConversationEntity requireConversationEdit(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Conversation not found"));
+        authorizationService.requireProjectEdit(conversation.getProjectId(), userId);
+        return conversation;
     }
 
     private AssistantRole parseRole(String roleValue) {
@@ -217,6 +294,18 @@ public class ConversationService {
         } catch (IllegalArgumentException ex) {
             throw new DomainException("VALIDATION_ERROR", ex.getMessage());
         }
+    }
+
+    private ConversationSummaryResponse toSummary(ConversationEntity entity) {
+        return new ConversationSummaryResponse(
+                entity.getId(),
+                entity.getProjectId(),
+                entity.getAssistantRole().name(),
+                entity.getTitle(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                (int) messageRepository.countByConversationId(entity.getId())
+        );
     }
 
     private ConversationResponse.MessageDto toMessageDto(MessageEntity entity) {
@@ -238,7 +327,7 @@ public class ConversationService {
     }
 
     private record PreparedChat(
-            UUID conversationId,
+            ConversationEntity conversation,
             MessageEntity userMessage,
             AiProviderPort.AiGenerationRequest request
     ) {

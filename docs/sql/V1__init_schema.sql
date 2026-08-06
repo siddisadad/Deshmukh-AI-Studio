@@ -130,8 +130,7 @@ CREATE TABLE conversations (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_assistant_role CHECK (assistant_role IN (
         'BUSINESS_ANALYST', 'DEVELOPER', 'QA_ENGINEER', 'DOCUMENTATION_WRITER'
-    )),
-    CONSTRAINT uq_conversation_project_role UNIQUE (project_id, assistant_role)
+    ))
 );
 
 CREATE TABLE messages (
@@ -198,5 +197,6 @@ CREATE INDEX idx_tasks_project_status ON tasks(project_id, status);
 CREATE INDEX idx_tasks_requirement ON tasks(requirement_id);
 CREATE INDEX idx_documents_project ON documents(project_id);
 CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
+CREATE INDEX idx_conversations_project_role_updated ON conversations(project_id, assistant_role, updated_at DESC);
 CREATE INDEX idx_audit_created ON audit_logs(created_at);
 CREATE INDEX idx_refresh_user ON refresh_tokens(user_id);

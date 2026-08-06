@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT/backend"
+cd "$ROOT/prototype/backend"
 
 if ! python3 -m venv /tmp/.venv-probe 2>/dev/null; then
   if command -v sudo >/dev/null 2>&1; then

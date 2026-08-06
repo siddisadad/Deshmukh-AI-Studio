@@ -64,6 +64,30 @@ class MockProvider(AIProvider):
                 "then prior records remain consistent."
             )
 
+        if (
+            "document" in prompt_lower
+            or "readme" in prompt_lower
+            or "markdown" in prompt_lower
+        ):
+            title = "Feature overview"
+            for line in user_prompt.splitlines():
+                if line.lower().startswith("title:"):
+                    title = line.split(":", 1)[1].strip() or title
+                    break
+            return (
+                f"[Mock {role_hint}] Documentation draft:\n\n"
+                f"# {title}\n\n"
+                "## Summary\n"
+                "This feature fits the current project scope described in "
+                "requirements and tasks.\n\n"
+                "## Behaviour\n"
+                "- Primary flow aligned with linked requirements\n"
+                "- Error handling for invalid input and edge cases\n\n"
+                "## Notes for developers\n"
+                "- Keep implementation consistent with the task board\n"
+                "- Verify against acceptance criteria before marking done"
+            )
+
         return (
             f"[Mock {role_hint}] Based on the current project context "
             f"(requirements and tasks), here is a response:\n\n"

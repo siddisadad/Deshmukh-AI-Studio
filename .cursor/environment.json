@@ -1,25 +1,43 @@
 {
-  "name": "AI Studio Prototype",
+  "name": "AI Studio",
   "install": ".cursor/install.sh",
   "terminals": [
     {
-      "name": "backend",
-      "description": "FastAPI API server (port 8000)",
-      "command": "cd backend && .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      "name": "api",
+      "description": "Spring Boot API (port 8080)",
+      "command": "cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=dev"
     },
     {
-      "name": "frontend",
-      "description": "Static frontend dev server (port 5500)",
-      "command": "cd frontend && python3 -m http.server 5500 --bind 0.0.0.0"
+      "name": "ui",
+      "description": "React dev server (port 5173)",
+      "command": "cd frontend && npm run dev -- --host 0.0.0.0"
+    },
+    {
+      "name": "prototype-api",
+      "description": "FastAPI prototype (port 8000)",
+      "command": "cd prototype/backend && .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    },
+    {
+      "name": "prototype-ui",
+      "description": "Static prototype frontend (port 5500)",
+      "command": "cd prototype/frontend && python3 -m http.server 5500 --bind 0.0.0.0"
     }
   ],
   "ports": [
     {
-      "name": "api",
+      "name": "spring-api",
+      "port": 8080
+    },
+    {
+      "name": "react-ui",
+      "port": 5173
+    },
+    {
+      "name": "prototype-api",
       "port": 8000
     },
     {
-      "name": "frontend",
+      "name": "prototype-ui",
       "port": 5500
     }
   ]

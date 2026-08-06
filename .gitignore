@@ -1,0 +1,10 @@
+backend/.venv/
+backend/__pycache__/
+backend/*.db
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+.pytest_cache/

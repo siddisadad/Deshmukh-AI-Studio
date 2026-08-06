@@ -9,6 +9,7 @@ import com.aistudio.infrastructure.persistence.repository.AuditLogRepository;
 import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectMemberRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
+import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -26,17 +27,20 @@ public class DashboardService {
     private final ProjectMemberRepository projectMemberRepository;
     private final MembershipRepository membershipRepository;
     private final AuditLogRepository auditLogRepository;
+    private final RequirementRepository requirementRepository;
 
     public DashboardService(
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             MembershipRepository membershipRepository,
-            AuditLogRepository auditLogRepository
+            AuditLogRepository auditLogRepository,
+            RequirementRepository requirementRepository
     ) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.membershipRepository = membershipRepository;
         this.auditLogRepository = auditLogRepository;
+        this.requirementRepository = requirementRepository;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +64,7 @@ public class DashboardService {
                         p.getName(),
                         p.getProjectKey(),
                         p.getStatus().name(),
-                        0L,
+                        requirementRepository.countByProjectId(p.getId()),
                         0L,
                         0L,
                         p.getUpdatedAt()

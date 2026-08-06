@@ -7,6 +7,7 @@ import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
 import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
 import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
+import { RequirementsPage } from '../../features/requirements/pages/RequirementsPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <DashboardPage /> },
           { path: '/projects', element: <ProjectsPage /> },
           { path: '/projects/:projectId', element: <ProjectOverviewPage /> },
+          { path: '/projects/:projectId/requirements', element: <RequirementsPage /> },
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
         ],

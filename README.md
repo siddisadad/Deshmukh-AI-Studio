@@ -61,7 +61,8 @@ uvicorn main:app --reload --port 8000
 - [x] Backend foundations + JWT auth (register/login/refresh/logout/forgot-reset/profile)
 - [x] React auth flow + dashboard shell
 - [x] Projects CRUD, archive/unarchive, org listing, dashboard aggregates
-- [ ] Requirements / Kanban / AI assistants
+- [x] Requirements CRUD + BA AI (improve / user stories / acceptance criteria)
+- [ ] Kanban / AI chat assistants
 
 ## Docs
 

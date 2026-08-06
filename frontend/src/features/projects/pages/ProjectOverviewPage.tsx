@@ -44,9 +44,14 @@ export function ProjectOverviewPage() {
             {project.description || 'No description yet.'}
           </Typography>
         </Box>
-        <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
-          Settings
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button component={RouterLink} to={`/projects/${project.id}/requirements`} variant="contained">
+            Requirements
+          </Button>
+          <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
+            Settings
+          </Button>
+        </Stack>
       </Stack>
 
       <Paper variant="outlined" sx={{ p: 3 }}>
@@ -54,8 +59,8 @@ export function ProjectOverviewPage() {
           Workspace
         </Typography>
         <Typography color="text.secondary">
-          Requirements, tasks, AI chat, and documents will attach to this project in the next slices. Your role:{' '}
-          {project.role}.
+          Capture requirements and run BA AI actions (improve, user stories, acceptance criteria). Tasks and AI chat
+          come next. Your role: {project.role}.
         </Typography>
       </Paper>
     </Stack>

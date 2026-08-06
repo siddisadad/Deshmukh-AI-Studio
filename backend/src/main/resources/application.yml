@@ -39,6 +39,11 @@ aistudio:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:
     provider: ${AI_PROVIDER:mock}
+    context:
+      max-requirements: 50
+      max-tasks: 100
+      max-messages: 20
+      max-chars: 48000
 
 springdoc:
   api-docs:

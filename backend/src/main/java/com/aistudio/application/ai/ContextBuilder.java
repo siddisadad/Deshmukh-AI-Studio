@@ -1,5 +1,6 @@
 package com.aistudio.application.ai;
 
+import com.aistudio.application.knowledge.KnowledgeRetrievalService;
 import com.aistudio.infrastructure.persistence.entity.ContextAssetEntity;
 import com.aistudio.infrastructure.persistence.entity.DocumentEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
@@ -23,6 +24,7 @@ public class ContextBuilder {
     private final TaskRepository taskRepository;
     private final DocumentRepository documentRepository;
     private final ContextAssetRepository contextAssetRepository;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final int maxRequirements;
     private final int maxTasks;
     private final int maxChars;
@@ -33,6 +35,7 @@ public class ContextBuilder {
             TaskRepository taskRepository,
             DocumentRepository documentRepository,
             ContextAssetRepository contextAssetRepository,
+            KnowledgeRetrievalService knowledgeRetrievalService,
             @Value("${aistudio.ai.context.max-requirements:50}") int maxRequirements,
             @Value("${aistudio.ai.context.max-tasks:100}") int maxTasks,
             @Value("${aistudio.ai.context.max-chars:48000}") int maxChars
@@ -42,12 +45,17 @@ public class ContextBuilder {
         this.taskRepository = taskRepository;
         this.documentRepository = documentRepository;
         this.contextAssetRepository = contextAssetRepository;
+        this.knowledgeRetrievalService = knowledgeRetrievalService;
         this.maxRequirements = maxRequirements;
         this.maxTasks = maxTasks;
         this.maxChars = maxChars;
     }
 
     public String buildForProject(UUID projectId) {
+        return buildForProject(projectId, null);
+    }
+
+    public String buildForProject(UUID projectId, String query) {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
         StringBuilder sb = new StringBuilder();
@@ -55,6 +63,16 @@ public class ContextBuilder {
                 .append("Name: ").append(project.getName()).append('\n')
                 .append("Key: ").append(project.getProjectKey()).append('\n')
                 .append("Description: ").append(nullToEmpty(project.getDescription())).append("\n\n");
+
+        if (query != null && !query.isBlank()) {
+            String rag = knowledgeRetrievalService.formatForPrompt(projectId, query);
+            if (!rag.isBlank()) {
+                sb.append(rag).append('\n');
+                if (overBudget(sb)) {
+                    return truncate(sb);
+                }
+            }
+        }
 
         List<ContextAssetEntity> assets = contextAssetRepository.findByProjectIdOrderByAssetTypeAsc(projectId);
         if (!assets.isEmpty()) {

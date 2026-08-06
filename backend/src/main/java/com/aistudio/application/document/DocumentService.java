@@ -96,7 +96,7 @@ public class DocumentService {
     @Transactional
     public DocumentAiResponse generate(UUID documentId, UUID userId, GenerateDocumentRequest request) {
         DocumentEntity entity = requireEditable(documentId, userId);
-        String context = contextBuilder.buildForProject(entity.getProjectId());
+        String context = contextBuilder.buildForProject(entity.getProjectId(), entity.getTitle() + " " + nullToEmpty(entity.getContentMd()));
         String system = promptTemplateManager.systemPrompt("documentation_writer");
         String userPrompt = promptTemplateManager.actionPrompt("docs_generate", Map.of(
                 "project_context", context,

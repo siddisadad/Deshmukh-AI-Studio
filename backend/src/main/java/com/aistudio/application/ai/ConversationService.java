@@ -211,7 +211,7 @@ public class ConversationService {
 
         maybeAutoTitle(conversation, userMessage.getContent());
 
-        String context = contextBuilder.buildForProject(conversation.getProjectId());
+        String context = contextBuilder.buildForProject(conversation.getProjectId(), content.trim());
         String systemPrompt = promptTemplateManager.systemPrompt(assistant.promptKey())
                 + "\n\n## Shared project context\n" + context;
 

@@ -2,9 +2,11 @@ package com.aistudio.application.context;
 
 import com.aistudio.api.context.dto.ContextAssetResponse;
 import com.aistudio.api.context.dto.UpsertContextAssetRequest;
+import com.aistudio.application.knowledge.KnowledgeIndexService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.context.ContextAssetType;
+import com.aistudio.domain.knowledge.KnowledgeSourceType;
 import com.aistudio.infrastructure.persistence.entity.ContextAssetEntity;
 import com.aistudio.infrastructure.persistence.repository.ContextAssetRepository;
 import java.util.List;
@@ -18,13 +20,16 @@ public class ContextAssetService {
 
     private final ContextAssetRepository contextAssetRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final KnowledgeIndexService knowledgeIndexService;
 
     public ContextAssetService(
             ContextAssetRepository contextAssetRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            KnowledgeIndexService knowledgeIndexService
     ) {
         this.contextAssetRepository = contextAssetRepository;
         this.authorizationService = authorizationService;
+        this.knowledgeIndexService = knowledgeIndexService;
     }
 
     @Transactional(readOnly = true)
@@ -50,6 +55,13 @@ public class ContextAssetService {
         entity.setContent(request.content() == null ? "" : request.content());
         entity.setMetadata(request.metadata() == null || request.metadata().isBlank() ? "{}" : request.metadata());
         contextAssetRepository.save(entity);
+        knowledgeIndexService.reindexSource(
+                projectId,
+                KnowledgeSourceType.CONTEXT_ASSET,
+                entity.getId(),
+                entity.getTitle(),
+                entity.getContent()
+        );
         return toResponse(entity);
     }
 

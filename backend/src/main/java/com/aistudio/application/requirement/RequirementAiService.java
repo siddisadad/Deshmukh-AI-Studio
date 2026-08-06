@@ -57,7 +57,10 @@ public class RequirementAiService {
             FieldWriter writer
     ) {
         RequirementEntity entity = requirementService.requireEditable(requirementId, userId);
-        String context = contextBuilder.buildForProject(entity.getProjectId());
+        String context = contextBuilder.buildForProject(
+                entity.getProjectId(),
+                entity.getTitle() + " " + nullToEmpty(entity.getDescription()) + " " + nullToEmpty(instructions)
+        );
         String system = promptTemplateManager.systemPrompt("business_analyst");
         String userPrompt = promptTemplateManager.actionPrompt(actionKey, Map.of(
                 "project_context", context,

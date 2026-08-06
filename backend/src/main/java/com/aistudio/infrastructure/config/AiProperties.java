@@ -8,7 +8,9 @@ public record AiProperties(
         OpenAi openai,
         Anthropic anthropic,
         Context context,
-        RateLimit rateLimit
+        RateLimit rateLimit,
+        Embedding embedding,
+        Rag rag
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }
@@ -20,5 +22,11 @@ public record AiProperties(
     }
 
     public record RateLimit(int aiPerMinute) {
+    }
+
+    public record Embedding(String provider, String model, int dimensions) {
+    }
+
+    public record Rag(boolean enabled, int topK, int maxChars) {
     }
 }

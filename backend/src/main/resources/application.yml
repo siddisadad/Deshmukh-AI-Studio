@@ -55,6 +55,14 @@ aistudio:
       max-chars: 48000
     rate-limit:
       ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
+    embedding:
+      provider: ${EMBEDDING_PROVIDER:mock}
+      model: ${EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: 384
+    rag:
+      enabled: ${RAG_ENABLED:true}
+      top-k: ${RAG_TOP_K:8}
+      max-chars: ${RAG_MAX_CHARS:6000}
 
 springdoc:
   api-docs:

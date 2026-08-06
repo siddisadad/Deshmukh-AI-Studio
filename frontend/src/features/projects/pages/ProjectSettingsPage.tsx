@@ -17,6 +17,11 @@ import {
   type ContextAsset,
   type ContextAssetType,
 } from '../api/contextAssetsApi';
+import {
+  knowledgeApi,
+  type KnowledgeHit,
+  type KnowledgeStatus,
+} from '../api/knowledgeApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
@@ -36,17 +41,25 @@ export function ProjectSettingsPage() {
   const [assetType, setAssetType] = useState<ContextAssetType>('API_SPEC');
   const [assetTitle, setAssetTitle] = useState('');
   const [assetContent, setAssetContent] = useState('');
+  const [knowledge, setKnowledge] = useState<KnowledgeStatus | null>(null);
+  const [knowledgeQuery, setKnowledgeQuery] = useState('');
+  const [knowledgeHits, setKnowledgeHits] = useState<KnowledgeHit[]>([]);
 
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
-    Promise.all([projectsApi.getProject(projectId), contextAssetsApi.list(projectId)])
-      .then(([p, listed]) => {
+    Promise.all([
+      projectsApi.getProject(projectId),
+      contextAssetsApi.list(projectId),
+      knowledgeApi.status(projectId),
+    ])
+      .then(([p, listed, status]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
         setDescription(p.description || '');
         setAssets(listed);
+        setKnowledge(status);
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
           setAssetType(current.assetType);
@@ -102,9 +115,50 @@ export function ProjectSettingsPage() {
         const others = prev.filter((a) => a.assetType !== saved.assetType);
         return [...others, saved].sort((a, b) => a.assetType.localeCompare(b.assetType));
       });
-      setMessage('Context asset saved — included in AI prompts');
+      setMessage('Context asset saved — included in AI prompts and knowledge index');
+      setKnowledge(await knowledgeApi.status(projectId));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to save context asset');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onReindex() {
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await knowledgeApi.reindex(projectId);
+      setKnowledge({
+        enabled: result.enabled,
+        embeddingProvider: result.embeddingProvider,
+        indexedChunks: result.chunkCount,
+      });
+      setMessage(`Knowledge reindexed · ${result.chunkCount} chunks (${result.embeddingProvider})`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Reindex failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSearchKnowledge(e: FormEvent) {
+    e.preventDefault();
+    if (!projectId || !knowledgeQuery.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await knowledgeApi.search(projectId, knowledgeQuery.trim());
+      setKnowledgeHits(result.hits);
+      setKnowledge({
+        enabled: true,
+        embeddingProvider: result.embeddingProvider,
+        indexedChunks: result.indexedChunks,
+      });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Search failed');
     } finally {
       setSaving(false);
     }
@@ -202,6 +256,40 @@ export function ProjectSettingsPage() {
           <Button type="submit" variant="contained" disabled={saving || !assetTitle.trim()}>
             Save context asset
           </Button>
+        </Stack>
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 3 }}>
+        <Stack spacing={2} component="form" onSubmit={onSearchKnowledge}>
+          <Typography variant="h6">Knowledge index (RAG)</Typography>
+          <Typography color="text.secondary">
+            Embeddings power semantic retrieval into chat and AI actions. Provider:{' '}
+            {knowledge?.embeddingProvider || 'mock'} · {knowledge?.indexedChunks ?? 0} chunks indexed.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button variant="outlined" onClick={() => void onReindex()} disabled={saving}>
+              Reindex project
+            </Button>
+          </Stack>
+          <TextField
+            label="Search knowledge"
+            value={knowledgeQuery}
+            onChange={(e) => setKnowledgeQuery(e.target.value)}
+            placeholder="e.g. password reset API"
+          />
+          <Button type="submit" variant="contained" disabled={saving || !knowledgeQuery.trim()}>
+            Search
+          </Button>
+          {knowledgeHits.map((hit) => (
+            <Box key={hit.id} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 1.5 }}>
+              <Typography variant="subtitle2">
+                [{hit.sourceType}] {hit.title} · score {hit.score.toFixed(3)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                {hit.content.length > 320 ? `${hit.content.slice(0, 320)}…` : hit.content}
+              </Typography>
+            </Box>
+          ))}
         </Stack>
       </Paper>
 

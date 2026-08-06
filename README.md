@@ -88,6 +88,7 @@ uvicorn main:app --reload --port 8000
 - [x] Empty-state / first-run cues on core pages
 - [x] Streaming AI chat (SSE) with progressive tokens
 - [x] Multi-thread conversations per assistant
+- [x] RAG knowledge index (pgvector + mock/OpenAI embeddings)
 
 ## Docs
 

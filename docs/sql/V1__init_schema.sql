@@ -154,7 +154,8 @@ CREATE TABLE project_context_assets (
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_asset_type CHECK (asset_type IN (
         'DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'
-    ))
+    )),
+    CONSTRAINT uq_context_assets_project_type UNIQUE (project_id, asset_type)
 );
 
 CREATE TABLE refresh_tokens (
@@ -197,6 +198,5 @@ CREATE INDEX idx_tasks_project_status ON tasks(project_id, status);
 CREATE INDEX idx_tasks_requirement ON tasks(requirement_id);
 CREATE INDEX idx_documents_project ON documents(project_id);
 CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
-CREATE INDEX idx_context_assets_project ON project_context_assets(project_id, asset_type);
 CREATE INDEX idx_audit_created ON audit_logs(created_at);
 CREATE INDEX idx_refresh_user ON refresh_tokens(user_id);

@@ -39,11 +39,21 @@ aistudio:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:
     provider: ${AI_PROVIDER:mock}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_MODEL:gpt-4o-mini}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: ${ANTHROPIC_MODEL:claude-sonnet-4-20250514}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
     context:
       max-requirements: 50
       max-tasks: 100
       max-messages: 20
       max-chars: 48000
+    rate-limit:
+      ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
 
 springdoc:
   api-docs:

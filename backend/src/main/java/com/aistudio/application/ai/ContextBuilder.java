@@ -1,9 +1,11 @@
 package com.aistudio.application.ai;
 
+import com.aistudio.infrastructure.persistence.entity.ContextAssetEntity;
 import com.aistudio.infrastructure.persistence.entity.DocumentEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.entity.RequirementEntity;
 import com.aistudio.infrastructure.persistence.entity.TaskEntity;
+import com.aistudio.infrastructure.persistence.repository.ContextAssetRepository;
 import com.aistudio.infrastructure.persistence.repository.DocumentRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
@@ -20,6 +22,7 @@ public class ContextBuilder {
     private final RequirementRepository requirementRepository;
     private final TaskRepository taskRepository;
     private final DocumentRepository documentRepository;
+    private final ContextAssetRepository contextAssetRepository;
     private final int maxRequirements;
     private final int maxTasks;
     private final int maxChars;
@@ -29,6 +32,7 @@ public class ContextBuilder {
             RequirementRepository requirementRepository,
             TaskRepository taskRepository,
             DocumentRepository documentRepository,
+            ContextAssetRepository contextAssetRepository,
             @Value("${aistudio.ai.context.max-requirements:50}") int maxRequirements,
             @Value("${aistudio.ai.context.max-tasks:100}") int maxTasks,
             @Value("${aistudio.ai.context.max-chars:48000}") int maxChars
@@ -37,6 +41,7 @@ public class ContextBuilder {
         this.requirementRepository = requirementRepository;
         this.taskRepository = taskRepository;
         this.documentRepository = documentRepository;
+        this.contextAssetRepository = contextAssetRepository;
         this.maxRequirements = maxRequirements;
         this.maxTasks = maxTasks;
         this.maxChars = maxChars;
@@ -50,6 +55,22 @@ public class ContextBuilder {
                 .append("Name: ").append(project.getName()).append('\n')
                 .append("Key: ").append(project.getProjectKey()).append('\n')
                 .append("Description: ").append(nullToEmpty(project.getDescription())).append("\n\n");
+
+        List<ContextAssetEntity> assets = contextAssetRepository.findByProjectIdOrderByAssetTypeAsc(projectId);
+        if (!assets.isEmpty()) {
+            sb.append("# Context assets\n");
+            for (ContextAssetEntity asset : assets) {
+                sb.append("## [").append(asset.getAssetType()).append("] ").append(asset.getTitle()).append('\n');
+                String body = nullToEmpty(asset.getContent());
+                if (!body.isBlank()) {
+                    sb.append(body.length() > 2000 ? body.substring(0, 2000) + "…" : body).append('\n');
+                }
+                sb.append('\n');
+                if (overBudget(sb)) {
+                    return truncate(sb);
+                }
+            }
+        }
 
         List<RequirementEntity> requirements = requirementRepository
                 .findByProjectIdOrderBySortOrderAscCreatedAtAsc(projectId);

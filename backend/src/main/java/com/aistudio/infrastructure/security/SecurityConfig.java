@@ -1,6 +1,9 @@
 package com.aistudio.infrastructure.security;
 
+import com.aistudio.infrastructure.config.AiProperties;
 import com.aistudio.infrastructure.config.CorsProperties;
+import com.aistudio.infrastructure.ratelimit.AiRateLimitFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,14 +29,24 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final CorsProperties corsProperties;
+    private final AiProperties aiProperties;
+    private final ObjectMapper objectMapper;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, CorsProperties corsProperties) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            CorsProperties corsProperties,
+            AiProperties aiProperties,
+            ObjectMapper objectMapper
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.corsProperties = corsProperties;
+        this.aiProperties = aiProperties;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        AiRateLimitFilter aiRateLimitFilter = new AiRateLimitFilter(aiProperties, objectMapper);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -50,7 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(aiRateLimitFilter, JwtAuthFilter.class);
         return http.build();
     }
 

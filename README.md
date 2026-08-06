@@ -34,6 +34,15 @@ npm run dev
 
 Auth endpoints live under `/api/v1/auth/*` and `/api/v1/me`.
 
+AI provider (default `mock`):
+
+```bash
+export AI_PROVIDER=openai          # or anthropic | mock
+export OPENAI_API_KEY=sk-...
+# export ANTHROPIC_API_KEY=...
+export AI_RATE_LIMIT_PER_MINUTE=30
+```
+
 Optional Compose (when Docker is available):
 
 ```bash
@@ -65,7 +74,9 @@ uvicorn main:app --reload --port 8000
 - [x] Kanban tasks (status/priority/labels)
 - [x] AI chat (4 assistants, shared context, conversation memory)
 - [x] Documents CRUD + Documentation Writer generate
-- [ ] Real LLM providers / rate limiting polish
+- [x] OpenAI / Anthropic providers (env-gated; default mock)
+- [x] AI endpoint rate limiting
+- [x] Project context assets (DB design / API spec / source metadata)
 
 ## Docs
 

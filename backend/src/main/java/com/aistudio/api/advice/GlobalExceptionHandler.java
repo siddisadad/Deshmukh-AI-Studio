@@ -1,5 +1,6 @@
 package com.aistudio.api.advice;
 
+import com.aistudio.domain.common.AiProviderException;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.shared.api.ApiError;
 import com.aistudio.shared.logging.RequestIdFilter;
@@ -36,6 +37,11 @@ public class GlobalExceptionHandler {
             default -> HttpStatus.BAD_REQUEST;
         };
         return build(status, ex.getCode(), ex.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(AiProviderException.class)
+    public ResponseEntity<ApiError> handleAiProvider(AiProviderException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_GATEWAY, "AI_PROVIDER_ERROR", "AI provider request failed", request, List.of());
     }
 
     @ExceptionHandler(BadCredentialsException.class)

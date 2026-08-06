@@ -63,6 +63,8 @@ aistudio:
       enabled: ${RAG_ENABLED:true}
       top-k: ${RAG_TOP_K:8}
       max-chars: ${RAG_MAX_CHARS:6000}
+  jobs:
+    poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
 
 springdoc:
   api-docs:

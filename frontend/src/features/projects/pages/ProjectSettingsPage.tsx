@@ -22,6 +22,7 @@ import {
   type KnowledgeHit,
   type KnowledgeStatus,
 } from '../api/knowledgeApi';
+import { jobsApi, type BackgroundJob } from '../api/jobsApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
@@ -44,6 +45,7 @@ export function ProjectSettingsPage() {
   const [knowledge, setKnowledge] = useState<KnowledgeStatus | null>(null);
   const [knowledgeQuery, setKnowledgeQuery] = useState('');
   const [knowledgeHits, setKnowledgeHits] = useState<KnowledgeHit[]>([]);
+  const [jobs, setJobs] = useState<BackgroundJob[]>([]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -52,14 +54,16 @@ export function ProjectSettingsPage() {
       projectsApi.getProject(projectId),
       contextAssetsApi.list(projectId),
       knowledgeApi.status(projectId),
+      jobsApi.list(projectId, 10),
     ])
-      .then(([p, listed, status]) => {
+      .then(([p, listed, status, listedJobs]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
         setDescription(p.description || '');
         setAssets(listed);
         setKnowledge(status);
+        setJobs(listedJobs);
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
           setAssetType(current.assetType);
@@ -130,13 +134,24 @@ export function ProjectSettingsPage() {
     setError(null);
     setMessage(null);
     try {
-      const result = await knowledgeApi.reindex(projectId);
-      setKnowledge({
-        enabled: result.enabled,
-        embeddingProvider: result.embeddingProvider,
-        indexedChunks: result.chunkCount,
-      });
-      setMessage(`Knowledge reindexed · ${result.chunkCount} chunks (${result.embeddingProvider})`);
+      const job = await jobsApi.reindexAsync(projectId);
+      setJobs((prev) => [job, ...prev.filter((j) => j.id !== job.id)].slice(0, 10));
+      setMessage(`Reindex job queued (${job.id.slice(0, 8)}…) — waiting for worker`);
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 800));
+        const latest = await jobsApi.get(job.id);
+        setJobs((prev) => [latest, ...prev.filter((j) => j.id !== latest.id)].slice(0, 10));
+        if (latest.status === 'SUCCEEDED' || latest.status === 'FAILED') {
+          if (latest.status === 'SUCCEEDED') {
+            const status = await knowledgeApi.status(projectId);
+            setKnowledge(status);
+            setMessage(`Reindex succeeded · ${status.indexedChunks} chunks indexed`);
+          } else {
+            setMessage(`Reindex failed: ${latest.errorMessage || 'unknown error'}`);
+          }
+          break;
+        }
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Reindex failed');
     } finally {
@@ -268,7 +283,7 @@ export function ProjectSettingsPage() {
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button variant="outlined" onClick={() => void onReindex()} disabled={saving}>
-              Reindex project
+              Reindex in background
             </Button>
           </Stack>
           <TextField
@@ -290,6 +305,21 @@ export function ProjectSettingsPage() {
               </Typography>
             </Box>
           ))}
+          {jobs.length > 0 && (
+            <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Recent background jobs
+              </Typography>
+              <Stack spacing={1}>
+                {jobs.map((job) => (
+                  <Typography key={job.id} variant="body2" color="text.secondary">
+                    {job.jobType.replaceAll('_', ' ').toLowerCase()} · {job.status.toLowerCase()} ·{' '}
+                    {new Date(job.createdAt).toLocaleString()}
+                  </Typography>
+                ))}
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </Paper>
 

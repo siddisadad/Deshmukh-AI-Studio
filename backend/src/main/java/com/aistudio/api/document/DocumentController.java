@@ -5,13 +5,18 @@ import com.aistudio.api.document.dto.DocumentAiResponse;
 import com.aistudio.api.document.dto.DocumentResponse;
 import com.aistudio.api.document.dto.GenerateDocumentRequest;
 import com.aistudio.api.document.dto.UpdateDocumentRequest;
+import com.aistudio.api.job.dto.JobResponse;
 import com.aistudio.application.document.DocumentService;
+import com.aistudio.application.job.BackgroundJobService;
+import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,9 +35,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final BackgroundJobService backgroundJobService;
+    private final ObjectMapper objectMapper;
 
-    public DocumentController(DocumentService documentService) {
+    public DocumentController(
+            DocumentService documentService,
+            BackgroundJobService backgroundJobService,
+            ObjectMapper objectMapper
+    ) {
         this.documentService = documentService;
+        this.backgroundJobService = backgroundJobService;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/api/v1/projects/{projectId}/documents")
@@ -92,5 +105,21 @@ public class DocumentController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return documentService.generate(documentId, user.getId(), request);
+    }
+
+    @PostMapping("/api/v1/documents/{documentId}/ai/generate/async")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Enqueue document generation as a background job")
+    public JobResponse generateAsync(
+            @PathVariable UUID documentId,
+            @RequestBody(required = false) @Valid GenerateDocumentRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) throws Exception {
+        var document = documentService.get(documentId, user.getId());
+        String payload = objectMapper.writeValueAsString(Map.of(
+                "documentId", documentId.toString(),
+                "instructions", request == null || request.instructions() == null ? "" : request.instructions()
+        ));
+        return backgroundJobService.enqueue(document.projectId(), user.getId(), JobType.DOCUMENT_GENERATE, payload);
     }
 }

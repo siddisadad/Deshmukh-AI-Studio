@@ -1,19 +1,24 @@
 package com.aistudio.api.knowledge;
 
+import com.aistudio.api.job.dto.JobResponse;
 import com.aistudio.api.knowledge.dto.KnowledgeReindexResponse;
 import com.aistudio.api.knowledge.dto.KnowledgeSearchResponse;
 import com.aistudio.api.knowledge.dto.KnowledgeStatusResponse;
+import com.aistudio.application.job.BackgroundJobService;
 import com.aistudio.application.knowledge.KnowledgeService;
+import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,9 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class KnowledgeController {
 
     private final KnowledgeService knowledgeService;
+    private final BackgroundJobService backgroundJobService;
 
-    public KnowledgeController(KnowledgeService knowledgeService) {
+    public KnowledgeController(KnowledgeService knowledgeService, BackgroundJobService backgroundJobService) {
         this.knowledgeService = knowledgeService;
+        this.backgroundJobService = backgroundJobService;
     }
 
     @GetMapping("/api/v1/projects/{projectId}/knowledge")
@@ -37,12 +44,22 @@ public class KnowledgeController {
     }
 
     @PostMapping("/api/v1/projects/{projectId}/knowledge/reindex")
-    @Operation(summary = "Rebuild the project knowledge index")
+    @Operation(summary = "Rebuild the project knowledge index (synchronous)")
     public KnowledgeReindexResponse reindex(
             @PathVariable UUID projectId,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return knowledgeService.reindex(projectId, user.getId());
+    }
+
+    @PostMapping("/api/v1/projects/{projectId}/knowledge/reindex/async")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Enqueue a background knowledge reindex job")
+    public JobResponse reindexAsync(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return backgroundJobService.enqueue(projectId, user.getId(), JobType.KNOWLEDGE_REINDEX, "{}");
     }
 
     @GetMapping("/api/v1/projects/{projectId}/knowledge/search")

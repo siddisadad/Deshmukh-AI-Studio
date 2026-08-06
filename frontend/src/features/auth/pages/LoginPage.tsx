@@ -2,16 +2,17 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
   Link as MuiLink,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
-import { authApi } from '../api/authApi';
+import { authApi, type SsoProvider } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
 
 export function LoginPage() {
@@ -21,6 +22,15 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [providers, setProviders] = useState<SsoProvider[]>([]);
+
+  useEffect(() => {
+    void authApi
+      .listSsoProviders()
+      .then(setProviders)
+      .catch(() => setProviders([]));
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,6 +47,23 @@ export function LoginPage() {
     }
   }
 
+  async function onSso(providerId: string) {
+    setSsoLoading(true);
+    setError(null);
+    try {
+      const redirectUri = `${window.location.origin}/auth/sso/callback`;
+      const started = await authApi.startSso({
+        provider: providerId,
+        redirectUri,
+        loginHint: email || undefined,
+      });
+      window.location.assign(started.authorizationUrl);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'SSO start failed');
+      setSsoLoading(false);
+    }
+  }
+
   return (
     <AuthCard title="Sign in" subtitle="Continue to your engineering workspace">
       <Box component="form" onSubmit={onSubmit}>
@@ -50,9 +77,27 @@ export function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button type="submit" variant="contained" size="large" disabled={loading}>
+          <Button type="submit" variant="contained" size="large" disabled={loading || ssoLoading}>
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
+
+          {providers.length > 0 && (
+            <>
+              <Divider>or</Divider>
+              {providers.map((provider) => (
+                <Button
+                  key={provider.id}
+                  variant="outlined"
+                  size="large"
+                  disabled={loading || ssoLoading}
+                  onClick={() => void onSso(provider.id)}
+                >
+                  {ssoLoading ? 'Redirecting…' : provider.displayName}
+                </Button>
+              ))}
+            </>
+          )}
+
           <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
             <MuiLink component={Link} to="/forgot-password" underline="hover">
               Forgot password?

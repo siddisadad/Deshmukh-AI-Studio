@@ -30,7 +30,7 @@ public class AuthenticatedUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return passwordHash;
+        return passwordHash == null ? "" : passwordHash;
     }
 
     @Override

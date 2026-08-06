@@ -20,6 +20,7 @@ import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
 import com.aistudio.infrastructure.persistence.repository.OrganizationRepository;
 import com.aistudio.infrastructure.persistence.repository.PasswordResetTokenRepository;
 import com.aistudio.infrastructure.persistence.repository.RefreshTokenRepository;
+import com.aistudio.infrastructure.persistence.repository.UserIdentityRepository;
 import com.aistudio.infrastructure.persistence.repository.UserRepository;
 import com.aistudio.infrastructure.security.JwtService;
 import java.time.Duration;
@@ -40,6 +41,7 @@ class AuthServiceTest {
     @Mock MembershipRepository membershipRepository;
     @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock PasswordResetTokenRepository passwordResetTokenRepository;
+    @Mock UserIdentityRepository userIdentityRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtService jwtService;
     @Mock EmailPort emailPort;
@@ -57,6 +59,7 @@ class AuthServiceTest {
                 membershipRepository,
                 refreshTokenRepository,
                 passwordResetTokenRepository,
+                userIdentityRepository,
                 passwordEncoder,
                 jwtService,
                 jwtProperties,

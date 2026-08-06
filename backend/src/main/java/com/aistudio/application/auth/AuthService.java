@@ -16,10 +16,12 @@ import com.aistudio.infrastructure.persistence.entity.OrganizationEntity;
 import com.aistudio.infrastructure.persistence.entity.PasswordResetTokenEntity;
 import com.aistudio.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.aistudio.infrastructure.persistence.entity.UserEntity;
+import com.aistudio.infrastructure.persistence.entity.UserIdentityEntity;
 import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
 import com.aistudio.infrastructure.persistence.repository.OrganizationRepository;
 import com.aistudio.infrastructure.persistence.repository.PasswordResetTokenRepository;
 import com.aistudio.infrastructure.persistence.repository.RefreshTokenRepository;
+import com.aistudio.infrastructure.persistence.repository.UserIdentityRepository;
 import com.aistudio.infrastructure.persistence.repository.UserRepository;
 import com.aistudio.infrastructure.security.JwtService;
 import com.aistudio.shared.util.SlugUtils;
@@ -40,6 +42,7 @@ public class AuthService {
     private final MembershipRepository membershipRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final UserIdentityRepository userIdentityRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
@@ -53,6 +56,7 @@ public class AuthService {
             MembershipRepository membershipRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            UserIdentityRepository userIdentityRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             JwtProperties jwtProperties,
@@ -65,6 +69,7 @@ public class AuthService {
         this.membershipRepository = membershipRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.userIdentityRepository = userIdentityRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.jwtProperties = jwtProperties;
@@ -109,12 +114,79 @@ public class AuthService {
     public TokenResponse login(String email, String password, String ip) {
         UserEntity user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
                 .orElseThrow(() -> invalidCredentials());
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new DomainException("INVALID_CREDENTIALS", "This account uses SSO. Sign in with SSO instead.");
+        }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             auditService.record(null, "LOGIN_FAILED", "USER", null, "{\"email\":\"" + normalizeEmail(email) + "\"}", ip);
             throw invalidCredentials();
         }
         OrganizationEntity org = primaryOrganization(user.getId());
         auditService.record(user.getId(), "LOGIN_SUCCESS", "USER", user.getId(), "{}", ip);
+        return issueTokens(user, org);
+    }
+
+    @Transactional
+    public TokenResponse loginWithExternalIdentity(
+            String provider,
+            String subject,
+            String email,
+            String displayName,
+            boolean emailVerified,
+            String ip
+    ) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail.isBlank() || !normalizedEmail.contains("@")) {
+            throw new DomainException("VALIDATION_ERROR", "SSO provider did not return a valid email");
+        }
+
+        UserEntity user = userIdentityRepository.findByProviderAndSubject(provider, subject)
+                .flatMap(identity -> userRepository.findById(identity.getUserId()))
+                .orElseGet(() -> userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null));
+
+        if (user == null) {
+            user = new UserEntity();
+            user.setEmail(normalizedEmail);
+            user.setPasswordHash(null);
+            user.setDisplayName(displayName == null || displayName.isBlank()
+                    ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                    : displayName.trim());
+            user.setTheme(ThemePreference.SYSTEM);
+            user.setEmailVerified(emailVerified);
+            userRepository.save(user);
+
+            OrganizationEntity org = new OrganizationEntity();
+            org.setName(user.getDisplayName() + "'s Workspace");
+            org.setSlug(uniqueSlug(SlugUtils.slugify(user.getDisplayName() + "-workspace")));
+            organizationRepository.save(org);
+
+            MembershipEntity membership = new MembershipEntity();
+            membership.setOrganizationId(org.getId());
+            membership.setUserId(user.getId());
+            membership.setRole(OrgRole.OWNER);
+            membershipRepository.save(membership);
+
+            billingService.ensureFreeSubscription(org.getId());
+            auditService.record(user.getId(), "USER_REGISTERED_SSO", "USER", user.getId(),
+                    "{\"provider\":\"" + provider + "\"}", ip);
+        } else if (emailVerified && !user.isEmailVerified()) {
+            user.setEmailVerified(true);
+            userRepository.save(user);
+        }
+
+        final UUID userId = user.getId();
+        if (userIdentityRepository.findByProviderAndSubject(provider, subject).isEmpty()) {
+            UserIdentityEntity identity = new UserIdentityEntity();
+            identity.setUserId(userId);
+            identity.setProvider(provider);
+            identity.setSubject(subject);
+            identity.setEmail(normalizedEmail);
+            userIdentityRepository.save(identity);
+        }
+
+        OrganizationEntity org = primaryOrganization(userId);
+        auditService.record(userId, "LOGIN_SUCCESS_SSO", "USER", userId,
+                "{\"provider\":\"" + provider + "\"}", ip);
         return issueTokens(user, org);
     }
 
@@ -213,6 +285,9 @@ public class AuthService {
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "User not found"));
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new DomainException("VALIDATION_ERROR", "This account uses SSO and has no local password");
+        }
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new DomainException("INVALID_CREDENTIALS", "Current password is incorrect");
         }

@@ -67,6 +67,10 @@ aistudio:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
   billing:
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}
+  sso:
+    enabled: ${SSO_ENABLED:true}
+    provider: ${SSO_PROVIDER:mock}
+    app-base-url: ${SSO_APP_BASE_URL:${BILLING_APP_BASE_URL:http://localhost:5173}}
 
 springdoc:
   api-docs:

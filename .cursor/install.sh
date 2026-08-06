@@ -21,3 +21,11 @@ if [ ! -d .venv ]; then
 fi
 
 .venv/bin/pip install -r requirements.txt
+
+if [ -f "$ROOT/frontend/package.json" ]; then
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "npm is required for the React frontend" >&2
+    exit 1
+  fi
+  (cd "$ROOT/frontend" && npm ci)
+fi

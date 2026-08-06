@@ -71,7 +71,8 @@ to introduce it as the system grows.
 | Real provider | `ai_provider.py: AnthropicProvider` | Wraps the `anthropic` SDK's `messages.create` |
 | Provider selection | `ai_provider.py: get_provider()` | Picks Anthropic if `ANTHROPIC_API_KEY` is set and the SDK is installed, else Mock |
 | Data models | `main.py` (SQLAlchemy) | `Project`, `Requirement`, `Task`, `Message` |
-| Frontend | `frontend/index.html` | Tabs for Requirements / Kanban / Chat; talks to the API via `fetch` |
+| Frontend (prototype) | `prototype/frontend/index.html` | Tabs for Requirements / Kanban / Documents / Chat |
+| Frontend (MVP) | `frontend/` (Vite + React) | Production SPA shell |
 
 ---
 

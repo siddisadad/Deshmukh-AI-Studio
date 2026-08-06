@@ -82,7 +82,7 @@ export function PluginsSettingsPage() {
             onChange={(_, checked) =>
               toggle.mutate({ pluginId: item.plugin.id, enabled: checked })
             }
-            inputProps={{ 'aria-label': `Toggle ${item.plugin.name}` }}
+            slotProps={{ input: { 'aria-label': `Toggle ${item.plugin.name}` } }}
           />
         ) : (
           <Button size="small" disabled variant="text">

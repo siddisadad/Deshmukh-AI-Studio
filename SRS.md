@@ -1,7 +1,7 @@
 # Software Requirements Specification
 ## AI Studio for Software Engineering — Prototype
 
-Version 0.1 · Covers the working prototype in `/backend` and `/frontend`
+Version 0.1 · Covers the working prototype in `prototype/backend` and `prototype/frontend`
 
 ---
 
@@ -41,8 +41,8 @@ collaboration, notifications, file uploads, and any deployment automation.
 - Original product vision brief: "AI Studio for Software Engineering" (full
   platform concept — Java/Spring/React/Postgres/RBAC/RAG). Referenced
   throughout as "the full vision."
-- Prototype source: `backend/main.py`, `backend/ai_provider.py`,
-  `frontend/index.html`.
+- Prototype source: `prototype/backend/main.py`, `prototype/backend/ai_provider.py`,
+  `prototype/frontend/index.html`.
 
 ### 1.5 Overview
 Section 2 describes the product at a high level. Section 3 lists functional
@@ -208,7 +208,7 @@ Each requirement has an ID, description, and priority (Must / Should / Could).
 
 ### 5.1 User Interface
 Single-page HTML/JS app with three tabs (Requirements, Kanban, AI Chat) and
-a project selector in the header. See `frontend/index.html`.
+a project selector in the header. See `prototype/frontend/index.html`.
 
 ### 5.2 API (REST, JSON)
 | Method | Path | Purpose |
@@ -243,7 +243,7 @@ Entities: **Project** (name, description), **Requirement** (project_id,
 title, description, improved_description, user_stories,
 acceptance_criteria), **Task** (project_id, requirement_id?, title,
 description, status, priority, labels), **Message** (project_id, role,
-sender, content). Full field types are in `backend/main.py`. No formal ER
+sender, content). Full field types are in `prototype/backend/main.py`. No formal ER
 diagram or migration history exists yet — see `ARCHITECTURE.md` for the
 data model diagram and the migration path to Postgres/Flyway.
 

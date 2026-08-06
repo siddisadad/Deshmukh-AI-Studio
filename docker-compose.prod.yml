@@ -1,0 +1,36 @@
+# Production overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Publishes only the edge frontend/nginx on port 80. Postgres and API stay internal.
+
+services:
+  postgres:
+    ports: !reset []
+    restart: unless-stopped
+
+  api:
+    ports: !reset []
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required in production}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required in production}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required in production}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-30}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  frontend:
+    ports: !override
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy

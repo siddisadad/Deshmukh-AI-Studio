@@ -45,6 +45,9 @@ Minimum VM (beta): 2 vCPU, 4 GB RAM, 40 GB SSD.
 ├── nginx/
 │   ├── nginx.conf
 │   └── conf.d/aistudio.conf
+├── scripts/
+│   ├── backup-db.sh
+│   └── restore-db.sh
 ├── backend/Dockerfile
 └── frontend/Dockerfile
 ```
@@ -236,14 +239,14 @@ Test restore on staging quarterly.
 
 ## 13. Security Hardening Checklist
 
-- [ ] TLS enabled; HTTP → HTTPS redirect  
-- [ ] Strong `JWT_SECRET` and DB password  
-- [ ] CORS limited to app origin  
-- [ ] Swagger disabled in prod  
-- [ ] Non-root containers  
-- [ ] Firewall: only 80/443 public  
-- [ ] Rate limiting enabled  
-- [ ] OS packages updated  
+- [x] TLS-ready Nginx config (enable certs for production)
+- [x] Strong `JWT_SECRET` and DB password required in prod compose overlay
+- [x] CORS limited via `CORS_ORIGINS`
+- [x] Swagger disabled in `prod` Spring profile
+- [x] Non-root API container user
+- [ ] Firewall: only 80/443 public (operator responsibility)
+- [x] Rate limiting enabled
+- [ ] OS packages updated (operator responsibility)
 
 ---
 

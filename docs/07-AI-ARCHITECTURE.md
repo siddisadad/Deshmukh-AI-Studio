@@ -5,7 +5,7 @@
 |---|---|
 | **Pattern** | Provider port + Prompt Manager + Context Builder + Conversation Manager |
 | **Assistants** | BA, Developer, QA, Documentation Writer |
-| **RAG** | Interfaces ready; vector store deferred |
+| **RAG** | pgvector knowledge chunks + mock/OpenAI embeddings |
 
 ---
 

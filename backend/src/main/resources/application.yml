@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: ai-studio-api
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:aistudio}
+    username: ${DB_USER:aistudio}
+    password: ${DB_PASSWORD:aistudio}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+aistudio:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-change-me-please-use-a-long-random-secret-key}
+      access-token-ttl: ${JWT_ACCESS_TTL:15m}
+      refresh-token-ttl: ${JWT_REFRESH_TTL:7d}
+    hsts-enabled: ${HSTS_ENABLED:false}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+  ai:
+    provider: ${AI_PROVIDER:mock}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_MODEL:gpt-4o-mini}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: ${ANTHROPIC_MODEL:claude-sonnet-4-20250514}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+    context:
+      max-requirements: 50
+      max-tasks: 100
+      max-messages: 20
+      max-chars: 48000
+    rate-limit:
+      ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
+    embedding:
+      provider: ${EMBEDDING_PROVIDER:mock}
+      model: ${EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: 384
+    rag:
+      enabled: ${RAG_ENABLED:true}
+      top-k: ${RAG_TOP_K:8}
+      max-chars: ${RAG_MAX_CHARS:6000}
+  jobs:
+    poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
+  billing:
+    app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}
+  sso:
+    enabled: ${SSO_ENABLED:true}
+    provider: ${SSO_PROVIDER:mock}
+    app-base-url: ${SSO_APP_BASE_URL:${BILLING_APP_BASE_URL:http://localhost:5173}}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.aistudio: INFO
+    org.springframework.security: INFO

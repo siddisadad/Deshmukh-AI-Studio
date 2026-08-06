@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cursor/**]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: aistudio
+          POSTGRES_USER: aistudio
+          POSTGRES_PASSWORD: aistudio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aistudio -d aistudio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Test
+        run: mvn -B test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: aistudio
+          DB_USER: aistudio
+          DB_PASSWORD: aistudio
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build

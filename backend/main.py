@@ -6,10 +6,11 @@ Layered modular monolith: routes → context builder / ask_assistant → AIProvi
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import (
@@ -29,7 +30,7 @@ from ai_provider import get_provider
 # Database
 # ---------------------------------------------------------------------------
 
-DATABASE_URL = "sqlite:///./ai_studio.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ai_studio.db")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
@@ -49,6 +50,7 @@ class Project(Base):
     requirements = relationship("Requirement", back_populates="project")
     tasks = relationship("Task", back_populates="project")
     messages = relationship("Message", back_populates="project")
+    documents = relationship("Document", back_populates="project")
 
 
 class Requirement(Base):
@@ -95,6 +97,19 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="messages")
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    body = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project", back_populates="documents")
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +176,11 @@ class ProjectOut(BaseModel):
         from_attributes = True
 
 
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
 class RequirementCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str = ""
@@ -178,6 +198,11 @@ class RequirementOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class RequirementUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 
 class TaskCreate(BaseModel):
@@ -240,6 +265,33 @@ class ChatReplyOut(BaseModel):
     ai_message: MessageOut
 
 
+class DocumentCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    body: str = ""
+
+
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = None
+    body: Optional[str] = None
+
+
+class DocumentOut(BaseModel):
+    id: int
+    project_id: int
+    title: str
+    body: Optional[str] = ""
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProjectContextOut(BaseModel):
+    project_id: int
+    context: str
+
+
 # ---------------------------------------------------------------------------
 # App + shared helpers
 # ---------------------------------------------------------------------------
@@ -290,6 +342,13 @@ def build_project_context(db: Session, project_id: int) -> str:
         .limit(30)
         .all()
     )
+    documents = (
+        db.query(Document)
+        .filter(Document.project_id == project_id)
+        .order_by(Document.id.asc())
+        .limit(15)
+        .all()
+    )
 
     lines = [
         f"Project: {project.name}",
@@ -328,11 +387,27 @@ def build_project_context(db: Session, project_id: int) -> str:
             if task.description:
                 lines.append(f"  {task.description}")
 
+    lines.append("")
+    lines.append("=== Documents ===")
+    if not documents:
+        lines.append("(none)")
+    else:
+        for doc in documents:
+            lines.append(f"- [{doc.id}] {doc.title}")
+            preview = (doc.body or "").strip()
+            if preview:
+                snippet = preview[:400] + ("..." if len(preview) > 400 else "")
+                lines.append(f"  {snippet}")
+
     return "\n".join(lines)
 
 
 def ask_assistant(
-    db: Session, project_id: int, role: str, user_prompt: str
+    db: Session,
+    project_id: int,
+    role: str,
+    user_prompt: str,
+    include_chat_history: bool = False,
 ) -> str:
     """Look up system prompt, append project context, call the provider."""
     if role not in ASSISTANTS:
@@ -343,7 +418,28 @@ def ask_assistant(
         f"{ASSISTANTS[role]['system_prompt']}\n\n"
         f"--- Project Context ---\n{context}\n--- End Context ---"
     )
-    return provider.generate(system, user_prompt)
+
+    prompt = user_prompt
+    if include_chat_history:
+        history = (
+            db.query(Message)
+            .filter(Message.project_id == project_id, Message.role == role)
+            .order_by(Message.created_at.asc(), Message.id.asc())
+            .limit(20)
+            .all()
+        )
+        if history:
+            history_lines = []
+            for msg in history:
+                label = "User" if msg.sender == "user" else ASSISTANTS[role]["name"]
+                history_lines.append(f"{label}: {msg.content}")
+            prompt = (
+                "Conversation so far:\n"
+                + "\n".join(history_lines)
+                + "\n\nRespond to the latest user message."
+            )
+
+    return provider.generate(system, prompt)
 
 
 def _get_project_or_404(db: Session, project_id: int) -> Project:
@@ -365,6 +461,13 @@ def _get_task_or_404(db: Session, task_id: int) -> Task:
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+def _get_document_or_404(db: Session, document_id: int) -> Document:
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return doc
 
 
 # ---------------------------------------------------------------------------
@@ -403,6 +506,38 @@ def get_project(project_id: int):
         db.close()
 
 
+@app.patch("/projects/{project_id}", response_model=ProjectOut)
+def update_project(project_id: int, body: ProjectUpdate):
+    db = get_db()
+    try:
+        project = _get_project_or_404(db, project_id)
+        data = body.model_dump(exclude_unset=True)
+        if "name" in data and data["name"] is not None:
+            data["name"] = data["name"].strip()
+            if not data["name"]:
+                raise HTTPException(status_code=400, detail="name cannot be empty")
+        for key, value in data.items():
+            setattr(project, key, value)
+        db.commit()
+        db.refresh(project)
+        return project
+    finally:
+        db.close()
+
+
+@app.get("/projects/{project_id}/context", response_model=ProjectContextOut)
+def get_project_context(project_id: int):
+    db = get_db()
+    try:
+        _get_project_or_404(db, project_id)
+        return ProjectContextOut(
+            project_id=project_id,
+            context=build_project_context(db, project_id),
+        )
+    finally:
+        db.close()
+
+
 # ---------------------------------------------------------------------------
 # Requirements
 # ---------------------------------------------------------------------------
@@ -437,6 +572,49 @@ def list_requirements(project_id: int):
             .order_by(Requirement.id.asc())
             .all()
         )
+    finally:
+        db.close()
+
+
+@app.get("/requirements/{requirement_id}", response_model=RequirementOut)
+def get_requirement(requirement_id: int):
+    db = get_db()
+    try:
+        return _get_requirement_or_404(db, requirement_id)
+    finally:
+        db.close()
+
+
+@app.patch("/requirements/{requirement_id}", response_model=RequirementOut)
+def update_requirement(requirement_id: int, body: RequirementUpdate):
+    db = get_db()
+    try:
+        req = _get_requirement_or_404(db, requirement_id)
+        data = body.model_dump(exclude_unset=True)
+        if "title" in data and data["title"] is not None:
+            data["title"] = data["title"].strip()
+            if not data["title"]:
+                raise HTTPException(status_code=400, detail="title cannot be empty")
+        for key, value in data.items():
+            setattr(req, key, value)
+        db.commit()
+        db.refresh(req)
+        return req
+    finally:
+        db.close()
+
+
+@app.delete("/requirements/{requirement_id}", status_code=204)
+def delete_requirement(requirement_id: int):
+    db = get_db()
+    try:
+        req = _get_requirement_or_404(db, requirement_id)
+        db.query(Task).filter(Task.requirement_id == requirement_id).update(
+            {Task.requirement_id: None}
+        )
+        db.delete(req)
+        db.commit()
+        return Response(status_code=204)
     finally:
         db.close()
 
@@ -613,6 +791,119 @@ def update_task(task_id: int, body: TaskUpdate):
         db.close()
 
 
+@app.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: int):
+    db = get_db()
+    try:
+        task = _get_task_or_404(db, task_id)
+        db.delete(task)
+        db.commit()
+        return Response(status_code=204)
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Documents
+# ---------------------------------------------------------------------------
+
+
+@app.post("/projects/{project_id}/documents", response_model=DocumentOut)
+def create_document(project_id: int, body: DocumentCreate):
+    db = get_db()
+    try:
+        _get_project_or_404(db, project_id)
+        doc = Document(
+            project_id=project_id,
+            title=body.title.strip(),
+            body=body.body or "",
+        )
+        db.add(doc)
+        db.commit()
+        db.refresh(doc)
+        return doc
+    finally:
+        db.close()
+
+
+@app.get("/projects/{project_id}/documents", response_model=list[DocumentOut])
+def list_documents(project_id: int):
+    db = get_db()
+    try:
+        _get_project_or_404(db, project_id)
+        return (
+            db.query(Document)
+            .filter(Document.project_id == project_id)
+            .order_by(Document.id.asc())
+            .all()
+        )
+    finally:
+        db.close()
+
+
+@app.get("/documents/{document_id}", response_model=DocumentOut)
+def get_document(document_id: int):
+    db = get_db()
+    try:
+        return _get_document_or_404(db, document_id)
+    finally:
+        db.close()
+
+
+@app.patch("/documents/{document_id}", response_model=DocumentOut)
+def update_document(document_id: int, body: DocumentUpdate):
+    db = get_db()
+    try:
+        doc = _get_document_or_404(db, document_id)
+        data = body.model_dump(exclude_unset=True)
+        if "title" in data and data["title"] is not None:
+            data["title"] = data["title"].strip()
+            if not data["title"]:
+                raise HTTPException(status_code=400, detail="title cannot be empty")
+        for key, value in data.items():
+            setattr(doc, key, value)
+        doc.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(doc)
+        return doc
+    finally:
+        db.close()
+
+
+@app.delete("/documents/{document_id}", status_code=204)
+def delete_document(document_id: int):
+    db = get_db()
+    try:
+        doc = _get_document_or_404(db, document_id)
+        db.delete(doc)
+        db.commit()
+        return Response(status_code=204)
+    finally:
+        db.close()
+
+
+@app.post("/documents/{document_id}/ai/generate", response_model=DocumentOut)
+def ai_generate_document(document_id: int):
+    db = get_db()
+    try:
+        doc = _get_document_or_404(db, document_id)
+        prompt = (
+            "Generate or expand technical documentation for this document title. "
+            "Use clear headings and concise prose grounded in the project context. "
+            "Return only the document body markdown.\n\n"
+            f"Title: {doc.title}\n"
+            f"Current body:\n{doc.body or '(empty)'}"
+        )
+        result = ask_assistant(db, doc.project_id, "documentation_writer", prompt)
+        doc.body = result
+        doc.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(doc)
+        return doc
+    finally:
+        db.close()
+
+
 # ---------------------------------------------------------------------------
 # Assistants + Chat
 # ---------------------------------------------------------------------------
@@ -660,7 +951,9 @@ def send_chat_message(project_id: int, role: str, body: ChatMessageIn):
         db.commit()
         db.refresh(user_msg)
 
-        reply_text = ask_assistant(db, project_id, role, body.message)
+        reply_text = ask_assistant(
+            db, project_id, role, body.message, include_chat_history=True
+        )
 
         ai_msg = Message(
             project_id=project_id,

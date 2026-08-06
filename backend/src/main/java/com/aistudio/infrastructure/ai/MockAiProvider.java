@@ -37,6 +37,20 @@ public class MockAiProvider implements AiProviderPort {
                     Clarify the actor, trigger, expected outcome, and non-functional constraints.
                     Remove ambiguity, state assumptions explicitly, and keep the language testable.
                     """.strip() + "\n\n" + truncate(user, 800);
+        } else if (lower.contains("documentation") || lower.contains("generate markdown documentation") || lower.contains("readme")) {
+            text = """
+                    # Project Documentation
+
+                    ## Overview
+                    This document was generated from the shared project context.
+
+                    ## Getting started
+                    1. Review requirements and tasks in AI Studio.
+                    2. Confirm acceptance criteria before implementation.
+                    3. Keep this document updated as the project evolves.
+
+                    ## Notes
+                    """.strip() + "\n\n" + truncate(user, 600);
         } else {
             text = "Mock AI response grounded in project context:\n\n" + truncate(user, 1000);
         }

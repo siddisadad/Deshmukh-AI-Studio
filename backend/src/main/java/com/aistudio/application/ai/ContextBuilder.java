@@ -1,8 +1,10 @@
 package com.aistudio.application.ai;
 
+import com.aistudio.infrastructure.persistence.entity.DocumentEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.entity.RequirementEntity;
 import com.aistudio.infrastructure.persistence.entity.TaskEntity;
+import com.aistudio.infrastructure.persistence.repository.DocumentRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
 import com.aistudio.infrastructure.persistence.repository.TaskRepository;
@@ -17,6 +19,7 @@ public class ContextBuilder {
     private final ProjectRepository projectRepository;
     private final RequirementRepository requirementRepository;
     private final TaskRepository taskRepository;
+    private final DocumentRepository documentRepository;
     private final int maxRequirements;
     private final int maxTasks;
     private final int maxChars;
@@ -25,6 +28,7 @@ public class ContextBuilder {
             ProjectRepository projectRepository,
             RequirementRepository requirementRepository,
             TaskRepository taskRepository,
+            DocumentRepository documentRepository,
             @Value("${aistudio.ai.context.max-requirements:50}") int maxRequirements,
             @Value("${aistudio.ai.context.max-tasks:100}") int maxTasks,
             @Value("${aistudio.ai.context.max-chars:48000}") int maxChars
@@ -32,6 +36,7 @@ public class ContextBuilder {
         this.projectRepository = projectRepository;
         this.requirementRepository = requirementRepository;
         this.taskRepository = taskRepository;
+        this.documentRepository = documentRepository;
         this.maxRequirements = maxRequirements;
         this.maxTasks = maxTasks;
         this.maxChars = maxChars;
@@ -59,10 +64,8 @@ public class ContextBuilder {
                     .append(req.getTitle()).append('\n')
                     .append("  ").append(nullToEmpty(req.getDescription()).replace("\n", " ")).append('\n');
             count++;
-            if (sb.length() > maxChars) {
-                sb.setLength(maxChars);
-                sb.append("\n…[truncated]");
-                return sb.toString();
+            if (overBudget(sb)) {
+                return truncate(sb);
             }
         }
 
@@ -77,12 +80,39 @@ public class ContextBuilder {
             sb.append("- [").append(task.getStatus()).append("/").append(task.getPriority()).append("] ")
                     .append(task.getTitle()).append('\n');
             taskCount++;
-            if (sb.length() > maxChars) {
-                sb.setLength(maxChars);
-                sb.append("\n…[truncated]");
-                return sb.toString();
+            if (overBudget(sb)) {
+                return truncate(sb);
             }
         }
+
+        List<DocumentEntity> documents = documentRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        sb.append("\n# Documents\n");
+        int docCount = 0;
+        for (DocumentEntity doc : documents) {
+            if (docCount >= 20) {
+                sb.append("…[additional documents truncated]\n");
+                break;
+            }
+            sb.append("- [").append(doc.getDocType()).append("] ").append(doc.getTitle()).append('\n');
+            String body = nullToEmpty(doc.getContentMd()).replace("\n", " ");
+            if (!body.isBlank()) {
+                sb.append("  ").append(body.length() > 240 ? body.substring(0, 240) + "…" : body).append('\n');
+            }
+            docCount++;
+            if (overBudget(sb)) {
+                return truncate(sb);
+            }
+        }
+        return sb.toString();
+    }
+
+    private boolean overBudget(StringBuilder sb) {
+        return sb.length() > maxChars;
+    }
+
+    private String truncate(StringBuilder sb) {
+        sb.setLength(maxChars);
+        sb.append("\n…[truncated]");
         return sb.toString();
     }
 

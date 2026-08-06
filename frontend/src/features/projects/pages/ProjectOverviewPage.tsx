@@ -54,6 +54,9 @@ export function ProjectOverviewPage() {
           <Button component={RouterLink} to={`/projects/${project.id}/chat`} variant="contained">
             AI Chat
           </Button>
+          <Button component={RouterLink} to={`/projects/${project.id}/documents`} variant="contained">
+            Documents
+          </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
             Settings
           </Button>
@@ -65,8 +68,7 @@ export function ProjectOverviewPage() {
           Workspace
         </Typography>
         <Typography color="text.secondary">
-          Requirements, Kanban, and AI chat with four role assistants are available. Documents come next. Your role:{' '}
-          {project.role}.
+          Requirements, Kanban, AI chat, and documents are available for this project. Your role: {project.role}.
         </Typography>
       </Paper>
     </Stack>

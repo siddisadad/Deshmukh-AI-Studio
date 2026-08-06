@@ -64,7 +64,8 @@ uvicorn main:app --reload --port 8000
 - [x] Requirements CRUD + BA AI (improve / user stories / acceptance criteria)
 - [x] Kanban tasks (status/priority/labels)
 - [x] AI chat (4 assistants, shared context, conversation memory)
-- [ ] Documents
+- [x] Documents CRUD + Documentation Writer generate
+- [ ] Real LLM providers / rate limiting polish
 
 ## Docs
 

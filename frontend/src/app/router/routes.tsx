@@ -4,6 +4,9 @@ import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
+import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
+import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
@@ -23,6 +26,9 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/projects', element: <ProjectsPage /> },
+          { path: '/projects/:projectId', element: <ProjectOverviewPage /> },
+          { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
         ],
       },

@@ -7,7 +7,7 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom';
 import { authApi } from '../../features/auth/api/authApi';
 import { useAuthStore } from '../../features/auth/store/authStore';
 
@@ -31,11 +31,23 @@ export function AppShell() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="sticky" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+        <Toolbar sx={{ gap: 1 }}>
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/dashboard"
+            sx={{ fontWeight: 700, textDecoration: 'none', color: 'inherit', mr: 2 }}
+          >
             AI Studio
           </Typography>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Button component={RouterLink} to="/dashboard" color="inherit">
+            Dashboard
+          </Button>
+          <Button component={RouterLink} to="/projects" color="inherit">
+            Projects
+          </Button>
+          <Box sx={{ flexGrow: 1 }} />
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               {organization?.name}
             </Typography>

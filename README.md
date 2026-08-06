@@ -90,6 +90,7 @@ uvicorn main:app --reload --port 8000
 - [x] Multi-thread conversations per assistant
 - [x] RAG knowledge index (pgvector + mock/OpenAI embeddings)
 - [x] Background AI jobs (reindex + document generate queue)
+- [x] Billing plans + entitlements (FREE/PRO/TEAM, mock Stripe checkout, project & AI daily limits)
 
 ## Docs
 

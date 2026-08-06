@@ -34,6 +34,7 @@ public class GlobalExceptionHandler {
             case "INVALID_CREDENTIALS", "INVALID_TOKEN", "TOKEN_INVALID_OR_EXPIRED" -> HttpStatus.UNAUTHORIZED;
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
+            case "PLAN_LIMIT" -> HttpStatus.PAYMENT_REQUIRED;
             default -> HttpStatus.BAD_REQUEST;
         };
         return build(status, ex.getCode(), ex.getMessage(), request, List.of());

@@ -5,6 +5,7 @@ import com.aistudio.api.ai.dto.ConversationResponse;
 import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.ai.AssistantRole;
 import com.aistudio.domain.ai.MessageSender;
@@ -38,6 +39,7 @@ public class ConversationService {
     private final ContextBuilder contextBuilder;
     private final PromptTemplateManager promptTemplateManager;
     private final AiProviderPort aiProviderPort;
+    private final BillingService billingService;
     private final TransactionTemplate transactionTemplate;
     private final int maxMessages;
 
@@ -49,6 +51,7 @@ public class ConversationService {
             ContextBuilder contextBuilder,
             PromptTemplateManager promptTemplateManager,
             AiProviderPort aiProviderPort,
+            BillingService billingService,
             TransactionTemplate transactionTemplate,
             @Value("${aistudio.ai.context.max-messages:20}") int maxMessages
     ) {
@@ -59,6 +62,7 @@ public class ConversationService {
         this.contextBuilder = contextBuilder;
         this.promptTemplateManager = promptTemplateManager;
         this.aiProviderPort = aiProviderPort;
+        this.billingService = billingService;
         this.transactionTemplate = transactionTemplate;
         this.maxMessages = maxMessages;
     }
@@ -200,6 +204,7 @@ public class ConversationService {
 
     private PreparedChat prepareChat(UUID conversationId, UUID userId, String content) {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        billingService.requireAndConsumeAiActionForProject(conversation.getProjectId());
         AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(conversation.getAssistantRole());
 
         MessageEntity userMessage = new MessageEntity();

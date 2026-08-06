@@ -4,6 +4,7 @@ import com.aistudio.api.requirement.dto.RequirementAiResponse;
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.application.ai.ContextBuilder;
 import com.aistudio.application.ai.PromptTemplateManager;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.infrastructure.persistence.entity.RequirementEntity;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
 import java.util.List;
@@ -19,19 +20,22 @@ public class RequirementAiService {
     private final ContextBuilder contextBuilder;
     private final PromptTemplateManager promptTemplateManager;
     private final AiProviderPort aiProviderPort;
+    private final BillingService billingService;
 
     public RequirementAiService(
             RequirementService requirementService,
             RequirementRepository requirementRepository,
             ContextBuilder contextBuilder,
             PromptTemplateManager promptTemplateManager,
-            AiProviderPort aiProviderPort
+            AiProviderPort aiProviderPort,
+            BillingService billingService
     ) {
         this.requirementService = requirementService;
         this.requirementRepository = requirementRepository;
         this.contextBuilder = contextBuilder;
         this.promptTemplateManager = promptTemplateManager;
         this.aiProviderPort = aiProviderPort;
+        this.billingService = billingService;
     }
 
     @Transactional
@@ -57,6 +61,7 @@ public class RequirementAiService {
             FieldWriter writer
     ) {
         RequirementEntity entity = requirementService.requireEditable(requirementId, userId);
+        billingService.requireAndConsumeAiActionForProject(entity.getProjectId());
         String context = contextBuilder.buildForProject(
                 entity.getProjectId(),
                 entity.getTitle() + " " + nullToEmpty(entity.getDescription()) + " " + nullToEmpty(instructions)

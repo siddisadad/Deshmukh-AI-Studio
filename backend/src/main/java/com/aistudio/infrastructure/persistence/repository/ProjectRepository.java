@@ -18,4 +18,6 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
     List<ProjectEntity> findByIdInAndStatusOrderByUpdatedAtDesc(Collection<UUID> ids, ProjectStatus status);
 
     Optional<ProjectEntity> findByIdAndOrganizationId(UUID id, UUID organizationId);
+
+    long countByOrganizationIdAndStatus(UUID organizationId, ProjectStatus status);
 }

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.aistudio.api.auth.dto.TokenResponse;
 import com.aistudio.application.audit.AuditService;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.config.JwtProperties;
 import com.aistudio.infrastructure.mail.EmailPort;
@@ -43,6 +44,7 @@ class AuthServiceTest {
     @Mock JwtService jwtService;
     @Mock EmailPort emailPort;
     @Mock AuditService auditService;
+    @Mock BillingService billingService;
 
     JwtProperties jwtProperties = new JwtProperties("dev-only-change-me-please-use-a-long-random-secret-key", Duration.ofMinutes(15), Duration.ofDays(7));
     AuthService authService;
@@ -59,7 +61,8 @@ class AuthServiceTest {
                 jwtService,
                 jwtProperties,
                 emailPort,
-                auditService
+                auditService,
+                billingService
         );
     }
 
@@ -87,6 +90,7 @@ class AuthServiceTest {
         assertThat(response.refreshToken()).isNotBlank();
         assertThat(response.user().email()).isEqualTo("ada@example.com");
         verify(membershipRepository).save(any());
+        verify(billingService).ensureFreeSubscription(any());
         verify(refreshTokenRepository).save(any());
         verify(auditService).record(any(), eq("USER_REGISTERED"), eq("USER"), any(), anyString(), eq("127.0.0.1"));
     }

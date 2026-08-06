@@ -5,6 +5,7 @@ import com.aistudio.api.profile.dto.ChangePasswordRequest;
 import com.aistudio.api.profile.dto.MeResponse;
 import com.aistudio.api.profile.dto.UpdateProfileRequest;
 import com.aistudio.application.audit.AuditService;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.organization.OrgRole;
 import com.aistudio.domain.user.ThemePreference;
@@ -44,6 +45,7 @@ public class AuthService {
     private final JwtProperties jwtProperties;
     private final EmailPort emailPort;
     private final AuditService auditService;
+    private final BillingService billingService;
 
     public AuthService(
             UserRepository userRepository,
@@ -55,7 +57,8 @@ public class AuthService {
             JwtService jwtService,
             JwtProperties jwtProperties,
             EmailPort emailPort,
-            AuditService auditService
+            AuditService auditService,
+            BillingService billingService
     ) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
@@ -67,6 +70,7 @@ public class AuthService {
         this.jwtProperties = jwtProperties;
         this.emailPort = emailPort;
         this.auditService = auditService;
+        this.billingService = billingService;
     }
 
     @Transactional
@@ -94,6 +98,8 @@ public class AuthService {
         membership.setUserId(user.getId());
         membership.setRole(OrgRole.OWNER);
         membershipRepository.save(membership);
+
+        billingService.ensureFreeSubscription(org.getId());
 
         auditService.record(user.getId(), "USER_REGISTERED", "USER", user.getId(), "{}", ip);
         return issueTokens(user, org);

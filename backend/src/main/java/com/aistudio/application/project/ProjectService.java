@@ -4,6 +4,7 @@ import com.aistudio.api.project.dto.CreateProjectRequest;
 import com.aistudio.api.project.dto.ProjectResponse;
 import com.aistudio.api.project.dto.UpdateProjectRequest;
 import com.aistudio.application.audit.AuditService;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.project.ProjectRole;
@@ -26,22 +27,26 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectAuthorizationService authorizationService;
     private final AuditService auditService;
+    private final BillingService billingService;
 
     public ProjectService(
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             ProjectAuthorizationService authorizationService,
-            AuditService auditService
+            AuditService auditService,
+            BillingService billingService
     ) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.authorizationService = authorizationService;
         this.auditService = auditService;
+        this.billingService = billingService;
     }
 
     @Transactional
     public ProjectResponse create(UUID orgId, UUID userId, CreateProjectRequest request, String ip) {
         authorizationService.requireOrgCreateProject(orgId, userId);
+        billingService.requireCanCreateProject(orgId);
         String key = request.projectKey().toUpperCase(Locale.ROOT);
         if (projectRepository.existsByOrganizationIdAndProjectKeyIgnoreCase(orgId, key)) {
             throw new DomainException("PROJECT_KEY_TAKEN", "Project key already exists in this organization");

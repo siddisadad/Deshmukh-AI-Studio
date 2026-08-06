@@ -8,6 +8,7 @@ import com.aistudio.api.document.dto.UpdateDocumentRequest;
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.application.ai.ContextBuilder;
 import com.aistudio.application.ai.PromptTemplateManager;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.document.DocumentType;
@@ -27,19 +28,22 @@ public class DocumentService {
     private final ContextBuilder contextBuilder;
     private final PromptTemplateManager promptTemplateManager;
     private final AiProviderPort aiProviderPort;
+    private final BillingService billingService;
 
     public DocumentService(
             DocumentRepository documentRepository,
             ProjectAuthorizationService authorizationService,
             ContextBuilder contextBuilder,
             PromptTemplateManager promptTemplateManager,
-            AiProviderPort aiProviderPort
+            AiProviderPort aiProviderPort,
+            BillingService billingService
     ) {
         this.documentRepository = documentRepository;
         this.authorizationService = authorizationService;
         this.contextBuilder = contextBuilder;
         this.promptTemplateManager = promptTemplateManager;
         this.aiProviderPort = aiProviderPort;
+        this.billingService = billingService;
     }
 
     @Transactional
@@ -96,6 +100,7 @@ public class DocumentService {
     @Transactional
     public DocumentAiResponse generate(UUID documentId, UUID userId, GenerateDocumentRequest request) {
         DocumentEntity entity = requireEditable(documentId, userId);
+        billingService.requireAndConsumeAiActionForProject(entity.getProjectId());
         String context = contextBuilder.buildForProject(entity.getProjectId(), entity.getTitle() + " " + nullToEmpty(entity.getContentMd()));
         String system = promptTemplateManager.systemPrompt("documentation_writer");
         String userPrompt = promptTemplateManager.actionPrompt("docs_generate", Map.of(

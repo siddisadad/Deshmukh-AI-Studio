@@ -43,6 +43,15 @@ public class ProjectAuthorizationService {
     }
 
     @Transactional(readOnly = true)
+    public MembershipEntity requireOrgOwner(UUID orgId, UUID userId) {
+        MembershipEntity membership = requireOrgMember(orgId, userId);
+        if (membership.getRole() != OrgRole.OWNER && membership.getRole() != OrgRole.ADMIN) {
+            throw forbidden();
+        }
+        return membership;
+    }
+
+    @Transactional(readOnly = true)
     public MembershipEntity requireOrgCreateProject(UUID orgId, UUID userId) {
         MembershipEntity membership = requireOrgMember(orgId, userId);
         if (!ORG_CAN_CREATE.contains(membership.getRole())) {

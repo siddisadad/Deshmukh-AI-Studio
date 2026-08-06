@@ -208,7 +208,7 @@ Each requirement has an ID, description, and priority (Must / Should / Could).
 
 ### 5.1 User Interface
 Single-page HTML/JS app with three tabs (Requirements, Kanban, AI Chat) and
-a project selector in the header. See `frontend/index.html`.
+a project selector in the header. See `prototype/frontend/index.html`.
 
 ### 5.2 API (REST, JSON)
 | Method | Path | Purpose |

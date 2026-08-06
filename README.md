@@ -62,7 +62,8 @@ uvicorn main:app --reload --port 8000
 - [x] React auth flow + dashboard shell
 - [x] Projects CRUD, archive/unarchive, org listing, dashboard aggregates
 - [x] Requirements CRUD + BA AI (improve / user stories / acceptance criteria)
-- [ ] Kanban / AI chat assistants
+- [x] Kanban tasks (status/priority/labels)
+- [ ] AI chat assistants / documents
 
 ## Docs
 

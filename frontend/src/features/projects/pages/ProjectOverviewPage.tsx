@@ -48,6 +48,9 @@ export function ProjectOverviewPage() {
           <Button component={RouterLink} to={`/projects/${project.id}/requirements`} variant="contained">
             Requirements
           </Button>
+          <Button component={RouterLink} to={`/projects/${project.id}/tasks`} variant="contained" color="secondary">
+            Tasks
+          </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
             Settings
           </Button>
@@ -59,8 +62,7 @@ export function ProjectOverviewPage() {
           Workspace
         </Typography>
         <Typography color="text.secondary">
-          Capture requirements and run BA AI actions (improve, user stories, acceptance criteria). Tasks and AI chat
-          come next. Your role: {project.role}.
+          Requirements and Kanban tasks are available. AI chat and documents come next. Your role: {project.role}.
         </Typography>
       </Paper>
     </Stack>

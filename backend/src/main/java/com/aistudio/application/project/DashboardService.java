@@ -10,6 +10,8 @@ import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectMemberRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
+import com.aistudio.infrastructure.persistence.repository.TaskRepository;
+import com.aistudio.domain.task.TaskStatus;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -28,19 +30,22 @@ public class DashboardService {
     private final MembershipRepository membershipRepository;
     private final AuditLogRepository auditLogRepository;
     private final RequirementRepository requirementRepository;
+    private final TaskRepository taskRepository;
 
     public DashboardService(
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             MembershipRepository membershipRepository,
             AuditLogRepository auditLogRepository,
-            RequirementRepository requirementRepository
+            RequirementRepository requirementRepository,
+            TaskRepository taskRepository
     ) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.membershipRepository = membershipRepository;
         this.auditLogRepository = auditLogRepository;
         this.requirementRepository = requirementRepository;
+        this.taskRepository = taskRepository;
     }
 
     @Transactional(readOnly = true)
@@ -65,8 +70,8 @@ public class DashboardService {
                         p.getProjectKey(),
                         p.getStatus().name(),
                         requirementRepository.countByProjectId(p.getId()),
-                        0L,
-                        0L,
+                        taskRepository.countByProjectIdAndStatusNot(p.getId(), TaskStatus.DONE),
+                        taskRepository.countByProjectIdAndStatus(p.getId(), TaskStatus.DONE),
                         p.getUpdatedAt()
                 ))
                 .toList();

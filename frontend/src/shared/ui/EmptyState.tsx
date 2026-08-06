@@ -22,7 +22,7 @@ export function EmptyState({ title, description, actionLabel, onAction, secondar
         bgcolor: 'action.hover',
       }}
     >
-      <Stack spacing={1.5} alignItems="center">
+      <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
         <Typography variant="h6">{title}</Typography>
         <Typography color="text.secondary" sx={{ maxWidth: 480 }}>
           {description}

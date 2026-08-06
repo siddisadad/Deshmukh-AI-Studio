@@ -9,6 +9,7 @@ import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettin
 import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
 import { RequirementsPage } from '../../features/requirements/pages/RequirementsPage';
 import { TasksPage } from '../../features/tasks/pages/TasksPage';
+import { AiChatPage } from '../../features/chat/pages/AiChatPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId', element: <ProjectOverviewPage /> },
           { path: '/projects/:projectId/requirements', element: <RequirementsPage /> },
           { path: '/projects/:projectId/tasks', element: <TasksPage /> },
+          { path: '/projects/:projectId/chat', element: <AiChatPage /> },
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
         ],

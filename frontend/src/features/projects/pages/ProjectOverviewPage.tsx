@@ -44,12 +44,15 @@ export function ProjectOverviewPage() {
             {project.description || 'No description yet.'}
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
           <Button component={RouterLink} to={`/projects/${project.id}/requirements`} variant="contained">
             Requirements
           </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/tasks`} variant="contained" color="secondary">
             Tasks
+          </Button>
+          <Button component={RouterLink} to={`/projects/${project.id}/chat`} variant="contained">
+            AI Chat
           </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
             Settings
@@ -62,7 +65,8 @@ export function ProjectOverviewPage() {
           Workspace
         </Typography>
         <Typography color="text.secondary">
-          Requirements and Kanban tasks are available. AI chat and documents come next. Your role: {project.role}.
+          Requirements, Kanban, and AI chat with four role assistants are available. Documents come next. Your role:{' '}
+          {project.role}.
         </Typography>
       </Paper>
     </Stack>

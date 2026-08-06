@@ -60,7 +60,8 @@ uvicorn main:app --reload --port 8000
 - [x] Design pack (PRD → deployment)
 - [x] Backend foundations + JWT auth (register/login/refresh/logout/forgot-reset/profile)
 - [x] React auth flow + dashboard shell
-- [ ] Projects / requirements / Kanban / AI assistants
+- [x] Projects CRUD, archive/unarchive, org listing, dashboard aggregates
+- [ ] Requirements / Kanban / AI assistants
 
 ## Docs
 

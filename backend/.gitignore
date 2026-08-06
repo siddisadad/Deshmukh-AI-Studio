@@ -1,10 +1,9 @@
-# Ignore local runtime / tooling
-backend/.venv/
-backend/__pycache__/
-backend/*.db
-**/__pycache__/
-*.pyc
-.venv/
-venv/
-.env
+target/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
 .DS_Store
+*.log
+.env

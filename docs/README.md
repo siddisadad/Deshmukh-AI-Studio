@@ -27,3 +27,5 @@ The repository also contains a **local FastAPI prototype** (shared-context proof
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — prototype architecture  
 
 Those validate the product mechanic; this folder specifies the **Java/Spring + React** SaaS MVP.
+
+Prototype sources now live under `prototype/` (FastAPI + static HTML).

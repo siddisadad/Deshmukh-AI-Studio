@@ -1,0 +1,33 @@
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { AppShell } from '../layout/AppShell';
+import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
+import { LoginPage } from '../../features/auth/pages/LoginPage';
+import { RegisterPage } from '../../features/auth/pages/RegisterPage';
+import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
+import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
+
+export const router = createBrowserRouter([
+  {
+    element: <GuestRoute />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+    ],
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppShell />,
+        children: [
+          { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/settings/profile', element: <ProfileSettingsPage /> },
+        ],
+      },
+    ],
+  },
+  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
+]);

@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import com.aistudio.support.IntegrationTestProperties;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,13 +32,7 @@ class SsoControllerIT {
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5432/aistudio");
-        registry.add("spring.datasource.username", () -> "aistudio");
-        registry.add("spring.datasource.password", () -> "aistudio");
-        registry.add("aistudio.security.jwt.secret", () -> "test-secret-key-must-be-at-least-32-bytes-long");
-        registry.add("aistudio.sso.enabled", () -> "true");
-        registry.add("aistudio.sso.provider", () -> "mock");
-        registry.add("aistudio.sso.app-base-url", () -> "http://localhost:5173");
+        IntegrationTestProperties.register(registry);
     }
 
     @Test

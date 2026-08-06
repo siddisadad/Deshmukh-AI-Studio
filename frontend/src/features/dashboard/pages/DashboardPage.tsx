@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useAuthStore } from '../../auth/store/authStore';
 import { projectsApi, type DashboardData } from '../../projects/api/projectsApi';
 import { CreateProjectDialog } from '../../projects/components/CreateProjectDialog';
@@ -73,7 +74,17 @@ export function DashboardPage() {
               gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
             }}
           >
-            {data.projects.map((project) => (
+            {data.projects.length === 0 ? (
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <EmptyState
+                  title="Create your first project"
+                  description="Projects hold requirements, tasks, documents, and shared AI context for your SDLC workspace."
+                  actionLabel="New project"
+                  onAction={() => setCreateOpen(true)}
+                />
+              </Box>
+            ) : (
+              data.projects.map((project) => (
               <Card key={project.id} variant="outlined">
                 <CardActionArea onClick={() => navigate(`/projects/${project.id}`)}>
                   <CardContent>
@@ -87,11 +98,7 @@ export function DashboardPage() {
                   </CardContent>
                 </CardActionArea>
               </Card>
-            ))}
-            {data.projects.length === 0 && (
-              <Alert severity="info" sx={{ gridColumn: '1 / -1' }}>
-                No active projects yet. Create your first project to start the SDLC workspace.
-              </Alert>
+              ))
             )}
           </Box>
 
@@ -100,7 +107,10 @@ export function DashboardPage() {
               Recent activity
             </Typography>
             {data.recentActivity.length === 0 ? (
-              <Typography color="text.secondary">No activity yet.</Typography>
+              <EmptyState
+                title="No activity yet"
+                description="Create a project, add a requirement, or chat with an assistant to see workspace activity here."
+              />
             ) : (
               <Stack spacing={1}>
                 {data.recentActivity.map((item, idx) => (

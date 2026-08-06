@@ -4,6 +4,8 @@ venv/
 *.pyc
 *.db
 .env
+backups/
+*.sql.gz
 .DS_Store
 .pytest_cache/
 backend/target/

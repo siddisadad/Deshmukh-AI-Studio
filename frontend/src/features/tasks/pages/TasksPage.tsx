@@ -20,6 +20,7 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { projectsApi, type Project } from '../../projects/api/projectsApi';
 import { tasksApi, type Task, type TaskStatus } from '../api/tasksApi';
 
@@ -161,6 +162,15 @@ export function TasksPage() {
       </Stack>
 
       {error && <Alert severity="error">{error}</Alert>}
+
+      {tasks.length === 0 && (
+        <EmptyState
+          title="Board is empty"
+          description="Break work into tasks and move them across To Do → Done as the team delivers."
+          actionLabel="New task"
+          onAction={() => setCreateOpen(true)}
+        />
+      )}
 
       <Box
         sx={{

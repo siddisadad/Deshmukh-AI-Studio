@@ -48,6 +48,13 @@ Optional Compose (when Docker is available):
 ```bash
 cp .env.example .env
 docker compose up --build
+
+# Production-shaped (edge on :80, internal DB/API, Spring prod profile)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# Backup / restore
+./scripts/backup-db.sh
+./scripts/restore-db.sh ./backups/aistudio-YYYYMMDD-HHMMSS.sql.gz
 ```
 
 ### 2. Prototype (FastAPI shared-context proof)
@@ -77,6 +84,8 @@ uvicorn main:app --reload --port 8000
 - [x] OpenAI / Anthropic providers (env-gated; default mock)
 - [x] AI endpoint rate limiting
 - [x] Project context assets (DB design / API spec / source metadata)
+- [x] Prod compose + nginx security headers + backup/restore scripts
+- [x] Empty-state / first-run cues on core pages
 
 ## Docs
 

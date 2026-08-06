@@ -13,6 +13,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { projectsApi, type Project } from '../../projects/api/projectsApi';
 import { chatApi, type Assistant, type ChatMessage } from '../api/chatApi';
 
@@ -138,9 +139,15 @@ export function AiChatPage() {
       >
         <Stack spacing={2}>
           {messages.length === 0 && (
-            <Typography color="text.secondary">
-              Ask the {selected?.name || 'assistant'} anything about this project. Responses use shared project context.
-            </Typography>
+            <EmptyState
+              title={`Start with the ${selected?.name || 'assistant'}`}
+              description="Ask about requirements, design trade-offs, test ideas, or docs. Answers use this project's shared context assets."
+              secondary={
+                <Typography variant="body2" color="text.secondary">
+                  Try: “Summarize open requirements” or “Suggest acceptance criteria for the top item.”
+                </Typography>
+              }
+            />
           )}
           {messages.map((message) => (
             <Box

@@ -1,0 +1,25 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+aistudio:
+  security:
+    hsts-enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.aistudio: INFO
+    org.springframework.security: WARN

@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useAuthStore } from '../../auth/store/authStore';
 import { projectsApi, type Project } from '../api/projectsApi';
 import { CreateProjectDialog } from '../components/CreateProjectDialog';
@@ -71,6 +72,17 @@ export function ProjectsPage() {
         <Box sx={{ display: 'grid', placeItems: 'center', py: 6 }}>
           <CircularProgress />
         </Box>
+      ) : projects.length === 0 ? (
+        <EmptyState
+          title={status === 'ACTIVE' ? 'No active projects' : 'Nothing in this filter'}
+          description={
+            status === 'ACTIVE'
+              ? 'Start with a project so requirements, tasks, documents, and AI assistants share one workspace context.'
+              : 'Try another filter, or create a new project.'
+          }
+          actionLabel="New project"
+          onAction={() => setCreateOpen(true)}
+        />
       ) : (
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
           {projects.map((project) => (
@@ -88,7 +100,6 @@ export function ProjectsPage() {
               </CardActionArea>
             </Card>
           ))}
-          {projects.length === 0 && <Alert severity="info">No projects in this filter.</Alert>}
         </Box>
       )}
 

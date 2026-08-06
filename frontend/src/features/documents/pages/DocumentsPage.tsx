@@ -18,6 +18,7 @@ import {
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { projectsApi, type Project } from '../../projects/api/projectsApi';
 import { documentsApi, type Document } from '../api/documentsApi';
 
@@ -192,16 +193,22 @@ export function DocumentsPage() {
               </ListItemButton>
             ))}
             {documents.length === 0 && (
-              <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
-                No documents yet.
-              </Typography>
+              <Box sx={{ px: 1, pb: 1 }}>
+                <EmptyState
+                  title="No documents yet"
+                  description="Create a README or API doc, then generate a first draft from shared project context."
+                />
+              </Box>
             )}
           </List>
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 3 }}>
           {!selected ? (
-            <Typography color="text.secondary">Select or create a document.</Typography>
+            <EmptyState
+              title="Select a document"
+              description="Choose an existing document or create one with the form on the left."
+            />
           ) : (
             <Box component="form" onSubmit={onSave}>
               <Stack spacing={2}>

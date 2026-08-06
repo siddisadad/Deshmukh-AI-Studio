@@ -35,6 +35,7 @@ aistudio:
       secret: ${JWT_SECRET:dev-only-change-me-please-use-a-long-random-secret-key}
       access-token-ttl: ${JWT_ACCESS_TTL:15m}
       refresh-token-ttl: ${JWT_REFRESH_TTL:7d}
+    hsts-enabled: ${HSTS_ENABLED:false}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:

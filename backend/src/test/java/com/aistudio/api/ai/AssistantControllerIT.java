@@ -3,6 +3,7 @@ package com.aistudio.api.ai;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -71,6 +72,44 @@ class AssistantControllerIT {
                 .andExpect(jsonPath("$.provider").value("mock"))
                 .andExpect(jsonPath("$.userMessage.sender").value("USER"))
                 .andExpect(jsonPath("$.assistantMessage.sender").value("ASSISTANT"));
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/DEVELOPER")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(2));
+    }
+
+    @Test
+    void streamChatMessageReturnsSseEvents() throws Exception {
+        JsonNode auth = register("stream" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Stream Proj","projectKey":"ST","description":"stream"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/DEVELOPER/messages/stream")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.TEXT_EVENT_STREAM)
+                        .content("""
+                                {"content":"Say hello in one sentence"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        // Wait for SseEmitter completion without re-entering the security filter chain.
+        mvcResult.getAsyncResult(60_000);
+        String body = mvcResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:user"), body);
+        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:delta"), body);
+        org.junit.jupiter.api.Assertions.assertTrue(body.contains("event:done"), body);
 
         mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/DEVELOPER")
                         .header("Authorization", "Bearer " + token))

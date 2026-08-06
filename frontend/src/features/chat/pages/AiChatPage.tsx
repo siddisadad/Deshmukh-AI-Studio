@@ -23,6 +23,7 @@ export function AiChatPage() {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [role, setRole] = useState('BUSINESS_ANALYST');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [streamingContent, setStreamingContent] = useState('');
   const [input, setInput] = useState('');
   const [provider, setProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,12 +58,13 @@ export function AiChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending]);
+  }, [messages, sending, streamingContent]);
 
   async function onRoleChange(_: MouseEvent<HTMLElement>, value: string | null) {
-    if (!value || !projectId) return;
+    if (!value || !projectId || sending) return;
     setRole(value);
     setError(null);
+    setStreamingContent('');
     try {
       await loadConversation(value);
     } catch (err) {
@@ -72,17 +74,32 @@ export function AiChatPage() {
 
   async function onSend(e: FormEvent) {
     e.preventDefault();
-    if (!projectId || !input.trim()) return;
+    if (!projectId || !input.trim() || sending) return;
     setSending(true);
     setError(null);
+    setStreamingContent('');
     const content = input.trim();
     setInput('');
     try {
-      const result = await chatApi.sendMessage(projectId, role, content);
-      setMessages((prev) => [...prev, result.userMessage, result.assistantMessage]);
-      setProvider(`${result.provider} / ${result.model}`);
+      await chatApi.streamMessage(projectId, role, content, {
+        onUser: (userMessage) => {
+          setMessages((prev) => [...prev, userMessage]);
+        },
+        onDelta: (text) => {
+          setStreamingContent((prev) => prev + text);
+        },
+        onDone: ({ assistantMessage, provider: p, model }) => {
+          setStreamingContent('');
+          setMessages((prev) => [...prev, assistantMessage]);
+          setProvider(`${p} / ${model}`);
+        },
+        onError: (message) => {
+          setError(message);
+        },
+      });
     } catch (err) {
       setInput(content);
+      setStreamingContent('');
       setError(err instanceof ApiError ? err.message : 'Failed to send message');
     } finally {
       setSending(false);
@@ -113,7 +130,7 @@ export function AiChatPage() {
 
       <ToggleButtonGroup exclusive value={role} onChange={onRoleChange} size="small" sx={{ flexWrap: 'wrap' }}>
         {assistants.map((assistant) => (
-          <ToggleButton key={assistant.role} value={assistant.role}>
+          <ToggleButton key={assistant.role} value={assistant.role} disabled={sending}>
             {assistant.name}
           </ToggleButton>
         ))}
@@ -138,10 +155,10 @@ export function AiChatPage() {
         }}
       >
         <Stack spacing={2}>
-          {messages.length === 0 && (
+          {messages.length === 0 && !streamingContent && (
             <EmptyState
               title={`Start with the ${selected?.name || 'assistant'}`}
-              description="Ask about requirements, design trade-offs, test ideas, or docs. Answers use this project's shared context assets."
+              description="Ask about requirements, design trade-offs, test ideas, or docs. Answers stream live using this project's shared context."
               secondary={
                 <Typography variant="body2" color="text.secondary">
                   Try: “Summarize open requirements” or “Suggest acceptance criteria for the top item.”
@@ -175,7 +192,41 @@ export function AiChatPage() {
               </Paper>
             </Box>
           ))}
-          {sending && <Typography color="text.secondary">Assistant is thinking…</Typography>}
+          {streamingContent && (
+            <Box sx={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+              <Typography variant="caption" color="text.secondary">
+                {selected?.name || 'Assistant'} · streaming
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  mt: 0.5,
+                  whiteSpace: 'pre-wrap',
+                  bgcolor: 'background.paper',
+                }}
+              >
+                {streamingContent}
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-block',
+                    width: 8,
+                    height: 14,
+                    ml: 0.5,
+                    bgcolor: 'primary.main',
+                    verticalAlign: 'text-bottom',
+                    animation: 'pulse 1s ease-in-out infinite',
+                    '@keyframes pulse': {
+                      '0%, 100%': { opacity: 1 },
+                      '50%': { opacity: 0.2 },
+                    },
+                  }}
+                />
+              </Paper>
+            </Box>
+          )}
+          {sending && !streamingContent && <Typography color="text.secondary">Assistant is thinking…</Typography>}
           <div ref={bottomRef} />
         </Stack>
       </Paper>
@@ -194,7 +245,7 @@ export function AiChatPage() {
           </Button>
         </Stack>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Context: shared project · {provider || 'Provider: mock (default)'}
+          Context: shared project · streaming SSE · {provider || 'Provider: mock (default)'}
         </Typography>
       </Box>
     </Stack>

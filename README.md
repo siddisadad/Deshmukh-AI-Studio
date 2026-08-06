@@ -86,6 +86,7 @@ uvicorn main:app --reload --port 8000
 - [x] Project context assets (DB design / API spec / source metadata)
 - [x] Prod compose + nginx security headers + backup/restore scripts
 - [x] Empty-state / first-run cues on core pages
+- [x] Streaming AI chat (SSE) with progressive tokens
 
 ## Docs
 

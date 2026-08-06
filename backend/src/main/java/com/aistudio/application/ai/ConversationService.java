@@ -10,6 +10,8 @@ import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
 import com.aistudio.infrastructure.persistence.entity.MessageEntity;
 import com.aistudio.infrastructure.persistence.repository.ConversationRepository;
 import com.aistudio.infrastructure.persistence.repository.MessageRepository;
+import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +19,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 public class ConversationService {
@@ -30,6 +35,7 @@ public class ConversationService {
     private final ContextBuilder contextBuilder;
     private final PromptTemplateManager promptTemplateManager;
     private final AiProviderPort aiProviderPort;
+    private final TransactionTemplate transactionTemplate;
     private final int maxMessages;
 
     public ConversationService(
@@ -40,6 +46,7 @@ public class ConversationService {
             ContextBuilder contextBuilder,
             PromptTemplateManager promptTemplateManager,
             AiProviderPort aiProviderPort,
+            TransactionTemplate transactionTemplate,
             @Value("${aistudio.ai.context.max-messages:20}") int maxMessages
     ) {
         this.conversationRepository = conversationRepository;
@@ -49,6 +56,7 @@ public class ConversationService {
         this.contextBuilder = contextBuilder;
         this.promptTemplateManager = promptTemplateManager;
         this.aiProviderPort = aiProviderPort;
+        this.transactionTemplate = transactionTemplate;
         this.maxMessages = maxMessages;
     }
 
@@ -76,6 +84,69 @@ public class ConversationService {
 
     @Transactional
     public ChatMessageResponse sendMessage(UUID projectId, String roleValue, UUID userId, String content) {
+        PreparedChat prepared = prepareChat(projectId, roleValue, userId, content);
+        AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
+        MessageEntity assistantMessage = persistAssistant(prepared.conversationId(), result);
+        return new ChatMessageResponse(
+                toChatDto(prepared.userMessage()),
+                toChatDto(assistantMessage),
+                aiProviderPort.providerId(),
+                result.model()
+        );
+    }
+
+    public void streamMessage(UUID projectId, String roleValue, UUID userId, String content, SseEmitter emitter) {
+        try {
+            PreparedChat prepared = transactionTemplate.execute(status ->
+                    prepareChat(projectId, roleValue, userId, content));
+            if (prepared == null) {
+                throw new IllegalStateException("Failed to prepare chat");
+            }
+
+            emitter.send(SseEmitter.event()
+                    .name("user")
+                    .data(toChatDto(prepared.userMessage()), MediaType.APPLICATION_JSON));
+
+            AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("delta")
+                            .data(Map.of("text", delta), MediaType.APPLICATION_JSON));
+                } catch (IOException ex) {
+                    throw new IllegalStateException("Failed to write SSE delta", ex);
+                }
+            });
+
+            MessageEntity assistantMessage = transactionTemplate.execute(status ->
+                    persistAssistant(prepared.conversationId(), result));
+            if (assistantMessage == null) {
+                throw new IllegalStateException("Failed to persist assistant message");
+            }
+
+            Map<String, Object> done = Map.of(
+                    "assistantMessage", toChatDto(assistantMessage),
+                    "provider", aiProviderPort.providerId(),
+                    "model", result.model()
+            );
+            emitter.send(SseEmitter.event()
+                    .name("done")
+                    .data(done, MediaType.APPLICATION_JSON));
+            emitter.complete();
+        } catch (Exception ex) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("error")
+                        .data(Map.of(
+                                "message", ex.getMessage() == null ? "Stream failed" : ex.getMessage()
+                        ), MediaType.APPLICATION_JSON));
+            } catch (Exception ignored) {
+                // emitter may already be closed
+            }
+            emitter.completeWithError(ex);
+        }
+    }
+
+    private PreparedChat prepareChat(UUID projectId, String roleValue, UUID userId, String content) {
         authorizationService.requireProjectEdit(projectId, userId);
         AssistantRole role = parseRole(roleValue);
         AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(role);
@@ -113,16 +184,19 @@ public class ConversationService {
                 ))
                 .toList();
 
-        AiProviderPort.AiGenerationResult result = aiProviderPort.generate(new AiProviderPort.AiGenerationRequest(
+        AiProviderPort.AiGenerationRequest request = new AiProviderPort.AiGenerationRequest(
                 systemPrompt,
                 aiMessages,
                 0.3,
                 2000,
                 Map.of("assistantRole", role.name())
-        ));
+        );
+        return new PreparedChat(conversation.getId(), userMessage, request);
+    }
 
+    private MessageEntity persistAssistant(UUID conversationId, AiProviderPort.AiGenerationResult result) {
         MessageEntity assistantMessage = new MessageEntity();
-        assistantMessage.setConversationId(conversation.getId());
+        assistantMessage.setConversationId(conversationId);
         assistantMessage.setSender(MessageSender.ASSISTANT);
         assistantMessage.setContent(result.text());
         assistantMessage.setMetadata("""
@@ -130,15 +204,11 @@ public class ConversationService {
                 """.formatted(aiProviderPort.providerId(), result.model()).trim());
         messageRepository.save(assistantMessage);
 
-        conversation.setUpdatedAt(java.time.Instant.now());
-        conversationRepository.save(conversation);
-
-        return new ChatMessageResponse(
-                toChatDto(userMessage),
-                toChatDto(assistantMessage),
-                aiProviderPort.providerId(),
-                result.model()
-        );
+        conversationRepository.findById(conversationId).ifPresent(conversation -> {
+            conversation.setUpdatedAt(Instant.now());
+            conversationRepository.save(conversation);
+        });
+        return assistantMessage;
     }
 
     private AssistantRole parseRole(String roleValue) {
@@ -165,5 +235,12 @@ public class ConversationService {
                 entity.getContent(),
                 entity.getCreatedAt()
         );
+    }
+
+    private record PreparedChat(
+            UUID conversationId,
+            MessageEntity userMessage,
+            AiProviderPort.AiGenerationRequest request
+    ) {
     }
 }

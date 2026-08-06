@@ -7,6 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -41,20 +46,7 @@ public class OpenAiProvider implements AiProviderPort {
     @Override
     public AiGenerationResult generate(AiGenerationRequest request) {
         try {
-            ObjectNode body = objectMapper.createObjectNode();
-            body.put("model", model);
-            if (request.temperature() != null) {
-                body.put("temperature", request.temperature());
-            }
-            if (request.maxOutputTokens() != null) {
-                body.put("max_tokens", request.maxOutputTokens());
-            }
-            ArrayNode messages = body.putArray("messages");
-            messages.addObject().put("role", "system").put("content", request.systemPrompt());
-            for (AiMessage message : request.messages()) {
-                messages.addObject().put("role", mapRole(message.role())).put("content", message.content());
-            }
-
+            ObjectNode body = buildBody(request, false);
             String response = client.post()
                     .uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -80,8 +72,75 @@ public class OpenAiProvider implements AiProviderPort {
     }
 
     @Override
+    public AiGenerationResult stream(AiGenerationRequest request, Consumer<String> onDelta) {
+        try {
+            ObjectNode body = buildBody(request, true);
+            StringBuilder full = new StringBuilder();
+            client.post()
+                    .uri("/v1/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+                    .body(body.toString())
+                    .exchange((req, response) -> {
+                        if (response.getStatusCode().isError()) {
+                            throw new AiProviderException("OpenAI stream failed with status " + response.getStatusCode().value());
+                        }
+                        InputStream stream = response.getBody();
+                        if (stream == null) {
+                            throw new AiProviderException("OpenAI stream returned empty body");
+                        }
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (!line.startsWith("data:")) {
+                                    continue;
+                                }
+                                String payload = line.substring(5).trim();
+                                if (payload.isEmpty() || "[DONE]".equals(payload)) {
+                                    continue;
+                                }
+                                JsonNode root = objectMapper.readTree(payload);
+                                String delta = root.path("choices").path(0).path("delta").path("content").asText(null);
+                                if (delta != null && !delta.isEmpty()) {
+                                    full.append(delta);
+                                    onDelta.accept(delta);
+                                }
+                            }
+                        }
+                        return null;
+                    });
+            if (full.isEmpty()) {
+                throw new AiProviderException("OpenAI stream returned empty content");
+            }
+            return new AiGenerationResult(full.toString(), model, null, null);
+        } catch (AiProviderException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new AiProviderException("OpenAI stream request failed", ex);
+        }
+    }
+
+    @Override
     public String providerId() {
         return "openai";
+    }
+
+    private ObjectNode buildBody(AiGenerationRequest request, boolean stream) {
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", model);
+        body.put("stream", stream);
+        if (request.temperature() != null) {
+            body.put("temperature", request.temperature());
+        }
+        if (request.maxOutputTokens() != null) {
+            body.put("max_tokens", request.maxOutputTokens());
+        }
+        ArrayNode messages = body.putArray("messages");
+        messages.addObject().put("role", "system").put("content", request.systemPrompt());
+        for (AiMessage message : request.messages()) {
+            messages.addObject().put("role", mapRole(message.role())).put("content", message.content());
+        }
+        return body;
     }
 
     private static String mapRole(String role) {

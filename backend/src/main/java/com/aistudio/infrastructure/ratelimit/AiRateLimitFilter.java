@@ -35,7 +35,8 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         boolean aiAction = path.contains("/ai/");
-        boolean chatMessage = path.contains("/conversations/") && path.endsWith("/messages");
+        boolean chatMessage = path.contains("/conversations/")
+                && (path.endsWith("/messages") || path.endsWith("/messages/stream"));
         return !(aiAction || chatMessage);
     }
 

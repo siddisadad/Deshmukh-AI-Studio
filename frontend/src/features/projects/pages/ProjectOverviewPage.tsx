@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { projectsApi, type Project } from '../api/projectsApi';
+import { ProjectOnboardingChecklist } from '../components/ProjectOnboardingChecklist';
 
 export function ProjectOverviewPage() {
   const { projectId } = useParams();
@@ -78,6 +79,8 @@ export function ProjectOverviewPage() {
           </Button>
         </Stack>
       </Stack>
+
+      <ProjectOnboardingChecklist projectId={project.id} />
 
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>

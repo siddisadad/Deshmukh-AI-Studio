@@ -4,8 +4,9 @@ import { expect, test, type Page } from '@playwright/test';
  * Phase 5 private-beta smoke journeys (docs/12-TESTING-STRATEGY.md):
  * 1. Register → create project → add requirement
  * 2. Create task → move to IN_PROGRESS
- * 3. Send chat message (mock AI)
- * 4. Logout
+ * 3. Add document
+ * 4. Send chat message (mock AI)
+ * 5. Logout
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -71,7 +72,17 @@ test('private beta first-run smoke journey', async ({ page }) => {
     page.getByTestId('task-column-IN_PROGRESS').getByTestId('task-card-title').filter({ hasText: taskTitle }),
   ).toBeVisible();
 
-  // 3) Send chat message (mock provider)
+  // 3) Add document
+  await page.getByTestId('nav-projects').click();
+  await page.getByTestId(`project-card-${projectKey}`).click();
+  await page.getByRole('link', { name: 'Documents' }).click();
+  await expect(page).toHaveURL(/\/documents$/);
+  const documentTitle = `E2E doc ${stamp}`;
+  await page.getByTestId('document-new-title').fill(documentTitle);
+  await page.getByTestId('document-create-submit').click();
+  await expect(page.getByText(documentTitle)).toBeVisible();
+
+  // 4) Send chat message (mock provider)
   await page.getByTestId('nav-projects').click();
   await page.getByTestId(`project-card-${projectKey}`).click();
   await page.getByTestId('nav-chat').click();
@@ -81,7 +92,7 @@ test('private beta first-run smoke journey', async ({ page }) => {
   await expect(page.getByTestId('chat-message-user')).toContainText(chatPrompt);
   await expect(page.getByTestId('chat-message-assistant')).toBeVisible({ timeout: 45_000 });
 
-  // 4) Logout
+  // 5) Logout
   await page.getByTestId('logout-button').click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/dashboard');

@@ -55,6 +55,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Backup / restore
 ./scripts/backup-db.sh
 ./scripts/restore-db.sh ./backups/aistudio-YYYYMMDD-HHMMSS.sql.gz
+
+# Validate production-shaped compose locally (builds prod profile, healthcheck, teardown)
+./scripts/deploy-dry-run.sh
 ```
 
 ### 2. Prototype (FastAPI shared-context proof)

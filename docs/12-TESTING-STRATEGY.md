@@ -78,7 +78,7 @@ Goal: confidence in authz, core CRUD, and AI orchestration without flaky externa
 4. Send chat message (Mock backend)  
 5. Logout  
 
-Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR.
+Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR. CI `deploy-dry-run` validates prod compose overlay separately.
 
 ---
 

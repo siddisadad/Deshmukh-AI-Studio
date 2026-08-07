@@ -137,7 +137,9 @@ test('private beta first-run smoke journey', async ({ page }) => {
   await page.getByTestId('nav-plugins').click();
   await expect(page).toHaveURL(/\/settings\/plugins/);
   await expect(page.getByTestId('plugin-row-core.assistant.business_analyst')).toBeVisible();
-  const echoToggle = page.getByTestId('plugin-toggle-sample.tool.echo');
+  const echoToggle = page
+    .getByTestId('plugin-toggle-sample.tool.echo')
+    .getByRole('switch', { name: 'Toggle Echo (Sample)' });
   await expect(echoToggle).toBeVisible();
   await echoToggle.click();
   await expect(page.getByText('Echo (Sample) disabled')).toBeVisible();

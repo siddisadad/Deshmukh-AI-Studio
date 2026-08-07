@@ -18,6 +18,7 @@ aistudio:
   security:
     hsts-enabled: true
 
+# Console JSON formatting is configured in logback-spring.xml (prod profile).
 logging:
   level:
     root: INFO

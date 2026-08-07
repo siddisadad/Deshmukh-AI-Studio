@@ -129,7 +129,9 @@ public class TaskService {
         if (request.status() != null) {
             task.setStatus(request.status());
         }
-        if (request.requirementId() != null) {
+        if (Boolean.TRUE.equals(request.clearRequirementId())) {
+            task.setRequirementId(null);
+        } else if (request.requirementId() != null) {
             validateRequirement(task.getProjectId(), request.requirementId());
             task.setRequirementId(request.requirementId());
         }

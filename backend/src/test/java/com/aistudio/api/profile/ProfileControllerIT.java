@@ -43,22 +43,46 @@ class ProfileControllerIT {
         JsonNode registerJson = objectMapper.readTree(registerResult.getResponse().getContentAsString());
         String accessToken = registerJson.get("accessToken").asText();
 
+        String oldRefreshToken = registerJson.get("refreshToken").asText();
+
         mockMvc.perform(post("/api/v1/me/password")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"currentPassword":"WrongPass123","newPassword":"NewStr0ngPass!"}
                                 """))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("Current password is incorrect"));
 
-        mockMvc.perform(post("/api/v1/me/password")
+        MvcResult changeResult = mockMvc.perform(post("/api/v1/me/password")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"currentPassword":"Str0ngPass!","newPassword":"NewStr0ngPass!"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andReturn();
+        String newRefreshToken = objectMapper.readTree(changeResult.getResponse().getContentAsString())
+                .get("refreshToken")
+                .asText();
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"%s"}
+                                """.formatted(oldRefreshToken)))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"%s"}
+                                """.formatted(newRefreshToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

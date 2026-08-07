@@ -11,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState, type FormEvent } from 'react';
-import { ApiError } from '../../../shared/api/types';
+import { formatApiError } from '../../../shared/api/formatApiError';
 import { authApi } from '../../auth/api/authApi';
 import { useAuthStore } from '../../auth/store/authStore';
 
@@ -76,7 +76,7 @@ export function ProfileSettingsPage() {
       }
       setMessage('Profile updated');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Update failed');
+      setError(formatApiError(err, 'Update failed'));
     }
   }
 
@@ -88,15 +88,25 @@ export function ProfileSettingsPage() {
       setPasswordError('Passwords do not match');
       return;
     }
+    if (newPassword.length < 10 || !/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      setPasswordError('New password must be at least 10 characters and include a letter and a number');
+      return;
+    }
     setPasswordLoading(true);
     try {
-      await authApi.changePassword({ currentPassword, newPassword });
+      const tokens = await authApi.changePassword({ currentPassword, newPassword });
+      setSession({
+        user: tokens.user,
+        organization: tokens.organization,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPasswordMessage('Password updated');
+      setPasswordMessage('Password updated. Other sessions have been signed out.');
     } catch (err) {
-      setPasswordError(err instanceof ApiError ? err.message : 'Password change failed');
+      setPasswordError(formatApiError(err, 'Password change failed'));
     } finally {
       setPasswordLoading(false);
     }

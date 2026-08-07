@@ -48,7 +48,18 @@ describe('ProfileSettingsPage', () => {
 
   it('shows email read-only and changes password', async () => {
     const user = userEvent.setup();
-    vi.mocked(authApi.changePassword).mockResolvedValue(undefined);
+    vi.mocked(authApi.changePassword).mockResolvedValue({
+      user: {
+        id: 'u1',
+        email: 'ada@example.com',
+        displayName: 'Ada',
+        theme: 'SYSTEM',
+      },
+      organization: { id: 'o1', name: "Ada's Workspace", slug: 'ada-workspace' },
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+      expiresIn: 3600,
+    });
 
     renderPage(<ProfileSettingsPage />);
 
@@ -66,7 +77,9 @@ describe('ProfileSettingsPage', () => {
         newPassword: 'NewStr0ngPass!',
       }),
     );
-    expect(await screen.findByText('Password updated')).toBeInTheDocument();
+    expect(await screen.findByText(/Password updated/i)).toBeInTheDocument();
+    expect(useAuthStore.getState().accessToken).toBe('new-access');
+    expect(useAuthStore.getState().refreshToken).toBe('new-refresh');
   });
 
   it('rejects mismatched passwords without calling API', async () => {
@@ -87,7 +100,7 @@ describe('ProfileSettingsPage', () => {
   it('surfaces API errors from change password', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.changePassword).mockRejectedValue(
-      new ApiError({ status: 401, code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect' }),
+      new ApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Current password is incorrect' }),
     );
 
     renderPage(<ProfileSettingsPage />);
@@ -99,5 +112,27 @@ describe('ProfileSettingsPage', () => {
     await user.click(screen.getByTestId('profile-change-password'));
 
     expect(await screen.findByText('Current password is incorrect')).toBeInTheDocument();
+  });
+
+  it('surfaces validation field details from the API', async () => {
+    const user = userEvent.setup();
+    vi.mocked(authApi.changePassword).mockRejectedValue(
+      new ApiError({
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'Request validation failed',
+        details: [{ field: 'newPassword', message: 'must contain a letter and a number' }],
+      }),
+    );
+
+    renderPage(<ProfileSettingsPage />);
+    await waitFor(() => expect(screen.getByTestId('profile-email')).toHaveValue('ada@example.com'));
+
+    await user.type(screen.getByTestId('profile-current-password'), 'Str0ngPass!');
+    await user.type(screen.getByTestId('profile-new-password'), 'NewStr0ngPass!');
+    await user.type(screen.getByTestId('profile-confirm-password'), 'NewStr0ngPass!');
+    await user.click(screen.getByTestId('profile-change-password'));
+
+    expect(await screen.findByText('newPassword: must contain a letter and a number')).toBeInTheDocument();
   });
 });

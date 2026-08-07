@@ -282,18 +282,30 @@ public class AuthService {
     }
 
     @Transactional
-    public void changePassword(UUID userId, ChangePasswordRequest request) {
+    public TokenResponse changePassword(UUID userId, ChangePasswordRequest request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "User not found"));
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
             throw new DomainException("VALIDATION_ERROR", "This account uses SSO and has no local password");
         }
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new DomainException("INVALID_CREDENTIALS", "Current password is incorrect");
+            // 400 (not 401): wrong password on an authenticated session must not trigger SPA token refresh/logout
+            throw new DomainException("VALIDATION_ERROR", "Current password is incorrect");
         }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        revokeAllRefreshTokens(userId);
         auditService.record(userId, "PASSWORD_CHANGED", "USER", userId, "{}", null);
+        OrganizationEntity org = primaryOrganization(userId);
+        return issueTokens(user, org);
+    }
+
+    private void revokeAllRefreshTokens(UUID userId) {
+        Instant now = Instant.now();
+        for (RefreshTokenEntity token : refreshTokenRepository.findByUserIdAndRevokedAtIsNull(userId)) {
+            token.setRevokedAt(now);
+            refreshTokenRepository.save(token);
+        }
     }
 
     private TokenResponse issueTokens(UserEntity user, OrganizationEntity org) {

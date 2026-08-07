@@ -67,7 +67,7 @@ class ContextBuilderTest {
             RequirementEntity req = new RequirementEntity();
             req.setTitle("Requirement " + i);
             req.setDescription("Detail " + i);
-            req.setPriority(Priority.MUST);
+            req.setPriority(Priority.HIGH);
             req.setStatus(RequirementStatus.DRAFT);
             requirements.add(req);
         }

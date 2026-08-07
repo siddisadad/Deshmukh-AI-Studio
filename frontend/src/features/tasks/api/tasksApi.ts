@@ -44,7 +44,8 @@ export const tasksApi = {
       description: string;
       priority: string;
       status: TaskStatus;
-      requirementId: string | null;
+      requirementId: string;
+      clearRequirementId: boolean;
       labelIds: string[];
       sortOrder: number;
     }>,

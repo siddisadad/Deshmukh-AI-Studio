@@ -12,6 +12,8 @@ public record UpdateTaskRequest(
         Priority priority,
         TaskStatus status,
         UUID requirementId,
+        /** When true, clears the requirement link (needed because null requirementId means "omit" on PATCH). */
+        Boolean clearRequirementId,
         UUID assigneeId,
         List<UUID> labelIds,
         Integer sortOrder

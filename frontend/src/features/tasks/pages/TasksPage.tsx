@@ -22,8 +22,10 @@ import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { projectsApi, type Project } from '../../projects/api/projectsApi';
+import { requirementsApi, type Requirement } from '../../requirements/api/requirementsApi';
 import { tasksApi, type Label, type Task, type TaskStatus } from '../api/tasksApi';
 import { LabelMultiSelect } from '../components/LabelMultiSelect';
+import { RequirementSelect } from '../components/RequirementSelect';
 
 const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'TODO', title: 'To Do' },
@@ -39,6 +41,7 @@ export function TasksPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,9 @@ export function TasksPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [newLabelIds, setNewLabelIds] = useState<string[]>([]);
+  const [newRequirementId, setNewRequirementId] = useState('');
   const [editLabelIds, setEditLabelIds] = useState<string[]>([]);
+  const [editRequirementId, setEditRequirementId] = useState('');
   const [labelName, setLabelName] = useState('');
   const [labelColor, setLabelColor] = useState(LABEL_COLORS[0]);
   const [saving, setSaving] = useState(false);
@@ -57,19 +62,29 @@ export function TasksPage() {
   const [labelsError, setLabelsError] = useState<string | null>(null);
   const [labelsMessage, setLabelsMessage] = useState<string | null>(null);
 
+  const requirementTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const req of requirements) {
+      map.set(req.id, req.title);
+    }
+    return map;
+  }, [requirements]);
+
   async function load() {
     if (!projectId) return;
     setLoading(true);
     setError(null);
     try {
-      const [p, list, projectLabels] = await Promise.all([
+      const [p, list, projectLabels, projectRequirements] = await Promise.all([
         projectsApi.getProject(projectId),
         tasksApi.list(projectId),
         tasksApi.listLabels(projectId),
+        requirementsApi.list(projectId),
       ]);
       setProject(p);
       setTasks(list);
       setLabels(projectLabels);
+      setRequirements(projectRequirements);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load tasks');
     } finally {
@@ -101,6 +116,7 @@ export function TasksPage() {
     setNewTitle('');
     setNewPriority('MEDIUM');
     setNewLabelIds([]);
+    setNewRequirementId('');
     setCreateError(null);
     setCreateOpen(true);
   }
@@ -108,6 +124,7 @@ export function TasksPage() {
   function openEdit(task: Task) {
     setSelected(task);
     setEditLabelIds(task.labels.map((l) => l.id));
+    setEditRequirementId(task.requirementId || '');
     setEditError(null);
   }
 
@@ -128,11 +145,13 @@ export function TasksPage() {
         priority: newPriority,
         status: 'TODO',
         labelIds: newLabelIds,
+        ...(newRequirementId ? { requirementId: newRequirementId } : {}),
       });
       setTasks((prev) => [...prev, created]);
       setCreateOpen(false);
       setNewTitle('');
       setNewLabelIds([]);
+      setNewRequirementId('');
       setMessage('Task created');
     } catch (err) {
       setCreateError(err instanceof ApiError ? err.message : 'Create failed');
@@ -151,6 +170,7 @@ export function TasksPage() {
       if (selected?.id === updated.id) {
         setSelected(updated);
         setEditLabelIds(updated.labels.map((l) => l.id));
+        setEditRequirementId(updated.requirementId || '');
       }
     } catch (err) {
       setTasks(previous);
@@ -163,6 +183,7 @@ export function TasksPage() {
     if (!selected) return;
     setSaving(true);
     setEditError(null);
+    setMessage(null);
     try {
       const updated = await tasksApi.update(selected.id, {
         title: selected.title,
@@ -170,13 +191,37 @@ export function TasksPage() {
         priority: selected.priority,
         status: selected.status,
         labelIds: editLabelIds,
+        ...(editRequirementId
+          ? { requirementId: editRequirementId }
+          : { clearRequirementId: true }),
       });
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setSelected(updated);
       setEditLabelIds(updated.labels.map((l) => l.id));
+      setEditRequirementId(updated.requirementId || '');
       setMessage('Task saved');
     } catch (err) {
       setEditError(err instanceof ApiError ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDeleteSelected() {
+    if (!selected) return;
+    const confirmed = window.confirm(`Delete task “${selected.title}”? This cannot be undone.`);
+    if (!confirmed) return;
+    setSaving(true);
+    setEditError(null);
+    setMessage(null);
+    try {
+      const deletedId = selected.id;
+      await tasksApi.remove(deletedId);
+      setTasks((prev) => prev.filter((t) => t.id !== deletedId));
+      setSelected(null);
+      setMessage('Task deleted');
+    } catch (err) {
+      setEditError(err instanceof ApiError ? err.message : 'Delete failed');
     } finally {
       setSaving(false);
     }
@@ -308,6 +353,14 @@ export function TasksPage() {
                   </Typography>
                   <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
                     <Chip size="small" label={task.priority} />
+                    {task.requirementId && (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={requirementTitleById.get(task.requirementId) || 'Requirement'}
+                        data-testid={`task-requirement-chip-${task.id}`}
+                      />
+                    )}
                     {task.labels.map((label) => (
                       <Chip
                         key={label.id}
@@ -365,6 +418,11 @@ export function TasksPage() {
                   ))}
                 </Select>
               </FormControl>
+              <RequirementSelect
+                requirements={requirements}
+                value={newRequirementId}
+                onChange={setNewRequirementId}
+              />
               <LabelMultiSelect labels={labels} value={newLabelIds} onChange={setNewLabelIds} />
             </Stack>
           </DialogContent>
@@ -427,6 +485,12 @@ export function TasksPage() {
                     ))}
                   </Select>
                 </FormControl>
+                <RequirementSelect
+                  requirements={requirements}
+                  value={editRequirementId}
+                  onChange={setEditRequirementId}
+                  testId="edit-requirement-select"
+                />
                 <LabelMultiSelect
                   labels={labels}
                   value={editLabelIds}
@@ -435,11 +499,21 @@ export function TasksPage() {
                 />
               </Stack>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setSelected(null)}>Close</Button>
-              <Button type="submit" variant="contained" disabled={saving} data-testid="task-save-submit">
-                Save
+            <DialogActions sx={{ justifyContent: 'space-between' }}>
+              <Button
+                color="error"
+                onClick={() => void onDeleteSelected()}
+                disabled={saving}
+                data-testid="task-delete-button"
+              >
+                Delete
               </Button>
+              <Stack direction="row" spacing={1}>
+                <Button onClick={() => setSelected(null)}>Close</Button>
+                <Button type="submit" variant="contained" disabled={saving} data-testid="task-save-submit">
+                  Save
+                </Button>
+              </Stack>
             </DialogActions>
           </Box>
         )}

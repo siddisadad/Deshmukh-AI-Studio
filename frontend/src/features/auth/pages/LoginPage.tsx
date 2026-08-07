@@ -10,13 +10,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { authApi, type SsoProvider } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const setSession = useAuthStore((s) => s.setSession);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +25,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
   const [providers, setProviders] = useState<SsoProvider[]>([]);
+  const resetSuccess = Boolean((location.state as { resetSuccess?: boolean } | null)?.resetSuccess);
 
   useEffect(() => {
     void authApi
@@ -68,16 +70,31 @@ export function LoginPage() {
     <AuthCard title="Sign in" subtitle="Continue to your engineering workspace">
       <Box component="form" onSubmit={onSubmit}>
         <Stack spacing={2}>
+          {resetSuccess && <Alert severity="success">Password updated. Sign in with your new password.</Alert>}
           {error && <Alert severity="error">{error}</Alert>}
-          <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <TextField
+            label="Email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'login-email' } }}
+          />
           <TextField
             label="Password"
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'login-password' } }}
           />
-          <Button type="submit" variant="contained" size="large" disabled={loading || ssoLoading}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading || ssoLoading}
+            data-testid="login-submit"
+          >
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
 

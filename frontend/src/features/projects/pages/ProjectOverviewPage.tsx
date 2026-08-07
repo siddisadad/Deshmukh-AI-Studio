@@ -45,13 +45,29 @@ export function ProjectOverviewPage() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-          <Button component={RouterLink} to={`/projects/${project.id}/requirements`} variant="contained">
+          <Button
+            component={RouterLink}
+            to={`/projects/${project.id}/requirements`}
+            variant="contained"
+            data-testid="nav-requirements"
+          >
             Requirements
           </Button>
-          <Button component={RouterLink} to={`/projects/${project.id}/tasks`} variant="contained" color="secondary">
+          <Button
+            component={RouterLink}
+            to={`/projects/${project.id}/tasks`}
+            variant="contained"
+            color="secondary"
+            data-testid="nav-tasks"
+          >
             Tasks
           </Button>
-          <Button component={RouterLink} to={`/projects/${project.id}/chat`} variant="contained">
+          <Button
+            component={RouterLink}
+            to={`/projects/${project.id}/chat`}
+            variant="contained"
+            data-testid="nav-chat"
+          >
             AI Chat
           </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/documents`} variant="contained">

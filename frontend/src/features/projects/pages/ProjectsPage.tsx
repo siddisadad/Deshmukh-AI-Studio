@@ -61,7 +61,7 @@ export function ProjectsPage() {
             <ToggleButton value="ARCHIVED">Archived</ToggleButton>
             <ToggleButton value="ALL">All</ToggleButton>
           </ToggleButtonGroup>
-          <Button variant="contained" onClick={() => setCreateOpen(true)}>
+          <Button variant="contained" onClick={() => setCreateOpen(true)} data-testid="new-project-button">
             New project
           </Button>
         </Stack>
@@ -86,13 +86,15 @@ export function ProjectsPage() {
       ) : (
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
           {projects.map((project) => (
-            <Card key={project.id} variant="outlined">
+            <Card key={project.id} variant="outlined" data-testid={`project-card-${project.projectKey}`}>
               <CardActionArea onClick={() => navigate(`/projects/${project.id}`)}>
                 <CardContent>
                   <Typography variant="overline" color="primary">
                     {project.projectKey} · {project.status}
                   </Typography>
-                  <Typography variant="h6">{project.name}</Typography>
+                  <Typography variant="h6" data-testid="project-card-name">
+                    {project.name}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     {project.description || 'No description'}
                   </Typography>

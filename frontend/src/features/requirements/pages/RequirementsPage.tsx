@@ -155,6 +155,27 @@ export function RequirementsPage() {
     }
   }
 
+  async function onDelete() {
+    if (!selected) return;
+    const confirmed = window.confirm(`Delete requirement “${selected.title}”? This cannot be undone.`);
+    if (!confirmed) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const deletedId = selected.id;
+      await requirementsApi.remove(deletedId);
+      const remaining = requirements.filter((r) => r.id !== deletedId);
+      setRequirements(remaining);
+      setSelectedId(remaining[0]?.id ?? null);
+      setMessage('Requirement deleted');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Delete failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>
@@ -332,9 +353,19 @@ export function RequirementsPage() {
                   value={acceptanceCriteria}
                   onChange={(e) => setAcceptanceCriteria(e.target.value)}
                 />
-                <Button type="submit" variant="contained" disabled={saving}>
-                  Save requirement
-                </Button>
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between' }}>
+                  <Button
+                    color="error"
+                    onClick={() => void onDelete()}
+                    disabled={saving || !!aiLoading}
+                    data-testid="requirement-delete-button"
+                  >
+                    Delete
+                  </Button>
+                  <Button type="submit" variant="contained" disabled={saving} data-testid="requirement-save-submit">
+                    Save requirement
+                  </Button>
+                </Stack>
               </Stack>
             </Box>
           )}

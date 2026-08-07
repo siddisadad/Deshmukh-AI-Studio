@@ -242,6 +242,8 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 
 GHCR packages may be private — `docker login ghcr.io` with a PAT that has `read:packages`.
 
+**Local validation (no GHCR):** `./scripts/staging-dry-run.sh` builds images and boots `docker-compose.yml` + `docker-compose.staging.yml` + `docker-compose.staging-local.yml` on non-default ports (`8091` UI, `8092` API), runs `healthcheck.sh`, then tears down. CI runs the same script on every push/PR.
+
 ---
 
 ## 11. Observability (MVP)

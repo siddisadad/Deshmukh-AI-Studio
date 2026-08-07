@@ -55,7 +55,7 @@ public class PromptTemplateManager {
             int end = raw.indexOf("---", 3);
             if (end > 0) {
                 String frontMatter = raw.substring(3, end);
-                String body = raw.substring(end + 3).stripLeading();
+                String body = raw.substring(end + 3).strip();
                 String version = "1";
                 for (String line : frontMatter.split("\n")) {
                     String trimmed = line.trim();

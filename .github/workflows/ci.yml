@@ -8,20 +8,6 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_DB: aistudio
-          POSTGRES_USER: aistudio
-          POSTGRES_PASSWORD: aistudio
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U aistudio -d aistudio"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -35,11 +21,8 @@ jobs:
       - name: Test
         run: mvn -B test
         env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: aistudio
-          DB_USER: aistudio
-          DB_PASSWORD: aistudio
+          # Prefer Testcontainers (Docker on the runner). Fallback values kept for local agents.
+          TESTCONTAINERS_RYUK_DISABLED: "false"
 
   frontend:
     runs-on: ubuntu-latest

@@ -244,6 +244,15 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 
 **Local validation (no GHCR):** `./scripts/staging-dry-run.sh` builds images and boots `docker-compose.yml` + `docker-compose.staging.yml` + `docker-compose.staging-local.yml` on non-default ports (`8091` UI, `8092` API), runs `healthcheck.sh`, then tears down. CI runs the same script on every push/PR.
 
+**GHCR staging host deploy:**
+
+```bash
+cp .env.example .env   # JWT_SECRET, DB_PASSWORD, CORS_ORIGINS (HTTPS)
+export IMAGE_TAG=main  # or sha-... / v0.1.0
+docker login ghcr.io   # if packages are private
+./scripts/staging-ghcr-deploy.sh
+```
+
 ### Cloud Agent environment builds
 
 Repository config lives in `.cursor/environment.json` (install, start, dev-server terminals). After merging to `main`:

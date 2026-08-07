@@ -41,13 +41,15 @@ Minimum VM (beta): 2 vCPU, 4 GB RAM, 40 GB SSD.
 /
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
+├── docker-compose.staging.yml
 ├── .env.example
 ├── nginx/
 │   ├── nginx.conf
 │   └── conf.d/aistudio.conf
 ├── scripts/
 │   ├── backup-db.sh
-│   └── restore-db.sh
+│   ├── restore-db.sh
+│   └── healthcheck.sh
 ├── backend/Dockerfile
 └── frontend/Dockerfile
 ```
@@ -210,29 +212,44 @@ docker compose exec -T postgres pg_dump -U aistudio aistudio > backup-$(date +%F
 
 ## 10. CI/CD (GitHub Actions)
 
-**On PR:** build + unit/IT + frontend lint/build.  
-**On main/tag:** build images, push to registry (GHCR), optional SSH deploy script.
+**On PR / push:** `ci.yml` — backend tests, frontend Vitest + build, Playwright E2E (compose).  
+**Publish:** `publish.yml` builds `api` and `frontend` images and pushes to GHCR on `main` / `v*` tags (PR builds without push).
+
+Images:
+- `ghcr.io/<owner>/<repo>/api:<tag>`
+- `ghcr.io/<owner>/<repo>/frontend:<tag>`
+
+Tags include branch name (`main`), semver (`v1.2.3`), and `sha-<short>`.
 
 Never store provider keys in workflow logs; use GitHub Secrets.
+
+### Staging deploy (GHCR images)
+
+```bash
+cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
+export IMAGE_TAG=main  # or sha-... / v0.1.0
+docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+./scripts/healthcheck.sh http://localhost:8088
+```
+
+GHCR packages may be private — `docker login ghcr.io` with a PAT that has `read:packages`.
 
 ---
 
 ## 11. Observability (MVP)
 
-- `docker compose logs -f api`
-- JSON logs shipped later to Loki/ELK if needed
-- Uptime check on `/actuator/health`
-- Disk alerts for Postgres volume
+- `docker compose logs -f api` — **prod profile emits JSON** logs (Logstash encoder) with `requestId` from `X-Request-Id` / MDC
+- Ship JSON stdout to Loki/ELK when ready (no agent required in-repo)
+- Uptime: `./scripts/healthcheck.sh https://staging.example.com` (edge `/actuator/health` + SPA)
+- Disk alerts for Postgres volume (host/ops)
 
 ---
 
 ## 12. Backup & Restore
 
-**Backup:** nightly cron `pg_dump` to object storage.  
-**Restore:**
-```bash
-cat backup.sql | docker compose exec -T postgres psql -U aistudio aistudio
-```
+**Backup:** `./scripts/backup-db.sh` (gzipped `pg_dump`; schedule nightly via cron to object storage).  
+**Restore:** `./scripts/restore-db.sh ./backups/aistudio-….sql.gz` (requires typing `YES`).  
 Test restore on staging quarterly.
 
 ---

@@ -29,3 +29,7 @@ if [ -f "$ROOT/frontend/package.json" ]; then
   fi
   (cd "$ROOT/frontend" && npm ci)
 fi
+
+if [ -f "$ROOT/backend/pom.xml" ] && command -v mvn >/dev/null 2>&1; then
+  (cd "$ROOT/backend" && mvn -B -q dependency:go-offline -DskipTests)
+fi

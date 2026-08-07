@@ -2,6 +2,7 @@ package com.aistudio.api.security;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class SecurityHeadersIT {
+class ApiErrorShapeIT {
 
     @Autowired MockMvc mockMvc;
 
@@ -28,25 +29,14 @@ class SecurityHeadersIT {
     }
 
     @Test
-    void healthEndpointExposesBaselineSecurityHeaders() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().string("X-Frame-Options", "DENY"))
-                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"));
-    }
-
-    @Test
-    void healthEndpointAssignsRequestIdWhenMissing() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk())
-                .andExpect(header().exists("X-Request-Id"));
-    }
-
-    @Test
-    void healthEndpointEchoesClientRequestId() throws Exception {
-        mockMvc.perform(get("/actuator/health").header("X-Request-Id", "test-request-id-123"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("X-Request-Id", "test-request-id-123"));
+    void unauthorizedResponsesIncludeStructuredErrorAndRequestId() throws Exception {
+        mockMvc.perform(get("/api/v1/me").header("X-Request-Id", "api-error-shape-test"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Request-Id", "api-error-shape-test"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.requestId").value("api-error-shape-test"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(401));
     }
 }

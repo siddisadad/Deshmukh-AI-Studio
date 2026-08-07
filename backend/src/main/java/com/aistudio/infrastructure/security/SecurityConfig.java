@@ -33,6 +33,7 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
+    private final ApiAuthenticationEntryPoint authenticationEntryPoint;
     private final boolean hstsEnabled;
 
     public SecurityConfig(
@@ -40,12 +41,14 @@ public class SecurityConfig {
             CorsProperties corsProperties,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
+            ApiAuthenticationEntryPoint authenticationEntryPoint,
             @Value("${aistudio.security.hsts-enabled:false}") boolean hstsEnabled
     ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.corsProperties = corsProperties;
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
+        this.authenticationEntryPoint = authenticationEntryPoint;
         this.hstsEnabled = hstsEnabled;
     }
 
@@ -73,6 +76,7 @@ public class SecurityConfig {
                     }
                 })
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/**",

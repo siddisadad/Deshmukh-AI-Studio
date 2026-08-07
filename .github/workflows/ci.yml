@@ -5,8 +5,14 @@ on:
     branches: [main, cursor/**]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   backend:
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -35,13 +41,41 @@ jobs:
       - name: Test
         run: mvn -B test
         env:
+          # Prefer Testcontainers (Docker on the runner). Fallback values for agents without Docker.
+          TESTCONTAINERS_RYUK_DISABLED: "false"
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: aistudio
           DB_USER: aistudio
           DB_PASSWORD: aistudio
+      - name: Export OpenAPI spec
+        run: |
+          mvn -B -DskipTests package
+          mvn -B spring-boot:start -Dspring-boot.run.arguments="--spring.profiles.active=dev"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/actuator/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          mkdir -p ../openapi
+          curl -sf http://localhost:8080/v3/api-docs -o ../openapi/openapi.json
+          mvn -B spring-boot:stop
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: aistudio
+          DB_USER: aistudio
+          DB_PASSWORD: aistudio
+          JWT_SECRET: ci-openapi-export-secret-key-at-least-32-bytes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: openapi/openapi.json
 
   frontend:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,4 +88,5 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npm run build

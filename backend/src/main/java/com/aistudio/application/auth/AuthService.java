@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,7 @@ public class AuthService {
     private final EmailPort emailPort;
     private final AuditService auditService;
     private final BillingService billingService;
+    private final String appBaseUrl;
 
     public AuthService(
             UserRepository userRepository,
@@ -62,7 +64,8 @@ public class AuthService {
             JwtProperties jwtProperties,
             EmailPort emailPort,
             AuditService auditService,
-            BillingService billingService
+            BillingService billingService,
+            @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl
     ) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
@@ -76,6 +79,7 @@ public class AuthService {
         this.emailPort = emailPort;
         this.auditService = auditService;
         this.billingService = billingService;
+        this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
     }
 
     @Transactional
@@ -228,10 +232,17 @@ public class AuthService {
             reset.setTokenHash(TokenHashUtils.sha256(rawToken));
             reset.setExpiresAt(Instant.now().plusSeconds(3600));
             passwordResetTokenRepository.save(reset);
+            String resetUrl = appBaseUrl + "/reset-password?token=" + rawToken;
             emailPort.send(
                     user.getEmail(),
                     "AI Studio password reset",
-                    "Use this token to reset your password (valid 1 hour): " + rawToken
+                    """
+                    Reset your AI Studio password (link valid 1 hour):
+                    %s
+
+                    If the link does not open, paste this token on the reset page:
+                    %s
+                    """.formatted(resetUrl, rawToken)
             );
             auditService.record(user.getId(), "PASSWORD_RESET_REQUESTED", "USER", user.getId(), "{}", ip);
         });

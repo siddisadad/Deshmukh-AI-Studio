@@ -65,7 +65,8 @@ class AuthServiceTest {
                 jwtProperties,
                 emailPort,
                 auditService,
-                billingService
+                billingService,
+                "http://localhost:5173"
         );
     }
 

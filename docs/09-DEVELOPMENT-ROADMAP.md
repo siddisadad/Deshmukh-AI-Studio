@@ -99,8 +99,14 @@ Realistic roadmap for a small startup (2–4 engineers). Ordered by risk reducti
 - Onboarding empty states polished
 - Bug bash + prompt tuning
 - Backup script for Postgres
+- Compose dry-runs (prod + staging local build) in CI
+- GHCR staging deploy script; images published on `main`
+- Growth E2E (multi-thread chat, RAG, billing, plugins, mock SSO)
+- Cloud Agent environment build + validation
 
 **Exit criteria:** Friendly users complete first-run journey without assistance.
+
+**Status (2026-08-07):** Complete on `main` — see [CHANGELOG.md](../CHANGELOG.md) `v0.1.0-beta`.
 
 ---
 

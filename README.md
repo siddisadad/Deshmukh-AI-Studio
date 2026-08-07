@@ -61,6 +61,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Validate staging-shaped compose locally (prod API profile, separate API/UI ports, no GHCR)
 ./scripts/staging-dry-run.sh
+
+# Deploy staging from GHCR (requires docker login ghcr.io if private)
+export IMAGE_TAG=main
+./scripts/staging-ghcr-deploy.sh
 ```
 
 #### Cloud Agents
@@ -103,6 +107,10 @@ uvicorn main:app --reload --port 8000
 - [x] Billing plans + entitlements (FREE/PRO/TEAM, mock Stripe checkout, project & AI daily limits)
 - [x] SSO (OIDC-shaped port + mock provider, identity linking, login callback)
 - [x] Plugin / assistant-tool SPI (built-in assistants as plugins, sample tool, org enablement)
+- [x] Phase 5 beta: growth E2E, prod/staging compose dry-runs, GHCR staging deploy script
+- [x] Cloud Agent environment (validated `environment.json`, CI `environment-config`)
+
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.1.0-beta` on `main` for GHCR images and deployment baseline.
 
 ## Docs
 

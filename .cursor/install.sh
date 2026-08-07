@@ -40,4 +40,7 @@ fi
 
 if [ -f "$ROOT/docker-compose.yml" ] && command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
   echo "Docker Compose available — start.sh can boot Postgres (pgvector) for local API dev"
+  if docker info >/dev/null 2>&1; then
+  (cd "$ROOT" && docker compose pull postgres 2>/dev/null || true)
+  fi
 fi

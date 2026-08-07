@@ -63,6 +63,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ./scripts/staging-dry-run.sh
 ```
 
+#### Cloud Agents
+
+Repository environment config: `.cursor/environment.json` (install, start, dev-server terminals, ports). After changing it on `main`, trigger an environment **Build** from the default branch, then **Save** in Cursor → Cloud Agents → Environment. Terminals and ports are defined in the committed JSON; the Save dialog only needs `install` and `start` scripts linked to a successful build.
+
 ### 2. Prototype (FastAPI shared-context proof)
 
 Located under [`prototype/`](prototype/). See [SRS.md](SRS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).

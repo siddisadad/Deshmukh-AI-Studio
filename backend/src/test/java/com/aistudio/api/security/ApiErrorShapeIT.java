@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.aistudio.support.IntegrationTestProperties;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,11 +22,7 @@ class ApiErrorShapeIT {
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5432/aistudio");
-        registry.add("spring.datasource.username", () -> "aistudio");
-        registry.add("spring.datasource.password", () -> "aistudio");
-        registry.add("aistudio.security.jwt.secret", () -> "test-secret-key-must-be-at-least-32-bytes-long");
-        registry.add("aistudio.ai.provider", () -> "mock");
+        IntegrationTestProperties.register(registry);
     }
 
     @Test

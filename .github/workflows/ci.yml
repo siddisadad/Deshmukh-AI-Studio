@@ -35,6 +35,8 @@ jobs:
       - name: Test
         run: mvn -B test
         env:
+          # Prefer Testcontainers (Docker on the runner). Fallback values for agents without Docker.
+          TESTCONTAINERS_RYUK_DISABLED: "false"
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: aistudio
@@ -78,4 +80,5 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npm run build

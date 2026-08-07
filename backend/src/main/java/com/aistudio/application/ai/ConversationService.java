@@ -141,7 +141,7 @@ public class ConversationService {
     @Transactional
     public ChatMessageResponse sendMessage(UUID conversationId, UUID userId, String content) {
         PreparedChat prepared = prepareChat(conversationId, userId, content);
-            AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
+        AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
         MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result, prepared.promptVersion());
         return new ChatMessageResponse(
                 toChatDto(prepared.userMessage()),

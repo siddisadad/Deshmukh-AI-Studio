@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.aistudio.application.ai.AiProviderPort;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class MockAiProviderTest {

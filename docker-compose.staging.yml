@@ -1,0 +1,47 @@
+# Staging overlay — pull prebuilt GHCR images (no local build).
+#
+#   export IMAGE_TAG=main   # or sha-..., v0.1.0
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+#
+# Requires images published by .github/workflows/publish.yml
+
+services:
+  postgres:
+    restart: unless-stopped
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/siddisadad/deshmukh-ai-studio/api:${IMAGE_TAG:-main}}
+    build: !reset
+    pull_policy: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for staging}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required for staging}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-30}
+      BILLING_APP_BASE_URL: ${BILLING_APP_BASE_URL:-http://localhost:8088}
+      SSO_APP_BASE_URL: ${SSO_APP_BASE_URL:-http://localhost:8088}
+    ports:
+      - "${STAGING_API_PORT:-8080}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/siddisadad/deshmukh-ai-studio/frontend:${IMAGE_TAG:-main}}
+    build: !reset
+    pull_policy: always
+    ports: !override
+      - "${STAGING_UI_PORT:-8088}:80"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy

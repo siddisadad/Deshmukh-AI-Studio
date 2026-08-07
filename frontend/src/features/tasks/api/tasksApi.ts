@@ -53,4 +53,5 @@ export const tasksApi = {
   listLabels: (projectId: string) => http.get<Label[]>(`/projects/${projectId}/labels`).then((r) => r.data),
   createLabel: (projectId: string, body: { name: string; color?: string }) =>
     http.post<Label>(`/projects/${projectId}/labels`, body).then((r) => r.data),
+  deleteLabel: (labelId: string) => http.delete(`/labels/${labelId}`).then(() => undefined),
 };

@@ -78,9 +78,12 @@ Goal: confidence in authz, core CRUD, and AI orchestration without flaky externa
 4. Streaming chat (SSE) + multi-thread isolation (Mock backend)  
 5. RAG knowledge search after context asset save  
 6. Billing overview (FREE plan)  
-7. Logout  
+7. Plugins — disable sample Echo tool  
+8. Logout  
 
-Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR. CI `deploy-dry-run` validates prod compose overlay separately.
+**SSO** (`e2e/tests/sso.spec.ts`): mock provider login → dashboard (separate spec).
+
+Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR. CI `deploy-dry-run` and `staging-dry-run` validate compose overlays separately.
 
 ---
 

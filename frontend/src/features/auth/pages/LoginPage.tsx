@@ -109,6 +109,7 @@ export function LoginPage() {
                   size="large"
                   disabled={loading || ssoLoading}
                   onClick={() => void onSso(provider.id)}
+                  data-testid={`login-sso-${provider.id}`}
                 >
                   {ssoLoading ? 'Redirecting…' : provider.displayName}
                 </Button>

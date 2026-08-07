@@ -49,6 +49,7 @@ export function PluginsSettingsPage() {
     return (
       <Box
         key={item.plugin.id}
+        data-testid={`plugin-row-${item.plugin.id}`}
         sx={{
           py: 2,
           borderTop: 1,
@@ -82,7 +83,12 @@ export function PluginsSettingsPage() {
             onChange={(_, checked) =>
               toggle.mutate({ pluginId: item.plugin.id, enabled: checked })
             }
-            slotProps={{ input: { 'aria-label': `Toggle ${item.plugin.name}` } }}
+            slotProps={{
+              input: {
+                'aria-label': `Toggle ${item.plugin.name}`,
+                'data-testid': `plugin-toggle-${item.plugin.id}`,
+              },
+            }}
           />
         ) : (
           <Button size="small" disabled variant="text">

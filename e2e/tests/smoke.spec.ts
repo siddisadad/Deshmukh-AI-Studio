@@ -8,7 +8,8 @@ import { expect, test, type Page } from '@playwright/test';
  * 4. Streaming chat (mock AI) + multi-thread isolation
  * 5. RAG knowledge search after context asset save
  * 6. Billing overview (FREE plan)
- * 7. Logout
+ * 7. Plugins — disable sample Echo tool
+ * 8. Logout
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -132,7 +133,16 @@ test('private beta first-run smoke journey', async ({ page }) => {
   await expect(page.getByTestId('billing-current-plan')).toContainText('Free');
   await expect(page.getByTestId('billing-plan-FREE')).toHaveText('Current plan');
 
-  // 7) Logout
+  // 7) Plugins — sample tool toggle
+  await page.getByTestId('nav-plugins').click();
+  await expect(page).toHaveURL(/\/settings\/plugins/);
+  await expect(page.getByTestId('plugin-row-core.assistant.business_analyst')).toBeVisible();
+  const echoToggle = page.getByTestId('plugin-toggle-sample.tool.echo');
+  await expect(echoToggle).toBeVisible();
+  await echoToggle.click();
+  await expect(page.getByText('Echo (Sample) disabled')).toBeVisible();
+
+  // 8) Logout
   await page.getByTestId('logout-button').click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/dashboard');

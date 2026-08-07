@@ -119,6 +119,8 @@ jobs:
         env:
           AI_PROVIDER: mock
           JWT_SECRET: ci-e2e-secret-key-at-least-32-bytes-long
+          BILLING_APP_BASE_URL: http://localhost:8088
+          SSO_APP_BASE_URL: http://localhost:8088
       - name: Install Playwright
         working-directory: e2e
         run: |

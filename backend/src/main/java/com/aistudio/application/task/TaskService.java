@@ -11,8 +11,11 @@ import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.common.Priority;
 import com.aistudio.domain.task.TaskStatus;
 import com.aistudio.infrastructure.persistence.entity.LabelEntity;
+import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.entity.TaskEntity;
 import com.aistudio.infrastructure.persistence.repository.LabelRepository;
+import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
+import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
 import com.aistudio.infrastructure.persistence.repository.TaskRepository;
 import java.util.HashSet;
@@ -29,17 +32,23 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final LabelRepository labelRepository;
     private final RequirementRepository requirementRepository;
+    private final ProjectRepository projectRepository;
+    private final MembershipRepository membershipRepository;
     private final ProjectAuthorizationService authorizationService;
 
     public TaskService(
             TaskRepository taskRepository,
             LabelRepository labelRepository,
             RequirementRepository requirementRepository,
+            ProjectRepository projectRepository,
+            MembershipRepository membershipRepository,
             ProjectAuthorizationService authorizationService
     ) {
         this.taskRepository = taskRepository;
         this.labelRepository = labelRepository;
         this.requirementRepository = requirementRepository;
+        this.projectRepository = projectRepository;
+        this.membershipRepository = membershipRepository;
         this.authorizationService = authorizationService;
     }
 
@@ -77,6 +86,7 @@ public class TaskService {
     public TaskResponse create(UUID projectId, UUID userId, CreateTaskRequest request) {
         authorizationService.requireProjectEdit(projectId, userId);
         validateRequirement(projectId, request.requirementId());
+        validateAssignee(projectId, request.assigneeId());
 
         TaskEntity task = new TaskEntity();
         task.setProjectId(projectId);
@@ -135,7 +145,10 @@ public class TaskService {
             validateRequirement(task.getProjectId(), request.requirementId());
             task.setRequirementId(request.requirementId());
         }
-        if (request.assigneeId() != null) {
+        if (Boolean.TRUE.equals(request.clearAssigneeId())) {
+            task.setAssigneeId(null);
+        } else if (request.assigneeId() != null) {
+            validateAssignee(task.getProjectId(), request.assigneeId());
             task.setAssigneeId(request.assigneeId());
         }
         if (request.sortOrder() != null) {
@@ -178,6 +191,16 @@ public class TaskService {
         }
         requirementRepository.findByIdAndProjectId(requirementId, projectId)
                 .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Requirement not found in this project"));
+    }
+
+    private void validateAssignee(UUID projectId, UUID assigneeId) {
+        if (assigneeId == null) {
+            return;
+        }
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        membershipRepository.findByOrganizationIdAndUserId(project.getOrganizationId(), assigneeId)
+                .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Assignee must be an organization member"));
     }
 
     private Set<LabelEntity> resolveLabels(UUID projectId, List<UUID> labelIds) {

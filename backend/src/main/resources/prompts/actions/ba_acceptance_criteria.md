@@ -1,5 +1,12 @@
+---
+version: 2
+---
 Generate acceptance criteria for the following requirement.
-Prefer Given/When/Then or a clear checklist. Return markdown only.
+
+## Output format (required)
+Return markdown with a `## Acceptance criteria` heading.
+Use Given/When/Then bullets or a numbered checklist (minimum 4 items).
+Cover success, validation errors, and authorization where relevant.
 
 ## Project context
 {{project_context}}

@@ -142,7 +142,7 @@ public class ConversationService {
     public ChatMessageResponse sendMessage(UUID conversationId, UUID userId, String content) {
         PreparedChat prepared = prepareChat(conversationId, userId, content);
         AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
-        MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result);
+        MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result, prepared.promptVersion());
         return new ChatMessageResponse(
                 toChatDto(prepared.userMessage()),
                 toChatDto(assistantMessage),
@@ -174,7 +174,7 @@ public class ConversationService {
             });
 
             MessageEntity assistantMessage = transactionTemplate.execute(status ->
-                    persistAssistant(prepared.conversation(), result));
+                    persistAssistant(prepared.conversation(), result, prepared.promptVersion()));
             if (assistantMessage == null) {
                 throw new IllegalStateException("Failed to persist assistant message");
             }
@@ -219,6 +219,7 @@ public class ConversationService {
         String context = contextBuilder.buildForProject(conversation.getProjectId(), content.trim());
         String systemPrompt = promptTemplateManager.systemPrompt(assistant.promptKey())
                 + "\n\n## Shared project context\n" + context;
+        String promptVersion = promptTemplateManager.systemPromptVersion(assistant.promptKey());
 
         List<MessageEntity> recentDesc = messageRepository.findByConversationIdOrderByCreatedAtDesc(
                 conversation.getId(), PageRequest.of(0, maxMessages));
@@ -237,9 +238,12 @@ public class ConversationService {
                 aiMessages,
                 0.3,
                 2000,
-                Map.of("assistantRole", conversation.getAssistantRole().name())
+                Map.of(
+                        "assistantRole", conversation.getAssistantRole().name(),
+                        "promptVersion", promptVersion
+                )
         );
-        return new PreparedChat(conversation, userMessage, request);
+        return new PreparedChat(conversation, userMessage, request, promptVersion);
     }
 
     private void maybeAutoTitle(ConversationEntity conversation, String firstUserContent) {
@@ -263,15 +267,16 @@ public class ConversationService {
 
     private MessageEntity persistAssistant(
             ConversationEntity conversation,
-            AiProviderPort.AiGenerationResult result
+            AiProviderPort.AiGenerationResult result,
+            String promptVersion
     ) {
         MessageEntity assistantMessage = new MessageEntity();
         assistantMessage.setConversationId(conversation.getId());
         assistantMessage.setSender(MessageSender.ASSISTANT);
         assistantMessage.setContent(result.text());
         assistantMessage.setMetadata("""
-                {"provider":"%s","model":"%s"}
-                """.formatted(aiProviderPort.providerId(), result.model()).trim());
+                {"provider":"%s","model":"%s","promptVersion":"%s"}
+                """.formatted(aiProviderPort.providerId(), result.model(), promptVersion).trim());
         messageRepository.save(assistantMessage);
 
         conversation.setUpdatedAt(Instant.now());
@@ -334,7 +339,8 @@ public class ConversationService {
     private record PreparedChat(
             ConversationEntity conversation,
             MessageEntity userMessage,
-            AiProviderPort.AiGenerationRequest request
+            AiProviderPort.AiGenerationRequest request,
+            String promptVersion
     ) {
     }
 }

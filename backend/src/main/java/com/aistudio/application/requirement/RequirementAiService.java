@@ -81,7 +81,11 @@ public class RequirementAiService {
                 List.of(new AiProviderPort.AiMessage("user", userPrompt)),
                 0.2,
                 2000,
-                Map.of("action", actionKey)
+                Map.of(
+                        "action", actionKey,
+                        "promptVersion", promptTemplateManager.actionPromptVersion(actionKey),
+                        "systemPromptVersion", promptTemplateManager.systemPromptVersion("business_analyst")
+                )
         ));
 
         writer.write(entity, result.text());

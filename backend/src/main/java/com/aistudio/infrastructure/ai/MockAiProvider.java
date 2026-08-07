@@ -34,6 +34,23 @@ public class MockAiProvider implements AiProviderPort {
                 .map(AiMessage::content)
                 .collect(Collectors.joining("\n"));
         String lower = (request.systemPrompt() + "\n" + user).toLowerCase(Locale.ROOT);
+        if (lower.contains("summarize") && lower.contains("requirement")) {
+            return """
+                    ## Open requirements summary
+
+                    Based on the shared project context, prioritize requirements that block implementation or testing.
+
+                    ### Highlights
+                    - Capture actor, trigger, and expected outcome for each open requirement.
+                    - Link tasks to requirements so Kanban progress reflects delivery.
+                    - Add acceptance criteria before moving stories to implementation.
+
+                    ### Suggested next steps
+                    1. Review the highest-priority requirement and confirm acceptance criteria.
+                    2. Create or update tasks for the next sprint slice.
+                    3. Ask clarifying questions where context is incomplete.
+                    """.strip();
+        }
         if (lower.contains("acceptance criteria")) {
             return """
                     ## Acceptance Criteria
@@ -52,10 +69,17 @@ public class MockAiProvider implements AiProviderPort {
         }
         if (lower.contains("improv")) {
             return """
-                    ## Improved Requirement
+                    ## Improved requirement
                     Clarify the actor, trigger, expected outcome, and non-functional constraints.
                     Remove ambiguity, state assumptions explicitly, and keep the language testable.
-                    """.strip() + "\n\n" + truncate(user, 800);
+
+                    ## Assumptions
+                    - Assumption: stakeholders agree on the priority stated in context.
+
+                    ## Open questions
+                    1. Who is the primary actor for this flow?
+                    2. What error states must be supported?
+                    """.strip() + "\n\n" + truncate(user, 400);
         }
         if (lower.contains("documentation") || lower.contains("generate markdown documentation") || lower.contains("readme")) {
             return """

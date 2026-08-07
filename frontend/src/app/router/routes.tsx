@@ -3,6 +3,7 @@ import { AppShell } from '../layout/AppShell';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
+import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { SsoCallbackPage } from '../../features/auth/pages/SsoCallbackPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
@@ -19,6 +20,8 @@ import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettin
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
+  // Public even when a session exists (email reset links must work while logged in).
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     element: <GuestRoute />,
     children: [

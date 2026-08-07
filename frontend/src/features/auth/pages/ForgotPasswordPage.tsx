@@ -26,20 +26,34 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthCard title="Forgot password" subtitle="We’ll email a reset token if the account exists">
+    <AuthCard title="Forgot password" subtitle="We’ll email a reset link if the account exists">
       {done ? (
         <Stack spacing={2}>
-          <Alert severity="success">If that email is registered, a reset token was sent (check API logs in local dev).</Alert>
-          <MuiLink component={Link} to="/login" underline="hover">
-            Back to sign in
-          </MuiLink>
+          <Alert severity="success">
+            If that email is registered, a reset link was sent. In local dev the token is also printed in API logs.
+          </Alert>
+          <Button component={Link} to="/reset-password" variant="contained" data-testid="forgot-goto-reset">
+            Continue to reset password
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            <MuiLink component={Link} to="/login" underline="hover">
+              Back to sign in
+            </MuiLink>
+          </Typography>
         </Stack>
       ) : (
         <Box component="form" onSubmit={onSubmit}>
           <Stack spacing={2}>
             {error && <Alert severity="error">{error}</Alert>}
-            <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Button type="submit" variant="contained" size="large" disabled={loading}>
+            <TextField
+              label="Email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              slotProps={{ htmlInput: { 'data-testid': 'forgot-email' } }}
+            />
+            <Button type="submit" variant="contained" size="large" disabled={loading} data-testid="forgot-submit">
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>
             <Typography variant="body2" color="text.secondary">

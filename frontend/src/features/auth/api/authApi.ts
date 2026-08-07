@@ -21,6 +21,8 @@ export const authApi = {
     http.post('/auth/logout', refreshToken ? { refreshToken } : {}).then(() => undefined),
   forgotPassword: (email: string) =>
     http.post('/auth/forgot-password', { email }).then(() => undefined),
+  resetPassword: (body: { token: string; newPassword: string }) =>
+    http.post('/auth/reset-password', body).then(() => undefined),
   me: () => http.get<MeResponse>('/me').then((r) => r.data),
   updateProfile: (body: { displayName?: string; theme?: string }) =>
     http.patch<MeResponse>('/me', body).then((r) => r.data),

@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Link as MuiLink, Stack, TextField } from '@mui/material';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { authApi } from '../api/authApi';
@@ -15,6 +15,12 @@ export function ResetPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (tokenFromQuery) {
+      setToken(tokenFromQuery);
+    }
+  }, [tokenFromQuery]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

@@ -109,8 +109,12 @@ class AuthControllerIT {
         verify(emailPort).send(eq(email), eq("AI Studio password reset"), bodyCaptor.capture());
         String body = bodyCaptor.getValue();
         assertThat(body).contains("/reset-password?token=");
-        String token = body.replaceAll("(?s).*token=([A-Za-z0-9_-]+).*", "$1");
-        assertThat(token).isNotBlank().doesNotContain("http");
+        String token = body.lines()
+                .map(String::trim)
+                .filter(line -> line.matches("[A-Za-z0-9_-]{20,}"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Reset token line missing from email body:\n" + body));
+        assertThat(token).doesNotContain("http").doesNotContain("=");
 
         mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -6,8 +6,6 @@
 #
 # Requires images published by .github/workflows/publish.yml
 
-name: aistudio-staging
-
 services:
   postgres:
     restart: unless-stopped

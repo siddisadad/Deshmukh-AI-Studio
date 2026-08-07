@@ -41,9 +41,11 @@ jobs:
       - name: Should push to GHCR
         id: push
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          event="${{ github.event_name }}"
+          ref="${{ github.ref }}"
+          if [[ "$event" == "pull_request" ]]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == refs/tags/v* ]]; then
+          elif [[ "$ref" == "refs/heads/main" || "$ref" == refs/tags/v* ]]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"

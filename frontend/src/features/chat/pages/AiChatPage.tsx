@@ -221,7 +221,14 @@ export function AiChatPage() {
         </Button>
       </Stack>
 
-      <ToggleButtonGroup exclusive value={role} onChange={onRoleChange} size="small" sx={{ flexWrap: 'wrap' }}>
+      <ToggleButtonGroup
+        exclusive
+        value={role}
+        onChange={onRoleChange}
+        size="small"
+        sx={{ flexWrap: 'wrap' }}
+        aria-label="Select AI assistant"
+      >
         {assistants.map((assistant) => (
           <ToggleButton key={assistant.role} value={assistant.role} disabled={sending}>
             {assistant.name}
@@ -246,7 +253,7 @@ export function AiChatPage() {
           minHeight: 0,
         }}
       >
-        <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', flexDirection: 'column', minHeight: 280 }}>
+        <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', flexDirection: 'column', minHeight: 280 }} aria-label="Conversation threads">
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 0.5 }}>
             <Typography variant="subtitle2">Threads</Typography>
             <Button size="small" onClick={() => void onNewThread()} disabled={sending}>
@@ -298,6 +305,8 @@ export function AiChatPage() {
         <Stack spacing={2} sx={{ minHeight: 0 }}>
           <Paper
             variant="outlined"
+            aria-label="Chat messages"
+            aria-live="polite"
             sx={{
               flex: 1,
               minHeight: 320,
@@ -390,6 +399,7 @@ export function AiChatPage() {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
               <TextField
                 fullWidth
+                label="Message"
                 placeholder={`Ask the ${selected?.name || 'assistant'}…`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

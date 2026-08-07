@@ -45,7 +45,7 @@ export function ProjectOverviewPage() {
             {project.description || 'No description yet.'}
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }} component="nav" aria-label="Project workspace">
           <Button
             component={RouterLink}
             to={`/projects/${project.id}/requirements`}
@@ -71,7 +71,7 @@ export function ProjectOverviewPage() {
           >
             AI Chat
           </Button>
-          <Button component={RouterLink} to={`/projects/${project.id}/documents`} variant="contained">
+          <Button component={RouterLink} to={`/projects/${project.id}/documents`} variant="contained" data-testid="nav-documents">
             Documents
           </Button>
           <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">

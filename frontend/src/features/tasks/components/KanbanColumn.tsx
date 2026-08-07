@@ -24,6 +24,8 @@ export function KanbanColumn({ status, title, count, children }: Props) {
         outlineColor: 'primary.main',
         bgcolor: isOver ? 'action.hover' : undefined,
       }}
+      role="region"
+      aria-label={`${title} column`}
       data-testid={`task-column-${status}`}
     >
       <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>

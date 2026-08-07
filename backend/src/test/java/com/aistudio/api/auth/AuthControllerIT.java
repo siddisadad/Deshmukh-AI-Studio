@@ -91,12 +91,16 @@ class AuthControllerIT {
     @Test
     void forgotPasswordEmailContainsResetLinkThenResetAllowsLogin() throws Exception {
         String email = "reset" + System.currentTimeMillis() + "@example.com";
-        mockMvc.perform(post("/api/v1/auth/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"email":"%s","password":"Str0ngPass!","displayName":"Reset User"}
                                 """.formatted(email)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn();
+        String oldRefreshToken = objectMapper.readTree(registerResult.getResponse().getContentAsString())
+                .get("refreshToken")
+                .asText();
 
         mockMvc.perform(post("/api/v1/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -116,12 +120,42 @@ class AuthControllerIT {
                 .orElseThrow(() -> new AssertionError("Reset token line missing from email body:\n" + body));
         assertThat(token).doesNotContain("http").doesNotContain("=");
 
+        // Second outstanding reset token should also be invalidated after a successful reset.
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s"}
+                                """.formatted(email)))
+                .andExpect(status().isAccepted());
+        ArgumentCaptor<String> secondBodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailPort, org.mockito.Mockito.times(2))
+                .send(eq(email), eq("AI Studio password reset"), secondBodyCaptor.capture());
+        String secondToken = secondBodyCaptor.getAllValues().get(1).lines()
+                .map(String::trim)
+                .filter(line -> line.matches("[A-Za-z0-9_-]{20,}"))
+                .findFirst()
+                .orElseThrow();
+
         mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"token":"%s","newPassword":"NewStr0ngPass!"}
                                 """.formatted(token)))
                 .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"%s"}
+                                """.formatted(oldRefreshToken)))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"%s","newPassword":"AnotherStr0ng1"}
+                                """.formatted(secondToken)))
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

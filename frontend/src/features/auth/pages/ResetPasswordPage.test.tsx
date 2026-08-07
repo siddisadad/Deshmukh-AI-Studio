@@ -33,6 +33,7 @@ describe('ResetPasswordPage', () => {
     );
 
     expect(screen.getByTestId('reset-token')).toHaveValue('abc-token');
+    expect(screen.getByText(/removed from the address bar/i)).toBeInTheDocument();
     await user.type(screen.getByTestId('reset-password'), 'NewPass1234');
     await user.type(screen.getByTestId('reset-password-confirm'), 'NewPass1234');
     await user.click(screen.getByTestId('reset-submit'));

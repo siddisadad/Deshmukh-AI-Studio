@@ -262,8 +262,15 @@ public class AuthService {
                 .orElseThrow(() -> new DomainException("TOKEN_INVALID_OR_EXPIRED", "Reset token is invalid or expired"));
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        reset.setUsedAt(Instant.now());
-        passwordResetTokenRepository.save(reset);
+        Instant now = Instant.now();
+        for (PasswordResetTokenEntity outstanding : passwordResetTokenRepository.findByUserIdAndUsedAtIsNull(user.getId())) {
+            outstanding.setUsedAt(now);
+            passwordResetTokenRepository.save(outstanding);
+        }
+        for (RefreshTokenEntity refresh : refreshTokenRepository.findByUserIdAndRevokedAtIsNull(user.getId())) {
+            refresh.setRevokedAt(now);
+            refreshTokenRepository.save(refresh);
+        }
         auditService.record(user.getId(), "PASSWORD_RESET_COMPLETED", "USER", user.getId(), "{}", ip);
     }
 

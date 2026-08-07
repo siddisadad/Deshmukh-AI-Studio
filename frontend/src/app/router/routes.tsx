@@ -19,13 +19,14 @@ import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettin
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
+  // Public even when a session exists (email reset links must work while logged in).
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     element: <GuestRoute />,
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
-      { path: '/reset-password', element: <ResetPasswordPage /> },
       { path: '/auth/sso/callback', element: <SsoCallbackPage /> },
     ],
   },

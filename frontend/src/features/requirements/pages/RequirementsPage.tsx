@@ -196,8 +196,14 @@ export function RequirementsPage() {
                 label="New requirement"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                slotProps={{ htmlInput: { 'data-testid': 'requirement-title-input' } }}
               />
-              <Button type="submit" variant="contained" disabled={saving || !newTitle.trim()}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={saving || !newTitle.trim()}
+                data-testid="requirement-add-button"
+              >
                 Add
               </Button>
             </Stack>
@@ -208,9 +214,10 @@ export function RequirementsPage() {
                 key={req.id}
                 selected={req.id === selectedId}
                 onClick={() => setSelectedId(req.id)}
+                data-testid={`requirement-item-${req.id}`}
               >
                 <ListItemText
-                  primary={req.title}
+                  primary={<span data-testid="requirement-item-title">{req.title}</span>}
                   secondary={`${req.priority} · ${req.status}`}
                 />
               </ListItemButton>

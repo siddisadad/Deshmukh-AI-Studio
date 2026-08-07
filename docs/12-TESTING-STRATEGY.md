@@ -71,13 +71,13 @@ Goal: confidence in authz, core CRUD, and AI orchestration without flaky externa
 
 **API mocking:** MSW.
 
-**E2E (Playwright) — smoke**
+**E2E (Playwright) — smoke** (`e2e/`)
 1. Register → create project → add requirement  
 2. Create task → move to IN_PROGRESS  
 3. Send chat message (Mock backend)  
 4. Logout  
 
-Run E2E against compose stack in CI nightly or on main.
+Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR.
 
 ---
 

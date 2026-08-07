@@ -90,3 +90,55 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  e2e:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Start compose stack (mock AI)
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8088/actuator/health >/dev/null \
+              && curl -sf http://localhost:8088/ >/dev/null; then
+              echo "Stack ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Compose stack failed to become ready" >&2
+          docker compose logs --no-color || true
+          exit 1
+        env:
+          AI_PROVIDER: mock
+          JWT_SECRET: ci-e2e-secret-key-at-least-32-bytes-long
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Smoke E2E
+        working-directory: e2e
+        run: npm test
+        env:
+          E2E_BASE_URL: http://localhost:8088
+          CI: "true"
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/test-results
+            e2e/playwright-report
+          if-no-files-found: ignore
+      - name: Tear down compose
+        if: always()
+        run: docker compose down -v

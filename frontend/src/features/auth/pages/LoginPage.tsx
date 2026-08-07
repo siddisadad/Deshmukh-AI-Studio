@@ -69,15 +69,29 @@ export function LoginPage() {
       <Box component="form" onSubmit={onSubmit}>
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
-          <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <TextField
+            label="Email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'login-email' } }}
+          />
           <TextField
             label="Password"
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'login-password' } }}
           />
-          <Button type="submit" variant="contained" size="large" disabled={loading || ssoLoading}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading || ssoLoading}
+            data-testid="login-submit"
+          >
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
 

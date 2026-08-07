@@ -155,7 +155,7 @@ export function TasksPage() {
           <Button component={RouterLink} to={`/projects/${projectId}`} variant="outlined">
             Overview
           </Button>
-          <Button variant="contained" onClick={() => setCreateOpen(true)}>
+          <Button variant="contained" onClick={() => setCreateOpen(true)} data-testid="new-task-button">
             New task
           </Button>
         </Stack>
@@ -181,7 +181,12 @@ export function TasksPage() {
         }}
       >
         {COLUMNS.map((column) => (
-          <Paper key={column.status} variant="outlined" sx={{ p: 1.5, minHeight: 320 }}>
+          <Paper
+            key={column.status}
+            variant="outlined"
+            sx={{ p: 1.5, minHeight: 320 }}
+            data-testid={`task-column-${column.status}`}
+          >
             <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>
               {column.title} · {byStatus[column.status].length}
             </Typography>
@@ -192,8 +197,11 @@ export function TasksPage() {
                   variant="outlined"
                   sx={{ p: 1.5, cursor: 'pointer', bgcolor: 'background.default' }}
                   onClick={() => setSelected(task)}
+                  data-testid={`task-card-${task.id}`}
                 >
-                  <Typography variant="subtitle2">{task.title}</Typography>
+                  <Typography variant="subtitle2" data-testid="task-card-title">
+                    {task.title}
+                  </Typography>
                   <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
                     <Chip size="small" label={task.priority} />
                     {task.labels.map((label) => (
@@ -209,6 +217,7 @@ export function TasksPage() {
                     <Select
                       value={task.status}
                       onChange={(e) => void moveTask(task, e.target.value as TaskStatus)}
+                      data-testid={`task-status-${task.id}`}
                     >
                       {COLUMNS.map((c) => (
                         <MenuItem key={c.status} value={c.status}>
@@ -229,7 +238,13 @@ export function TasksPage() {
           <DialogTitle>New task</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField label="Title" required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+              <TextField
+                label="Title"
+                required
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                slotProps={{ htmlInput: { 'data-testid': 'task-title-input' } }}
+              />
               <FormControl fullWidth>
                 <InputLabel id="new-priority">Priority</InputLabel>
                 <Select
@@ -249,7 +264,7 @@ export function TasksPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={saving}>
+            <Button type="submit" variant="contained" disabled={saving} data-testid="task-create-submit">
               Create
             </Button>
           </DialogActions>

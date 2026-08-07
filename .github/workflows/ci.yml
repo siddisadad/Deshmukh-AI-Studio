@@ -181,8 +181,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate Cloud Agent environment files
-        run: |
-          test -f .cursor/environment.json
-          python3 -c "import json; json.load(open('.cursor/environment.json'))"
-          test -x .cursor/install.sh
-          test -x .cursor/start.sh
+        run: python3 scripts/validate-environment-json.py

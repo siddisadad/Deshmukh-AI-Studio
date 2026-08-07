@@ -8,5 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MembershipRepository extends JpaRepository<MembershipEntity, UUID> {
     List<MembershipEntity> findByUserId(UUID userId);
+
+    List<MembershipEntity> findByOrganizationIdOrderByCreatedAtAsc(UUID organizationId);
+
     Optional<MembershipEntity> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
 }

@@ -34,6 +34,7 @@ export const tasksApi = {
       priority?: string;
       status?: TaskStatus;
       requirementId?: string;
+      assigneeId?: string;
       labelIds?: string[];
     },
   ) => http.post<Task>(`/projects/${projectId}/tasks`, body).then((r) => r.data),
@@ -46,6 +47,8 @@ export const tasksApi = {
       status: TaskStatus;
       requirementId: string;
       clearRequirementId: boolean;
+      assigneeId: string;
+      clearAssigneeId: boolean;
       labelIds: string[];
       sortOrder: number;
     }>,

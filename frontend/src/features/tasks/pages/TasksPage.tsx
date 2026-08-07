@@ -21,9 +21,11 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { organizationsApi, type OrgMember } from '../../projects/api/organizationsApi';
 import { projectsApi, type Project } from '../../projects/api/projectsApi';
 import { requirementsApi, type Requirement } from '../../requirements/api/requirementsApi';
 import { tasksApi, type Label, type Task, type TaskStatus } from '../api/tasksApi';
+import { AssigneeSelect } from '../components/AssigneeSelect';
 import { LabelMultiSelect } from '../components/LabelMultiSelect';
 import { RequirementSelect } from '../components/RequirementSelect';
 
@@ -42,6 +44,7 @@ export function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [members, setMembers] = useState<OrgMember[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,8 +55,10 @@ export function TasksPage() {
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [newLabelIds, setNewLabelIds] = useState<string[]>([]);
   const [newRequirementId, setNewRequirementId] = useState('');
+  const [newAssigneeId, setNewAssigneeId] = useState('');
   const [editLabelIds, setEditLabelIds] = useState<string[]>([]);
   const [editRequirementId, setEditRequirementId] = useState('');
+  const [editAssigneeId, setEditAssigneeId] = useState('');
   const [labelName, setLabelName] = useState('');
   const [labelColor, setLabelColor] = useState(LABEL_COLORS[0]);
   const [saving, setSaving] = useState(false);
@@ -70,6 +75,14 @@ export function TasksPage() {
     return map;
   }, [requirements]);
 
+  const memberNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const member of members) {
+      map.set(member.userId, member.displayName);
+    }
+    return map;
+  }, [members]);
+
   async function load() {
     if (!projectId) return;
     setLoading(true);
@@ -81,10 +94,12 @@ export function TasksPage() {
         tasksApi.listLabels(projectId),
         requirementsApi.list(projectId),
       ]);
+      const orgMembers = await organizationsApi.listMembers(p.organizationId);
       setProject(p);
       setTasks(list);
       setLabels(projectLabels);
       setRequirements(projectRequirements);
+      setMembers(orgMembers);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load tasks');
     } finally {
@@ -117,6 +132,7 @@ export function TasksPage() {
     setNewPriority('MEDIUM');
     setNewLabelIds([]);
     setNewRequirementId('');
+    setNewAssigneeId('');
     setCreateError(null);
     setCreateOpen(true);
   }
@@ -125,6 +141,7 @@ export function TasksPage() {
     setSelected(task);
     setEditLabelIds(task.labels.map((l) => l.id));
     setEditRequirementId(task.requirementId || '');
+    setEditAssigneeId(task.assigneeId || '');
     setEditError(null);
   }
 
@@ -146,12 +163,14 @@ export function TasksPage() {
         status: 'TODO',
         labelIds: newLabelIds,
         ...(newRequirementId ? { requirementId: newRequirementId } : {}),
+        ...(newAssigneeId ? { assigneeId: newAssigneeId } : {}),
       });
       setTasks((prev) => [...prev, created]);
       setCreateOpen(false);
       setNewTitle('');
       setNewLabelIds([]);
       setNewRequirementId('');
+      setNewAssigneeId('');
       setMessage('Task created');
     } catch (err) {
       setCreateError(err instanceof ApiError ? err.message : 'Create failed');
@@ -171,6 +190,7 @@ export function TasksPage() {
         setSelected(updated);
         setEditLabelIds(updated.labels.map((l) => l.id));
         setEditRequirementId(updated.requirementId || '');
+        setEditAssigneeId(updated.assigneeId || '');
       }
     } catch (err) {
       setTasks(previous);
@@ -194,11 +214,13 @@ export function TasksPage() {
         ...(editRequirementId
           ? { requirementId: editRequirementId }
           : { clearRequirementId: true }),
+        ...(editAssigneeId ? { assigneeId: editAssigneeId } : { clearAssigneeId: true }),
       });
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setSelected(updated);
       setEditLabelIds(updated.labels.map((l) => l.id));
       setEditRequirementId(updated.requirementId || '');
+      setEditAssigneeId(updated.assigneeId || '');
       setMessage('Task saved');
     } catch (err) {
       setEditError(err instanceof ApiError ? err.message : 'Save failed');
@@ -361,6 +383,14 @@ export function TasksPage() {
                         data-testid={`task-requirement-chip-${task.id}`}
                       />
                     )}
+                    {task.assigneeId && (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={memberNameById.get(task.assigneeId) || 'Assignee'}
+                        data-testid={`task-assignee-chip-${task.id}`}
+                      />
+                    )}
                     {task.labels.map((label) => (
                       <Chip
                         key={label.id}
@@ -423,6 +453,7 @@ export function TasksPage() {
                 value={newRequirementId}
                 onChange={setNewRequirementId}
               />
+              <AssigneeSelect members={members} value={newAssigneeId} onChange={setNewAssigneeId} />
               <LabelMultiSelect labels={labels} value={newLabelIds} onChange={setNewLabelIds} />
             </Stack>
           </DialogContent>
@@ -490,6 +521,12 @@ export function TasksPage() {
                   value={editRequirementId}
                   onChange={setEditRequirementId}
                   testId="edit-requirement-select"
+                />
+                <AssigneeSelect
+                  members={members}
+                  value={editAssigneeId}
+                  onChange={setEditAssigneeId}
+                  testId="edit-assignee-select"
                 />
                 <LabelMultiSelect
                   labels={labels}

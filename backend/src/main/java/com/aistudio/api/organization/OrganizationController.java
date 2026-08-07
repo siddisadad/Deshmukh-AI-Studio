@@ -1,5 +1,6 @@
 package com.aistudio.api.organization;
 
+import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
 import com.aistudio.application.project.OrganizationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
@@ -36,5 +37,14 @@ public class OrganizationController {
     @Operation(summary = "Get organization")
     public OrganizationResponse get(@PathVariable UUID orgId, @AuthenticationPrincipal AuthenticatedUser user) {
         return organizationService.get(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/members")
+    @Operation(summary = "List organization members")
+    public List<MemberResponse> listMembers(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return organizationService.listMembers(orgId, user.getId());
     }
 }

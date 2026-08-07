@@ -62,7 +62,11 @@ export function AppShell() {
             <Button onClick={() => navigate('/settings/members')} aria-label="Organization members">
               Members
             </Button>
-            <Button onClick={() => navigate('/settings/billing')} aria-label="Billing and plans">
+            <Button
+              onClick={() => navigate('/settings/billing')}
+              aria-label="Billing and plans"
+              data-testid="nav-billing"
+            >
               Billing
             </Button>
             <Button onClick={() => navigate('/settings/plugins')} aria-label="Plugins and assistants">

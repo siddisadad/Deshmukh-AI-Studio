@@ -1,0 +1,10 @@
+# Local deploy dry-run overlay — non-default host port, no host Postgres bind.
+# Used by scripts/deploy-dry-run.sh and CI to validate prod profile without port 80.
+
+services:
+  postgres:
+    ports: !reset []
+
+  frontend:
+    ports: !override
+      - "${DRY_RUN_UI_PORT:-8090}:80"

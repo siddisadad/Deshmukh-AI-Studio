@@ -49,7 +49,8 @@ Minimum VM (beta): 2 vCPU, 4 GB RAM, 40 GB SSD.
 ├── scripts/
 │   ├── backup-db.sh
 │   ├── restore-db.sh
-│   └── healthcheck.sh
+│   ├── healthcheck.sh
+│   └── deploy-dry-run.sh
 ├── backend/Dockerfile
 └── frontend/Dockerfile
 ```
@@ -192,6 +193,12 @@ Disable Swagger UI in prod (`springdoc.swagger-ui.enabled=false`).
 5. Verify: `curl -f https://app.example.com/actuator/health`  
 6. Run smoke: register user via UI.  
 7. Confirm Flyway version in logs (`Successfully applied`).
+
+**Local dry-run (before first VM deploy):**
+```bash
+./scripts/deploy-dry-run.sh
+```
+Builds `docker-compose.yml` + `docker-compose.prod.yml`, probes edge health on `http://localhost:8090`, then tears down. CI runs the same script on every push/PR.
 
 ### Zero-downtime (MVP lite)
 - `docker compose up -d --no-deps --build api` then reload nginx.

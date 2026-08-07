@@ -142,3 +142,17 @@ jobs:
       - name: Tear down compose
         if: always()
         run: docker compose down -v
+
+  deploy-dry-run:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prod compose dry-run
+        run: ./scripts/deploy-dry-run.sh
+        env:
+          AI_PROVIDER: mock
+          JWT_SECRET: ci-deploy-dry-run-secret-key-at-least-32-bytes
+          CORS_ORIGINS: https://dry-run.aistudio.test
+          DRY_RUN_UI_PORT: "8090"

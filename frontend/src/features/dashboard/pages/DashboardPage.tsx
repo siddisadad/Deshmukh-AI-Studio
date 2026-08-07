@@ -93,7 +93,8 @@ export function DashboardPage() {
                     </Typography>
                     <Typography variant="h6">{project.name}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      {project.requirementCount} requirements · {project.openTaskCount} open tasks
+                      {project.requirementCount} requirements · {project.openTaskCount} open ·{' '}
+                      {project.doneTaskCount} done
                     </Typography>
                   </CardContent>
                 </CardActionArea>

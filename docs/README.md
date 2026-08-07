@@ -19,6 +19,8 @@ Read in order; each document builds on the previous.
 | 12 | [12-TESTING-STRATEGY.md](12-TESTING-STRATEGY.md) | Test pyramid & gates |
 | 13 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Docker/Nginx production deploy |
 
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. See [CHANGELOG.md](../CHANGELOG.md).
+
 ## Related prototype docs
 
 The repository also contains a **local FastAPI prototype** (shared-context proof):

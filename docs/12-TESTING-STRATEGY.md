@@ -74,8 +74,9 @@ Goal: confidence in authz, core CRUD, and AI orchestration without flaky externa
 **E2E (Playwright) — smoke** (`e2e/`)
 1. Register → create project → add requirement  
 2. Create task → move to IN_PROGRESS  
-3. Send chat message (Mock backend)  
-4. Logout  
+3. Add document  
+4. Send chat message (Mock backend)  
+5. Logout  
 
 Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR.
 

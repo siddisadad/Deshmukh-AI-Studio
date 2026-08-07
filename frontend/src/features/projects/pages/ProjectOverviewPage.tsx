@@ -74,7 +74,12 @@ export function ProjectOverviewPage() {
           <Button component={RouterLink} to={`/projects/${project.id}/documents`} variant="contained" data-testid="nav-documents">
             Documents
           </Button>
-          <Button component={RouterLink} to={`/projects/${project.id}/settings`} variant="outlined">
+          <Button
+            component={RouterLink}
+            to={`/projects/${project.id}/settings`}
+            variant="outlined"
+            data-testid="nav-project-settings"
+          >
             Settings
           </Button>
         </Stack>

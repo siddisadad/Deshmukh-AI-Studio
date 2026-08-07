@@ -1,0 +1,25 @@
+# Local-build overlay for staging-shaped compose (no GHCR pull).
+# Used by scripts/staging-dry-run.sh and CI.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-compose.staging-local.yml up -d --build
+
+services:
+  postgres:
+    ports: !reset []
+
+  api:
+    image: !reset null
+    pull_policy: !reset null
+    build: ./backend
+    ports: !override
+      - "${STAGING_API_PORT:-8092}:8080"
+
+  frontend:
+    image: !reset null
+    pull_policy: !reset null
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+    ports: !override
+      - "${STAGING_UI_PORT:-8091}:80"

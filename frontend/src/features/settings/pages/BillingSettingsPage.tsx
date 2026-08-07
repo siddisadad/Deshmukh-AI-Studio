@@ -117,8 +117,8 @@ export function BillingSettingsPage() {
       )}
 
       {overview && (
-        <Stack spacing={2}>
-          <Typography variant="h6">
+        <Stack spacing={2} data-testid="billing-overview">
+          <Typography variant="h6" data-testid="billing-current-plan">
             Current plan: {overview.plan.name}{' '}
             <Typography component="span" variant="body2" color="text.secondary">
               ({overview.subscriptionStatus} · {overview.billingProvider})
@@ -183,6 +183,7 @@ export function BillingSettingsPage() {
                     isCurrent || changePlan.isPending || checkout.isPending || !org?.id
                   }
                   onClick={() => onSelectPlan(plan)}
+                  data-testid={`billing-plan-${plan.code}`}
                 >
                   {isCurrent ? 'Current plan' : plan.code === 'FREE' ? 'Downgrade' : 'Upgrade'}
                 </Button>

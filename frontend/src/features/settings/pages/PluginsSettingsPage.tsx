@@ -49,6 +49,7 @@ export function PluginsSettingsPage() {
     return (
       <Box
         key={item.plugin.id}
+        data-testid={`plugin-row-${item.plugin.id}`}
         sx={{
           py: 2,
           borderTop: 1,
@@ -76,14 +77,16 @@ export function PluginsSettingsPage() {
           </Typography>
         </Box>
         {item.canDisable ? (
-          <Switch
-            checked={item.enabled}
-            disabled={toggle.isPending}
-            onChange={(_, checked) =>
-              toggle.mutate({ pluginId: item.plugin.id, enabled: checked })
-            }
-            slotProps={{ input: { 'aria-label': `Toggle ${item.plugin.name}` } }}
-          />
+          <Box data-testid={`plugin-toggle-${item.plugin.id}`}>
+            <Switch
+              checked={item.enabled}
+              disabled={toggle.isPending}
+              onChange={(_, checked) =>
+                toggle.mutate({ pluginId: item.plugin.id, enabled: checked })
+              }
+              slotProps={{ input: { 'aria-label': `Toggle ${item.plugin.name}` } }}
+            />
+          </Box>
         ) : (
           <Button size="small" disabled variant="text">
             Always on

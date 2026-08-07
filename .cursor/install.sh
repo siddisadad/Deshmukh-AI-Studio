@@ -30,6 +30,14 @@ if [ -f "$ROOT/frontend/package.json" ]; then
   (cd "$ROOT/frontend" && npm ci)
 fi
 
+if [ -f "$ROOT/e2e/package.json" ]; then
+  (cd "$ROOT/e2e" && npm ci)
+fi
+
 if [ -f "$ROOT/backend/pom.xml" ] && command -v mvn >/dev/null 2>&1; then
   (cd "$ROOT/backend" && mvn -B -q dependency:go-offline -DskipTests)
+fi
+
+if [ -f "$ROOT/docker-compose.yml" ] && command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  echo "Docker Compose available — start.sh can boot Postgres (pgvector) for local API dev"
 fi

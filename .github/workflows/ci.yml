@@ -119,6 +119,8 @@ jobs:
         env:
           AI_PROVIDER: mock
           JWT_SECRET: ci-e2e-secret-key-at-least-32-bytes-long
+          BILLING_APP_BASE_URL: http://localhost:8088
+          SSO_APP_BASE_URL: http://localhost:8088
       - name: Install Playwright
         working-directory: e2e
         run: |
@@ -156,3 +158,31 @@ jobs:
           JWT_SECRET: ci-deploy-dry-run-secret-key-at-least-32-bytes
           CORS_ORIGINS: https://dry-run.aistudio.test
           DRY_RUN_UI_PORT: "8090"
+
+  staging-dry-run:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Staging compose dry-run
+        run: ./scripts/staging-dry-run.sh
+        env:
+          AI_PROVIDER: mock
+          JWT_SECRET: ci-staging-dry-run-secret-key-at-least-32-bytes
+          CORS_ORIGINS: https://staging-dry-run.aistudio.test
+          STAGING_UI_PORT: "8091"
+          STAGING_API_PORT: "8092"
+
+  environment-config:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Cloud Agent environment files
+        run: |
+          test -f .cursor/environment.json
+          python3 -c "import json; json.load(open('.cursor/environment.json'))"
+          test -x .cursor/install.sh
+          test -x .cursor/start.sh

@@ -2,20 +2,24 @@ package com.aistudio.application.project;
 
 import com.aistudio.api.dashboard.dto.DashboardResponse;
 import com.aistudio.domain.project.ProjectStatus;
+import com.aistudio.domain.task.TaskStatus;
 import com.aistudio.infrastructure.persistence.entity.AuditLogEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectMemberEntity;
 import com.aistudio.infrastructure.persistence.repository.AuditLogRepository;
 import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
+import com.aistudio.infrastructure.persistence.repository.ProjectCountProjection;
 import com.aistudio.infrastructure.persistence.repository.ProjectMemberRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
+import com.aistudio.infrastructure.persistence.repository.ProjectStatusCountProjection;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
 import com.aistudio.infrastructure.persistence.repository.TaskRepository;
-import com.aistudio.domain.task.TaskStatus;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -63,15 +67,20 @@ public class DashboardService {
                 ? List.of()
                 : projectRepository.findByIdInAndStatusOrderByUpdatedAtDesc(projectIds, ProjectStatus.ACTIVE);
 
+        Map<UUID, Long> requirementCounts = batchRequirementCounts(projectIds);
+        Map<UUID, Long> openTaskCounts = new HashMap<>();
+        Map<UUID, Long> doneTaskCounts = new HashMap<>();
+        batchTaskCounts(projectIds, openTaskCounts, doneTaskCounts);
+
         List<DashboardResponse.ProjectSummary> summaries = projects.stream()
                 .map(p -> new DashboardResponse.ProjectSummary(
                         p.getId(),
                         p.getName(),
                         p.getProjectKey(),
                         p.getStatus().name(),
-                        requirementRepository.countByProjectId(p.getId()),
-                        taskRepository.countByProjectIdAndStatusNot(p.getId(), TaskStatus.DONE),
-                        taskRepository.countByProjectIdAndStatus(p.getId(), TaskStatus.DONE),
+                        requirementCounts.getOrDefault(p.getId(), 0L),
+                        openTaskCounts.getOrDefault(p.getId(), 0L),
+                        doneTaskCounts.getOrDefault(p.getId(), 0L),
                         p.getUpdatedAt()
                 ))
                 .toList();
@@ -90,5 +99,33 @@ public class DashboardService {
         activity.sort(Comparator.comparing(DashboardResponse.ActivityItem::createdAt).reversed());
 
         return new DashboardResponse(summaries, activity);
+    }
+
+    private Map<UUID, Long> batchRequirementCounts(Set<UUID> projectIds) {
+        if (projectIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Long> counts = new HashMap<>();
+        for (ProjectCountProjection row : requirementRepository.countGroupedByProjectId(projectIds)) {
+            counts.put(row.getProjectId(), row.getCount());
+        }
+        return counts;
+    }
+
+    private void batchTaskCounts(
+            Set<UUID> projectIds,
+            Map<UUID, Long> openTaskCounts,
+            Map<UUID, Long> doneTaskCounts
+    ) {
+        if (projectIds.isEmpty()) {
+            return;
+        }
+        for (ProjectStatusCountProjection row : taskRepository.countGroupedByProjectIdAndStatus(projectIds)) {
+            if (row.getStatus() == TaskStatus.DONE) {
+                doneTaskCounts.put(row.getProjectId(), row.getCount());
+            } else {
+                openTaskCounts.merge(row.getProjectId(), row.getCount(), Long::sum);
+            }
+        }
     }
 }

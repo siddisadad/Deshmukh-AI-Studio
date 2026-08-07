@@ -2,11 +2,14 @@ package com.aistudio.infrastructure.persistence.repository;
 
 import com.aistudio.domain.task.TaskStatus;
 import com.aistudio.infrastructure.persistence.entity.TaskEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
 
@@ -19,4 +22,13 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     long countByProjectIdAndStatusNot(UUID projectId, TaskStatus status);
 
     long countByProjectIdAndStatus(UUID projectId, TaskStatus status);
+
+    @Query("""
+            SELECT t.projectId AS projectId, t.status AS status, COUNT(t) AS count
+            FROM TaskEntity t
+            WHERE t.projectId IN :projectIds
+            GROUP BY t.projectId, t.status
+            """)
+    List<ProjectStatusCountProjection> countGroupedByProjectIdAndStatus(
+            @Param("projectIds") Collection<UUID> projectIds);
 }

@@ -65,6 +65,28 @@ class ProjectControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.projects[0].projectKey").value("CP"));
 
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/requirements")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Login flow","priority":"HIGH"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/tasks")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Implement auth","priority":"MEDIUM","status":"TODO"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/dashboard").header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projects[0].requirementCount").value(1))
+                .andExpect(jsonPath("$.projects[0].openTaskCount").value(1))
+                .andExpect(jsonPath("$.projects[0].doneTaskCount").value(0));
+
         mockMvc.perform(patch("/api/v1/projects/" + projectId)
                         .header("Authorization", "Bearer " + tokenA)
                         .contentType(MediaType.APPLICATION_JSON)

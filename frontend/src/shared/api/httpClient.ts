@@ -47,7 +47,12 @@ http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorBody>) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && original && !original._retry && !original.url?.includes('/auth/')) {
+    const url = original?.url || '';
+    const skipRefresh =
+      url.includes('/auth/') ||
+      // Authenticated password change can return 401-class errors; never treat as session expiry.
+      url.includes('/me/password');
+    if (error.response?.status === 401 && original && !original._retry && !skipRefresh) {
       original._retry = true;
       refreshPromise ??= refreshAccessToken().finally(() => {
         refreshPromise = null;

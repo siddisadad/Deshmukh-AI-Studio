@@ -116,7 +116,11 @@ public class DocumentService {
                 List.of(new AiProviderPort.AiMessage("user", userPrompt)),
                 0.2,
                 3000,
-                Map.of("action", "docs_generate")
+                Map.of(
+                        "action", "docs_generate",
+                        "promptVersion", promptTemplateManager.actionPromptVersion("docs_generate"),
+                        "systemPromptVersion", promptTemplateManager.systemPromptVersion("documentation_writer")
+                )
         ));
 
         entity.setContentMd(result.text());

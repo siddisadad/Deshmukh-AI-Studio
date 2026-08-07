@@ -77,13 +77,15 @@ export function BillingSettingsPage() {
   });
 
   const overview = overviewQuery.data;
-  const plans = plansQuery.data ?? [];
   const currentCode = overview?.plan.code;
 
-  const sortedPlans = useMemo(
-    () => [...plans].sort((a, b) => a.priceCentsMonthly - b.priceCentsMonthly),
-    [plans],
-  );
+  const sortedPlans = useMemo(() => {
+    const list = plansQuery.data;
+    if (!list) {
+      return [];
+    }
+    return [...list].sort((a, b) => a.priceCentsMonthly - b.priceCentsMonthly);
+  }, [plansQuery.data]);
 
   function onSelectPlan(plan: Plan) {
     setError(null);

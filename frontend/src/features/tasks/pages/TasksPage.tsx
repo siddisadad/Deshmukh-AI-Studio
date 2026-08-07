@@ -26,7 +26,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { EmptyState } from '../../../shared/ui/EmptyState';
@@ -98,7 +98,7 @@ export function TasksPage() {
     return map;
   }, [members]);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
     setError(null);
@@ -120,11 +120,11 @@ export function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [projectId]);
 
   useEffect(() => {
     void load();
-  }, [projectId]);
+  }, [load]);
 
   const byStatus = useMemo(() => {
     const map: Record<TaskStatus, Task[]> = {

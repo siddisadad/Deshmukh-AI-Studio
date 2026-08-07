@@ -244,6 +244,17 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 
 **Local validation (no GHCR):** `./scripts/staging-dry-run.sh` builds images and boots `docker-compose.yml` + `docker-compose.staging.yml` + `docker-compose.staging-local.yml` on non-default ports (`8091` UI, `8092` API), runs `healthcheck.sh`, then tears down. CI runs the same script on every push/PR.
 
+### Cloud Agent environment builds
+
+Repository config lives in `.cursor/environment.json` (install, start, dev-server terminals). After merging to `main`:
+
+1. Open **Cursor → Cloud Agents → Environment** for this repo.
+2. Confirm install/start match `.cursor/install.sh` and `.cursor/start.sh`.
+3. **Builds** tab → trigger a build from `main` (promotable only from the default branch).
+4. When the build succeeds, **Save** so new agents boot from the snapshot.
+
+Draft builds from feature branches validate install but cannot be promoted — merge first, then build `main`.
+
 ---
 
 ## 11. Observability (MVP)

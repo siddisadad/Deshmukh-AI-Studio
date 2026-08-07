@@ -17,7 +17,9 @@ fail() {
 
 echo "Checking ${BASE_URL}/actuator/health"
 health_json="$(curl -fsS --max-time 10 "${BASE_URL}/actuator/health")" || fail "health endpoint unreachable"
-echo "${health_json}" | grep -q '"status"[[:space:]]*:[[:space:]]*"UP"' || fail "health status not UP: ${health_json}"
+if ! printf '%s' "${health_json}" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then
+  fail "health status not UP: ${health_json}"
+fi
 
 echo "Checking ${BASE_URL}/"
 curl -fsS --max-time 10 -o /dev/null "${BASE_URL}/" || fail "frontend unreachable"

@@ -5,8 +5,14 @@ on:
     branches: [main, cursor/**]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   backend:
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -68,6 +74,8 @@ jobs:
           path: openapi/openapi.json
 
   frontend:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     defaults:
       run:

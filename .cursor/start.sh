@@ -2,9 +2,20 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MANUAL_MSG="Docker/Compose not available; start PostgreSQL manually (see README docker compose up)"
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "Docker not available; start PostgreSQL manually (see README docker compose up)" >&2
+  echo "$MANUAL_MSG" >&2
+  exit 0
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+  echo "$MANUAL_MSG" >&2
+  exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "$MANUAL_MSG" >&2
   exit 0
 fi
 

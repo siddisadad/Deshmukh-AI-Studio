@@ -26,6 +26,8 @@ import com.aistudio.infrastructure.persistence.repository.UserRepository;
 import com.aistudio.infrastructure.security.JwtService;
 import com.aistudio.shared.util.SlugUtils;
 import com.aistudio.shared.util.TokenHashUtils;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -232,7 +234,8 @@ public class AuthService {
             reset.setTokenHash(TokenHashUtils.sha256(rawToken));
             reset.setExpiresAt(Instant.now().plusSeconds(3600));
             passwordResetTokenRepository.save(reset);
-            String resetUrl = appBaseUrl + "/reset-password?token=" + rawToken;
+            String resetUrl = appBaseUrl + "/reset-password?token="
+                    + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
             emailPort.send(
                     user.getEmail(),
                     "AI Studio password reset",

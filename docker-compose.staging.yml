@@ -1,6 +1,6 @@
 # Staging overlay — pull prebuilt GHCR images (no local build).
 #
-#   export IMAGE_TAG=main   # or sha-..., v0.1.0
+#   export IMAGE_TAG=main   # or sha-..., 0.1.0-beta, v0.1.0-beta
 #   docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
 #   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 #

@@ -170,9 +170,12 @@ export function ProjectOnboardingChecklist({ projectId }: Props) {
                   )}
                 </ListItemIcon>
                 <ListItemText
-                  primary={step.title}
+                  primary={
+                    <Typography component="span" sx={{ fontWeight: done ? 600 : 400 }}>
+                      {step.title}
+                    </Typography>
+                  }
                   secondary={step.description}
-                  primaryTypographyProps={{ fontWeight: done ? 600 : 400 }}
                 />
               </ListItem>
             );

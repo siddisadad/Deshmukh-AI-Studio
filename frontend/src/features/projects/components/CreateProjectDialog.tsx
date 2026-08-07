@@ -56,13 +56,20 @@ export function CreateProjectDialog({ open, orgId, onClose, onCreated }: Props) 
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
-            <TextField label="Name" required value={name} onChange={(e) => setName(e.target.value)} />
+            <TextField
+              label="Name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              slotProps={{ htmlInput: { 'data-testid': 'project-name' } }}
+            />
             <TextField
               label="Key"
               required
               helperText="2–10 uppercase letters/numbers, e.g. CP"
               value={projectKey}
               onChange={(e) => setProjectKey(e.target.value.toUpperCase())}
+              slotProps={{ htmlInput: { 'data-testid': 'project-key' } }}
             />
             <TextField
               label="Description"
@@ -70,12 +77,13 @@ export function CreateProjectDialog({ open, orgId, onClose, onCreated }: Props) 
               minRows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              slotProps={{ htmlInput: { 'data-testid': 'project-description' } }}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
+          <Button type="submit" variant="contained" disabled={loading} data-testid="project-create-submit">
             {loading ? 'Creating…' : 'Create'}
           </Button>
         </DialogActions>

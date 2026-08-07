@@ -40,8 +40,16 @@ export function RegisterPage() {
             required
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'register-display-name' } }}
           />
-          <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <TextField
+            label="Email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'register-email' } }}
+          />
           <TextField
             label="Password"
             type="password"
@@ -49,8 +57,15 @@ export function RegisterPage() {
             helperText="At least 10 characters, with a letter and a number"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'register-password' } }}
           />
-          <Button type="submit" variant="contained" size="large" disabled={loading}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading}
+            data-testid="register-submit"
+          >
             {loading ? 'Creating…' : 'Create account'}
           </Button>
           <MuiLink component={Link} to="/login" underline="hover">

@@ -43,7 +43,7 @@ export function AppShell() {
           <Button component={RouterLink} to="/dashboard" color="inherit">
             Dashboard
           </Button>
-          <Button component={RouterLink} to="/projects" color="inherit">
+          <Button component={RouterLink} to="/projects" color="inherit" data-testid="nav-projects">
             Projects
           </Button>
           <Box sx={{ flexGrow: 1 }} />
@@ -54,7 +54,7 @@ export function AppShell() {
             <Button onClick={() => navigate('/settings/billing')}>Billing</Button>
             <Button onClick={() => navigate('/settings/plugins')}>Plugins</Button>
             <Button onClick={() => navigate('/settings/profile')}>{user?.displayName}</Button>
-            <Button variant="outlined" onClick={() => void logout()}>
+            <Button variant="outlined" onClick={() => void logout()} data-testid="logout-button">
               Log out
             </Button>
           </Stack>

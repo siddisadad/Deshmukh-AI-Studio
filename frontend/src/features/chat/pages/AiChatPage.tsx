@@ -334,6 +334,7 @@ export function AiChatPage() {
                   </Typography>
                   <Paper
                     variant="outlined"
+                    data-testid={message.sender === 'USER' ? 'chat-message-user' : 'chat-message-assistant'}
                     sx={{
                       p: 1.5,
                       mt: 0.5,
@@ -393,8 +394,14 @@ export function AiChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={sending}
+                slotProps={{ htmlInput: { 'data-testid': 'chat-input' } }}
               />
-              <Button type="submit" variant="contained" disabled={sending || !input.trim()}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={sending || !input.trim()}
+                data-testid="chat-send"
+              >
                 Send
               </Button>
             </Stack>

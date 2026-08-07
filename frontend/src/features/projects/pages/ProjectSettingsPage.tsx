@@ -267,8 +267,14 @@ export function ProjectSettingsPage() {
             value={assetContent}
             onChange={(e) => setAssetContent(e.target.value)}
             placeholder="Paste schema, OpenAPI snippets, or module notes…"
+            slotProps={{ htmlInput: { 'data-testid': 'context-asset-content' } }}
           />
-          <Button type="submit" variant="contained" disabled={saving || !assetTitle.trim()}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || !assetTitle.trim()}
+            data-testid="context-asset-save"
+          >
             Save context asset
           </Button>
         </Stack>
@@ -282,7 +288,12 @@ export function ProjectSettingsPage() {
             {knowledge?.embeddingProvider || 'mock'} · {knowledge?.indexedChunks ?? 0} chunks indexed.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-            <Button variant="outlined" onClick={() => void onReindex()} disabled={saving}>
+            <Button
+              variant="outlined"
+              onClick={() => void onReindex()}
+              disabled={saving}
+              data-testid="knowledge-reindex"
+            >
               Reindex in background
             </Button>
           </Stack>
@@ -291,12 +302,22 @@ export function ProjectSettingsPage() {
             value={knowledgeQuery}
             onChange={(e) => setKnowledgeQuery(e.target.value)}
             placeholder="e.g. password reset API"
+            slotProps={{ htmlInput: { 'data-testid': 'knowledge-search-input' } }}
           />
-          <Button type="submit" variant="contained" disabled={saving || !knowledgeQuery.trim()}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || !knowledgeQuery.trim()}
+            data-testid="knowledge-search-submit"
+          >
             Search
           </Button>
           {knowledgeHits.map((hit) => (
-            <Box key={hit.id} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 1.5 }}>
+            <Box
+              key={hit.id}
+              data-testid="knowledge-hit"
+              sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 1.5 }}
+            >
               <Typography variant="subtitle2">
                 [{hit.sourceType}] {hit.title} · score {hit.score.toFixed(3)}
               </Typography>

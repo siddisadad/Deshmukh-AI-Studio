@@ -256,7 +256,12 @@ export function AiChatPage() {
         <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', flexDirection: 'column', minHeight: 280 }} aria-label="Conversation threads">
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 0.5 }}>
             <Typography variant="subtitle2">Threads</Typography>
-            <Button size="small" onClick={() => void onNewThread()} disabled={sending}>
+            <Button
+              size="small"
+              onClick={() => void onNewThread()}
+              disabled={sending}
+              data-testid="chat-new-thread"
+            >
               New
             </Button>
           </Stack>
@@ -267,6 +272,7 @@ export function AiChatPage() {
                 selected={thread.id === activeThreadId}
                 onClick={() => void onSelectThread(thread.id)}
                 disabled={sending}
+                data-testid={`chat-thread-${thread.id}`}
                 sx={{ borderRadius: 1, alignItems: 'flex-start' }}
               >
                 <ListItemText

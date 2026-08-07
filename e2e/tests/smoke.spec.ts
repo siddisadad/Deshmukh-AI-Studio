@@ -1,12 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Phase 5 private-beta smoke journeys (docs/12-TESTING-STRATEGY.md):
+ * Phase 5–6 smoke journeys (docs/12-TESTING-STRATEGY.md):
  * 1. Register → create project → add requirement
  * 2. Create task → move to IN_PROGRESS
  * 3. Add document
- * 4. Send chat message (mock AI)
- * 5. Logout
+ * 4. Streaming chat (mock AI) + multi-thread isolation
+ * 5. RAG knowledge search after context asset save
+ * 6. Billing overview (FREE plan)
+ * 7. Logout
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -19,6 +21,8 @@ const projectKey = `E${String(stamp).slice(-4)}`;
 const requirementTitle = `E2E requirement ${stamp}`;
 const taskTitle = `E2E task ${stamp}`;
 const chatPrompt = 'Summarize open requirements for this project.';
+const chatPromptSecond = `List kanban workflow columns for project ${stamp}`;
+const ragMarker = `E2E_RAG_MARKER_${stamp}`;
 
 async function register(page: Page) {
   await page.goto('/register');
@@ -42,6 +46,8 @@ async function createProject(page: Page) {
 }
 
 test('private beta first-run smoke journey', async ({ page }) => {
+  test.setTimeout(180_000);
+
   await register(page);
   await createProject(page);
 
@@ -82,17 +88,51 @@ test('private beta first-run smoke journey', async ({ page }) => {
   await page.getByTestId('document-create-submit').click();
   await expect(page.getByText(documentTitle)).toBeVisible();
 
-  // 4) Send chat message (mock provider)
+  // 4) Streaming chat + multi-thread (mock provider)
   await page.getByTestId('nav-projects').click();
   await page.getByTestId(`project-card-${projectKey}`).click();
   await page.getByTestId('nav-chat').click();
   await expect(page).toHaveURL(/\/chat$/);
   await page.getByTestId('chat-input').fill(chatPrompt);
   await page.getByTestId('chat-send').click();
-  await expect(page.getByTestId('chat-message-user')).toContainText(chatPrompt);
+  await expect(page.getByTestId('chat-message-user').filter({ hasText: chatPrompt })).toBeVisible();
   await expect(page.getByTestId('chat-message-assistant')).toBeVisible({ timeout: 45_000 });
 
-  // 5) Logout
+  await page.getByTestId('chat-new-thread').click();
+  await page.getByTestId('chat-input').fill(chatPromptSecond);
+  await page.getByTestId('chat-send').click();
+  await expect(page.getByTestId('chat-message-user').filter({ hasText: chatPromptSecond })).toBeVisible();
+  await expect(page.getByTestId('chat-message-assistant')).toBeVisible({ timeout: 45_000 });
+
+  const threadButtons = page.locator('[data-testid^="chat-thread-"]');
+  await expect(threadButtons).toHaveCount(2);
+  const olderThread = threadButtons.nth(1);
+  const olderThreadId = (await olderThread.getAttribute('data-testid'))?.replace('chat-thread-', '');
+  expect(olderThreadId).toBeTruthy();
+  await page.getByTestId(`chat-thread-${olderThreadId}`).click();
+  await expect(page.getByTestId('chat-message-user').filter({ hasText: chatPrompt })).toBeVisible();
+  await expect(page.getByTestId('chat-message-user').filter({ hasText: chatPromptSecond })).toHaveCount(0);
+
+  // 5) RAG knowledge search
+  await page.getByTestId('nav-projects').click();
+  await page.getByTestId(`project-card-${projectKey}`).click();
+  await page.getByTestId('nav-project-settings').click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await page.getByLabel('Title').fill(`E2E API spec ${stamp}`);
+  await page.getByTestId('context-asset-content').fill(ragMarker);
+  await page.getByTestId('context-asset-save').click();
+  await expect(page.getByText('Context asset saved')).toBeVisible();
+  await page.getByTestId('knowledge-search-input').fill(ragMarker);
+  await page.getByTestId('knowledge-search-submit').click();
+  await expect(page.getByTestId('knowledge-hit').first()).toContainText(ragMarker, { timeout: 30_000 });
+
+  // 6) Billing overview
+  await page.getByTestId('nav-billing').click();
+  await expect(page).toHaveURL(/\/settings\/billing/);
+  await expect(page.getByTestId('billing-current-plan')).toContainText('Free');
+  await expect(page.getByTestId('billing-plan-FREE')).toHaveText('Current plan');
+
+  // 7) Logout
   await page.getByTestId('logout-button').click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/dashboard');

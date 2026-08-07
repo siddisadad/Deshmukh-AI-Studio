@@ -11,12 +11,21 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
@@ -26,8 +35,11 @@ import { projectsApi, type Project } from '../../projects/api/projectsApi';
 import { requirementsApi, type Requirement } from '../../requirements/api/requirementsApi';
 import { tasksApi, type Label, type Task, type TaskStatus } from '../api/tasksApi';
 import { AssigneeSelect } from '../components/AssigneeSelect';
+import { KanbanColumn } from '../components/KanbanColumn';
+import { KanbanTaskCard } from '../components/KanbanTaskCard';
 import { LabelMultiSelect } from '../components/LabelMultiSelect';
 import { RequirementSelect } from '../components/RequirementSelect';
+import { applyTaskMove, resolveDropTarget, toReorderUpdates } from '../kanban/applyTaskMove';
 
 const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'TODO', title: 'To Do' },
@@ -66,6 +78,9 @@ export function TasksPage() {
   const [editError, setEditError] = useState<string | null>(null);
   const [labelsError, setLabelsError] = useState<string | null>(null);
   const [labelsMessage, setLabelsMessage] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const requirementTitleById = useMemo(() => {
     const map = new Map<string, string>();
@@ -179,24 +194,65 @@ export function TasksPage() {
     }
   }
 
-  async function moveTask(task: Task, status: TaskStatus) {
+  async function persistBoard(nextTasks: Task[], previous: Task[]) {
+    if (!projectId) return;
     setError(null);
-    const previous = tasks;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
+    setTasks(nextTasks);
     try {
-      const updated = await tasksApi.update(task.id, { status });
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      if (selected?.id === updated.id) {
-        setSelected(updated);
-        setEditLabelIds(updated.labels.map((l) => l.id));
-        setEditRequirementId(updated.requirementId || '');
-        setEditAssigneeId(updated.assigneeId || '');
+      const updated = await tasksApi.reorder(projectId, toReorderUpdates(nextTasks));
+      setTasks(updated);
+      if (selected) {
+        const refreshed = updated.find((t) => t.id === selected.id);
+        if (refreshed) {
+          setSelected(refreshed);
+          setEditLabelIds(refreshed.labels.map((l) => l.id));
+          setEditRequirementId(refreshed.requirementId || '');
+          setEditAssigneeId(refreshed.assigneeId || '');
+        }
       }
     } catch (err) {
       setTasks(previous);
       setError(err instanceof ApiError ? err.message : 'Move failed');
     }
   }
+
+  async function moveTask(task: Task, status: TaskStatus) {
+    if (task.status === status) return;
+    const previous = tasks;
+    const destIndex = tasks.filter((t) => t.status === status).length;
+    const next = applyTaskMove(tasks, task.id, status, destIndex);
+    await persistBoard(next, previous);
+  }
+
+  function onDragStart(event: DragStartEvent) {
+    setActiveDragId(String(event.active.id));
+  }
+
+  async function onDragEnd(event: DragEndEvent) {
+    setActiveDragId(null);
+    const overId = event.over?.id;
+    if (!overId) return;
+    const target = resolveDropTarget(
+      tasks,
+      String(event.active.id),
+      String(overId),
+      COLUMNS.map((c) => c.status),
+    );
+    if (!target) return;
+    const active = tasks.find((t) => t.id === event.active.id);
+    if (!active) return;
+    const previous = tasks;
+    const next = applyTaskMove(tasks, active.id, target.status, target.index);
+    const unchanged = next.every(
+      (task) =>
+        previous.find((p) => p.id === task.id)?.status === task.status &&
+        previous.find((p) => p.id === task.id)?.sortOrder === task.sortOrder,
+    );
+    if (unchanged) return;
+    await persistBoard(next, previous);
+  }
+
+  const activeDragTask = activeDragId ? tasks.find((t) => t.id === activeDragId) : null;
 
   async function saveSelected(e: FormEvent) {
     e.preventDefault();
@@ -343,82 +399,65 @@ export function TasksPage() {
         />
       )}
 
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(4, minmax(0, 1fr))' },
-          alignItems: 'start',
-        }}
+      <Typography variant="body2" color="text.secondary">
+        Drag cards between columns, or use Move to… for keyboard-friendly status changes.
+      </Typography>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={onDragStart}
+        onDragEnd={(event) => void onDragEnd(event)}
       >
-        {COLUMNS.map((column) => (
-          <Paper
-            key={column.status}
-            variant="outlined"
-            sx={{ p: 1.5, minHeight: 320 }}
-            data-testid={`task-column-${column.status}`}
-          >
-            <Typography variant="subtitle2" sx={{ mb: 1.5, px: 0.5 }}>
-              {column.title} · {byStatus[column.status].length}
-            </Typography>
-            <Stack spacing={1}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(4, minmax(0, 1fr))' },
+            alignItems: 'start',
+          }}
+          data-testid="kanban-board"
+        >
+          {COLUMNS.map((column) => (
+            <KanbanColumn
+              key={column.status}
+              status={column.status}
+              title={column.title}
+              count={byStatus[column.status].length}
+            >
               {byStatus[column.status].map((task) => (
-                <Paper
+                <KanbanTaskCard
                   key={task.id}
-                  variant="outlined"
-                  sx={{ p: 1.5, cursor: 'pointer', bgcolor: 'background.default' }}
-                  onClick={() => openEdit(task)}
-                  data-testid={`task-card-${task.id}`}
-                >
-                  <Typography variant="subtitle2" data-testid="task-card-title">
-                    {task.title}
-                  </Typography>
-                  <Stack direction="row" spacing={0.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                    <Chip size="small" label={task.priority} />
-                    {task.requirementId && (
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        label={requirementTitleById.get(task.requirementId) || 'Requirement'}
-                        data-testid={`task-requirement-chip-${task.id}`}
-                      />
-                    )}
-                    {task.assigneeId && (
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        label={memberNameById.get(task.assigneeId) || 'Assignee'}
-                        data-testid={`task-assignee-chip-${task.id}`}
-                      />
-                    )}
-                    {task.labels.map((label) => (
-                      <Chip
-                        key={label.id}
-                        size="small"
-                        label={label.name}
-                        sx={{ bgcolor: label.color, color: '#fff' }}
-                      />
-                    ))}
-                  </Stack>
-                  <FormControl size="small" fullWidth sx={{ mt: 1.5 }} onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={task.status}
-                      onChange={(e) => void moveTask(task, e.target.value as TaskStatus)}
-                      data-testid={`task-status-${task.id}`}
-                    >
-                      {COLUMNS.map((c) => (
-                        <MenuItem key={c.status} value={c.status}>
-                          Move to {c.title}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Paper>
+                  task={task}
+                  requirementTitle={
+                    task.requirementId ? requirementTitleById.get(task.requirementId) : undefined
+                  }
+                  assigneeName={task.assigneeId ? memberNameById.get(task.assigneeId) : undefined}
+                  onOpen={openEdit}
+                  onStatusChange={(t, status) => void moveTask(t, status)}
+                />
               ))}
-            </Stack>
-          </Paper>
-        ))}
-      </Box>
+            </KanbanColumn>
+          ))}
+        </Box>
+        <DragOverlay>
+          {activeDragTask ? (
+            <KanbanTaskCard
+              task={activeDragTask}
+              requirementTitle={
+                activeDragTask.requirementId
+                  ? requirementTitleById.get(activeDragTask.requirementId)
+                  : undefined
+              }
+              assigneeName={
+                activeDragTask.assigneeId ? memberNameById.get(activeDragTask.assigneeId) : undefined
+              }
+              onOpen={() => undefined}
+              onStatusChange={() => undefined}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="sm">
         <Box component="form" onSubmit={onCreate}>

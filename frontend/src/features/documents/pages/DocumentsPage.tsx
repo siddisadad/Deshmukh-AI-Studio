@@ -135,6 +135,27 @@ export function DocumentsPage() {
     }
   }
 
+  async function onDelete() {
+    if (!selected) return;
+    const confirmed = window.confirm(`Delete document “${selected.title}”? This cannot be undone.`);
+    if (!confirmed) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const deletedId = selected.id;
+      await documentsApi.remove(deletedId);
+      const remaining = documents.filter((d) => d.id !== deletedId);
+      setDocuments(remaining);
+      setSelectedId(remaining[0]?.id ?? null);
+      setMessage('Document deleted');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Delete failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>
@@ -176,8 +197,14 @@ export function DocumentsPage() {
                 label="New document"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                slotProps={{ htmlInput: { 'data-testid': 'document-new-title' } }}
               />
-              <Button type="submit" variant="contained" disabled={saving || !newTitle.trim()}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={saving || !newTitle.trim()}
+                data-testid="document-create-submit"
+              >
                 Add
               </Button>
             </Stack>
@@ -188,6 +215,7 @@ export function DocumentsPage() {
                 key={doc.id}
                 selected={doc.id === selectedId}
                 onClick={() => setSelectedId(doc.id)}
+                data-testid={`document-list-item-${doc.id}`}
               >
                 <ListItemText primary={doc.title} secondary={doc.docType} />
               </ListItemButton>
@@ -242,10 +270,21 @@ export function DocumentsPage() {
                   minRows={16}
                   value={contentMd}
                   onChange={(e) => setContentMd(e.target.value)}
+                  slotProps={{ htmlInput: { 'data-testid': 'document-content' } }}
                 />
-                <Button type="submit" variant="contained" disabled={saving}>
-                  Save document
-                </Button>
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between' }}>
+                  <Button
+                    color="error"
+                    onClick={() => void onDelete()}
+                    disabled={saving || generating}
+                    data-testid="document-delete-button"
+                  >
+                    Delete
+                  </Button>
+                  <Button type="submit" variant="contained" disabled={saving} data-testid="document-save-submit">
+                    Save document
+                  </Button>
+                </Stack>
               </Stack>
             </Box>
           )}

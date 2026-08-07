@@ -10,6 +10,7 @@ import {
 import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom';
 import { authApi } from '../../features/auth/api/authApi';
 import { useAuthStore } from '../../features/auth/store/authStore';
+import { MAIN_CONTENT_ID, SkipToContent } from '../../shared/ui/SkipToContent';
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -30,8 +31,15 @@ export function AppShell() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar position="sticky" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Toolbar sx={{ gap: 1 }}>
+      <SkipToContent />
+      <AppBar
+        position="sticky"
+        color="transparent"
+        elevation={0}
+        component="header"
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Toolbar sx={{ gap: 1 }} component="nav" aria-label="Primary">
           <Typography
             variant="h6"
             component={RouterLink}
@@ -48,20 +56,37 @@ export function AppShell() {
           </Button>
           <Box sx={{ flexGrow: 1 }} />
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" aria-label="Current organization">
               {organization?.name}
             </Typography>
-            <Button onClick={() => navigate('/settings/members')}>Members</Button>
-            <Button onClick={() => navigate('/settings/billing')}>Billing</Button>
-            <Button onClick={() => navigate('/settings/plugins')}>Plugins</Button>
-            <Button onClick={() => navigate('/settings/profile')}>{user?.displayName}</Button>
+            <Button onClick={() => navigate('/settings/members')} aria-label="Organization members">
+              Members
+            </Button>
+            <Button onClick={() => navigate('/settings/billing')} aria-label="Billing and plans">
+              Billing
+            </Button>
+            <Button onClick={() => navigate('/settings/plugins')} aria-label="Plugins and assistants">
+              Plugins
+            </Button>
+            <Button
+              onClick={() => navigate('/settings/profile')}
+              aria-label={`Profile settings for ${user?.displayName ?? 'user'}`}
+            >
+              {user?.displayName}
+            </Button>
             <Button variant="outlined" onClick={() => void logout()} data-testid="logout-button">
               Log out
             </Button>
           </Stack>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container
+        maxWidth="lg"
+        sx={{ py: 4 }}
+        component="main"
+        id={MAIN_CONTENT_ID}
+        aria-label="Main content"
+      >
         <Outlet />
       </Container>
     </Box>

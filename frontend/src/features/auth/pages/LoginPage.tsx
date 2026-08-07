@@ -12,6 +12,7 @@ import {
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
+import { MAIN_CONTENT_ID, SkipToContent } from '../../../shared/ui/SkipToContent';
 import { authApi, type SsoProvider } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
 
@@ -151,7 +152,15 @@ export function AuthCard({
             : 'radial-gradient(circle at top left, #134E4A 0%, #0B1220 50%, #020617 100%)',
       }}
     >
-      <Paper sx={{ width: '100%', maxWidth: 420, p: 4 }} elevation={0} variant="outlined">
+      <SkipToContent />
+      <Paper
+        component="main"
+        id={MAIN_CONTENT_ID}
+        aria-label="Authentication"
+        sx={{ width: '100%', maxWidth: 420, p: 4 }}
+        elevation={0}
+        variant="outlined"
+      >
         <Stack spacing={1} sx={{ mb: 3 }}>
           <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
             AI Studio

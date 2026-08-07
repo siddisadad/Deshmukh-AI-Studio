@@ -51,6 +51,7 @@ export function AppShell() {
             <Typography variant="body2" color="text.secondary">
               {organization?.name}
             </Typography>
+            <Button onClick={() => navigate('/settings/members')}>Members</Button>
             <Button onClick={() => navigate('/settings/billing')}>Billing</Button>
             <Button onClick={() => navigate('/settings/plugins')}>Plugins</Button>
             <Button onClick={() => navigate('/settings/profile')}>{user?.displayName}</Button>

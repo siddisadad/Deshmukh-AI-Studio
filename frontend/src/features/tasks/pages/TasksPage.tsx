@@ -57,6 +57,10 @@ export function TasksPage() {
   const [labelName, setLabelName] = useState('');
   const [labelColor, setLabelColor] = useState(LABEL_COLORS[0]);
   const [saving, setSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [labelsError, setLabelsError] = useState<string | null>(null);
+  const [labelsMessage, setLabelsMessage] = useState<string | null>(null);
 
   const requirementTitleById = useMemo(() => {
     const map = new Map<string, string>();
@@ -113,6 +117,7 @@ export function TasksPage() {
     setNewPriority('MEDIUM');
     setNewLabelIds([]);
     setNewRequirementId('');
+    setCreateError(null);
     setCreateOpen(true);
   }
 
@@ -120,13 +125,20 @@ export function TasksPage() {
     setSelected(task);
     setEditLabelIds(task.labels.map((l) => l.id));
     setEditRequirementId(task.requirementId || '');
+    setEditError(null);
+  }
+
+  function openLabels() {
+    setLabelsError(null);
+    setLabelsMessage(null);
+    setLabelsOpen(true);
   }
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     if (!projectId || !newTitle.trim()) return;
     setSaving(true);
-    setError(null);
+    setCreateError(null);
     try {
       const created = await tasksApi.create(projectId, {
         title: newTitle.trim(),
@@ -140,8 +152,9 @@ export function TasksPage() {
       setNewTitle('');
       setNewLabelIds([]);
       setNewRequirementId('');
+      setMessage('Task created');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Create failed');
+      setCreateError(err instanceof ApiError ? err.message : 'Create failed');
     } finally {
       setSaving(false);
     }
@@ -169,7 +182,7 @@ export function TasksPage() {
     e.preventDefault();
     if (!selected) return;
     setSaving(true);
-    setError(null);
+    setEditError(null);
     setMessage(null);
     try {
       const updated = await tasksApi.update(selected.id, {
@@ -188,7 +201,7 @@ export function TasksPage() {
       setEditRequirementId(updated.requirementId || '');
       setMessage('Task saved');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Save failed');
+      setEditError(err instanceof ApiError ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -199,7 +212,7 @@ export function TasksPage() {
     const confirmed = window.confirm(`Delete task “${selected.title}”? This cannot be undone.`);
     if (!confirmed) return;
     setSaving(true);
-    setError(null);
+    setEditError(null);
     setMessage(null);
     try {
       const deletedId = selected.id;
@@ -208,7 +221,7 @@ export function TasksPage() {
       setSelected(null);
       setMessage('Task deleted');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Delete failed');
+      setEditError(err instanceof ApiError ? err.message : 'Delete failed');
     } finally {
       setSaving(false);
     }
@@ -218,8 +231,8 @@ export function TasksPage() {
     e.preventDefault();
     if (!projectId || !labelName.trim()) return;
     setSaving(true);
-    setError(null);
-    setMessage(null);
+    setLabelsError(null);
+    setLabelsMessage(null);
     try {
       const created = await tasksApi.createLabel(projectId, {
         name: labelName.trim(),
@@ -227,17 +240,22 @@ export function TasksPage() {
       });
       setLabels((prev) => [...prev, created]);
       setLabelName('');
-      setMessage(`Label “${created.name}” created`);
+      setLabelsMessage(`Label “${created.name}” created`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create label');
+      setLabelsError(err instanceof ApiError ? err.message : 'Failed to create label');
     } finally {
       setSaving(false);
     }
   }
 
   async function onDeleteLabel(labelId: string) {
-    setError(null);
-    setMessage(null);
+    const label = labels.find((l) => l.id === labelId);
+    const confirmed = window.confirm(
+      `Delete label “${label?.name || 'this label'}”? It will be removed from all tasks.`,
+    );
+    if (!confirmed) return;
+    setLabelsError(null);
+    setLabelsMessage(null);
     try {
       await tasksApi.deleteLabel(labelId);
       setLabels((prev) => prev.filter((l) => l.id !== labelId));
@@ -255,9 +273,9 @@ export function TasksPage() {
           labels: selected.labels.filter((l) => l.id !== labelId),
         });
       }
-      setMessage('Label deleted');
+      setLabelsMessage('Label deleted');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to delete label');
+      setLabelsError(err instanceof ApiError ? err.message : 'Failed to delete label');
     }
   }
 
@@ -282,7 +300,7 @@ export function TasksPage() {
           <Button component={RouterLink} to={`/projects/${projectId}`} variant="outlined">
             Overview
           </Button>
-          <Button variant="outlined" onClick={() => setLabelsOpen(true)} data-testid="manage-labels-button">
+          <Button variant="outlined" onClick={openLabels} data-testid="manage-labels-button">
             Labels
           </Button>
           <Button variant="contained" onClick={openCreate} data-testid="new-task-button">
@@ -377,6 +395,7 @@ export function TasksPage() {
           <DialogTitle>New task</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
+              {createError && <Alert severity="error">{createError}</Alert>}
               <TextField
                 label="Title"
                 required
@@ -422,6 +441,7 @@ export function TasksPage() {
             <DialogTitle>Edit task</DialogTitle>
             <DialogContent>
               <Stack spacing={2} sx={{ mt: 1 }}>
+                {editError && <Alert severity="error">{editError}</Alert>}
                 <TextField
                   label="Title"
                   value={selected.title}
@@ -503,6 +523,8 @@ export function TasksPage() {
         <DialogTitle>Project labels</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {labelsError && <Alert severity="error">{labelsError}</Alert>}
+            {labelsMessage && <Alert severity="success">{labelsMessage}</Alert>}
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }} useFlexGap>
               {labels.map((label) => (
                 <Chip

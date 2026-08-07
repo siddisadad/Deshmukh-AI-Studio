@@ -1,18 +1,24 @@
 package com.aistudio.api.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aistudio.infrastructure.mail.EmailPort;
+import com.aistudio.support.IntegrationTestProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import com.aistudio.support.IntegrationTestProperties;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,6 +30,7 @@ class AuthControllerIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @MockBean EmailPort emailPort;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
@@ -79,5 +86,90 @@ class AuthControllerIT {
                                 """.formatted(email)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void forgotPasswordEmailContainsResetLinkThenResetAllowsLogin() throws Exception {
+        String email = "reset" + System.currentTimeMillis() + "@example.com";
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"Str0ngPass!","displayName":"Reset User"}
+                                """.formatted(email)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String oldRefreshToken = objectMapper.readTree(registerResult.getResponse().getContentAsString())
+                .get("refreshToken")
+                .asText();
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s"}
+                                """.formatted(email)))
+                .andExpect(status().isAccepted());
+
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailPort).send(eq(email), eq("AI Studio password reset"), bodyCaptor.capture());
+        String body = bodyCaptor.getValue();
+        assertThat(body).contains("/reset-password?token=");
+        String token = body.lines()
+                .map(String::trim)
+                .filter(line -> line.matches("[A-Za-z0-9_-]{20,}"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Reset token line missing from email body:\n" + body));
+        assertThat(token).doesNotContain("http").doesNotContain("=");
+
+        // Second outstanding reset token should also be invalidated after a successful reset.
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s"}
+                                """.formatted(email)))
+                .andExpect(status().isAccepted());
+        ArgumentCaptor<String> secondBodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailPort, org.mockito.Mockito.times(2))
+                .send(eq(email), eq("AI Studio password reset"), secondBodyCaptor.capture());
+        String secondToken = secondBodyCaptor.getAllValues().get(1).lines()
+                .map(String::trim)
+                .filter(line -> line.matches("[A-Za-z0-9_-]{20,}"))
+                .findFirst()
+                .orElseThrow();
+
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"%s","newPassword":"NewStr0ngPass!"}
+                                """.formatted(token)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"%s"}
+                                """.formatted(oldRefreshToken)))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"%s","newPassword":"AnotherStr0ng1"}
+                                """.formatted(secondToken)))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"NewStr0ngPass!"}
+                                """.formatted(email)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"Str0ngPass!"}
+                                """.formatted(email)))
+                .andExpect(status().isUnauthorized());
     }
 }

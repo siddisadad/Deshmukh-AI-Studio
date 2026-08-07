@@ -34,6 +34,7 @@ export const tasksApi = {
       priority?: string;
       status?: TaskStatus;
       requirementId?: string;
+      assigneeId?: string;
       labelIds?: string[];
     },
   ) => http.post<Task>(`/projects/${projectId}/tasks`, body).then((r) => r.data),
@@ -44,13 +45,21 @@ export const tasksApi = {
       description: string;
       priority: string;
       status: TaskStatus;
-      requirementId: string | null;
+      requirementId: string;
+      clearRequirementId: boolean;
+      assigneeId: string;
+      clearAssigneeId: boolean;
       labelIds: string[];
       sortOrder: number;
     }>,
   ) => http.patch<Task>(`/tasks/${taskId}`, body).then((r) => r.data),
   remove: (taskId: string) => http.delete(`/tasks/${taskId}`).then(() => undefined),
+  reorder: (
+    projectId: string,
+    updates: { taskId: string; status: TaskStatus; sortOrder: number }[],
+  ) => http.patch<Task[]>(`/projects/${projectId}/tasks/reorder`, { updates }).then((r) => r.data),
   listLabels: (projectId: string) => http.get<Label[]>(`/projects/${projectId}/labels`).then((r) => r.data),
   createLabel: (projectId: string, body: { name: string; color?: string }) =>
     http.post<Label>(`/projects/${projectId}/labels`, body).then((r) => r.data),
+  deleteLabel: (labelId: string) => http.delete(`/labels/${labelId}`).then(() => undefined),
 };

@@ -1,17 +1,24 @@
 package com.aistudio.api.organization;
 
+import com.aistudio.api.organization.dto.AddMemberRequest;
+import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
 import com.aistudio.application.project.OrganizationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,5 +43,25 @@ public class OrganizationController {
     @Operation(summary = "Get organization")
     public OrganizationResponse get(@PathVariable UUID orgId, @AuthenticationPrincipal AuthenticatedUser user) {
         return organizationService.get(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/members")
+    @Operation(summary = "List organization members")
+    public List<MemberResponse> listMembers(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return organizationService.listMembers(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add an existing user to the organization by email (OWNER/ADMIN)")
+    public MemberResponse addMember(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody AddMemberRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return organizationService.addMember(orgId, user.getId(), request);
     }
 }

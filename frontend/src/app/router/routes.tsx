@@ -3,6 +3,7 @@ import { AppShell } from '../layout/AppShell';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
+import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { SsoCallbackPage } from '../../features/auth/pages/SsoCallbackPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
@@ -14,10 +15,13 @@ import { AiChatPage } from '../../features/chat/pages/AiChatPage';
 import { DocumentsPage } from '../../features/documents/pages/DocumentsPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { BillingSettingsPage } from '../../features/settings/pages/BillingSettingsPage';
+import { OrgMembersSettingsPage } from '../../features/settings/pages/OrgMembersSettingsPage';
 import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
+  // Public even when a session exists (email reset links must work while logged in).
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     element: <GuestRoute />,
     children: [
@@ -42,6 +46,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId/documents', element: <DocumentsPage /> },
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
+          { path: '/settings/members', element: <OrgMembersSettingsPage /> },
           { path: '/settings/billing', element: <BillingSettingsPage /> },
           { path: '/settings/plugins', element: <PluginsSettingsPage /> },
         ],

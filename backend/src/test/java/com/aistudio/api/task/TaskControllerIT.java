@@ -1,5 +1,6 @@
 package com.aistudio.api.task;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -90,6 +91,110 @@ class TaskControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Reset API"));
+    }
+
+    @Test
+    void linkRequirementThenClearAndDeleteTask() throws Exception {
+        JsonNode auth = register("task-req" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Req Link","projectKey":"RL","description":"Link reqs"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID requirementId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/projects/" + projectId + "/requirements")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Auth stories","description":"Login","priority":"HIGH","status":"DRAFT"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID taskId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/projects/" + projectId + "/tasks")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Implement login","priority":"HIGH","requirementId":"%s"}
+                                """.formatted(requirementId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.requirementId").value(requirementId.toString()))
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(patch("/api/v1/tasks/" + taskId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"clearRequirementId":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requirementId").value(org.hamcrest.Matchers.nullValue()));
+
+        mockMvc.perform(delete("/api/v1/tasks/" + taskId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/tasks")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void assignOrgMemberThenClearAssignee() throws Exception {
+        JsonNode auth = register("task-assignee" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID userId = UUID.fromString(auth.get("user").get("id").asText());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/members")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userId").value(userId.toString()))
+                .andExpect(jsonPath("$[0].role").value("OWNER"));
+
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Assignee Board","projectKey":"AB","description":"Assign"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID taskId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/projects/" + projectId + "/tasks")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Owned by me","priority":"MEDIUM","assigneeId":"%s"}
+                                """.formatted(userId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.assigneeId").value(userId.toString()))
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(patch("/api/v1/tasks/" + taskId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"clearAssigneeId":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assigneeId").value(org.hamcrest.Matchers.nullValue()));
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/tasks")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Bad assignee","priority":"LOW","assigneeId":"%s"}
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     private JsonNode register(String email) throws Exception {

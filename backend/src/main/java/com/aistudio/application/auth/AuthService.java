@@ -26,10 +26,13 @@ import com.aistudio.infrastructure.persistence.repository.UserRepository;
 import com.aistudio.infrastructure.security.JwtService;
 import com.aistudio.shared.util.SlugUtils;
 import com.aistudio.shared.util.TokenHashUtils;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +52,7 @@ public class AuthService {
     private final EmailPort emailPort;
     private final AuditService auditService;
     private final BillingService billingService;
+    private final String appBaseUrl;
 
     public AuthService(
             UserRepository userRepository,
@@ -62,7 +66,8 @@ public class AuthService {
             JwtProperties jwtProperties,
             EmailPort emailPort,
             AuditService auditService,
-            BillingService billingService
+            BillingService billingService,
+            @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl
     ) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
@@ -76,6 +81,7 @@ public class AuthService {
         this.emailPort = emailPort;
         this.auditService = auditService;
         this.billingService = billingService;
+        this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
     }
 
     @Transactional
@@ -228,10 +234,18 @@ public class AuthService {
             reset.setTokenHash(TokenHashUtils.sha256(rawToken));
             reset.setExpiresAt(Instant.now().plusSeconds(3600));
             passwordResetTokenRepository.save(reset);
+            String resetUrl = appBaseUrl + "/reset-password?token="
+                    + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
             emailPort.send(
                     user.getEmail(),
                     "AI Studio password reset",
-                    "Use this token to reset your password (valid 1 hour): " + rawToken
+                    """
+                    Reset your AI Studio password (link valid 1 hour):
+                    %s
+
+                    If the link does not open, paste this token on the reset page:
+                    %s
+                    """.formatted(resetUrl, rawToken)
             );
             auditService.record(user.getId(), "PASSWORD_RESET_REQUESTED", "USER", user.getId(), "{}", ip);
         });
@@ -248,8 +262,15 @@ public class AuthService {
                 .orElseThrow(() -> new DomainException("TOKEN_INVALID_OR_EXPIRED", "Reset token is invalid or expired"));
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        reset.setUsedAt(Instant.now());
-        passwordResetTokenRepository.save(reset);
+        Instant now = Instant.now();
+        for (PasswordResetTokenEntity outstanding : passwordResetTokenRepository.findByUserIdAndUsedAtIsNull(user.getId())) {
+            outstanding.setUsedAt(now);
+            passwordResetTokenRepository.save(outstanding);
+        }
+        for (RefreshTokenEntity refresh : refreshTokenRepository.findByUserIdAndRevokedAtIsNull(user.getId())) {
+            refresh.setRevokedAt(now);
+            refreshTokenRepository.save(refresh);
+        }
         auditService.record(user.getId(), "PASSWORD_RESET_COMPLETED", "USER", user.getId(), "{}", ip);
     }
 
@@ -282,18 +303,30 @@ public class AuthService {
     }
 
     @Transactional
-    public void changePassword(UUID userId, ChangePasswordRequest request) {
+    public TokenResponse changePassword(UUID userId, ChangePasswordRequest request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "User not found"));
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
             throw new DomainException("VALIDATION_ERROR", "This account uses SSO and has no local password");
         }
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new DomainException("INVALID_CREDENTIALS", "Current password is incorrect");
+            // 400 (not 401): wrong password on an authenticated session must not trigger SPA token refresh/logout
+            throw new DomainException("VALIDATION_ERROR", "Current password is incorrect");
         }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        revokeAllRefreshTokens(userId);
         auditService.record(userId, "PASSWORD_CHANGED", "USER", userId, "{}", null);
+        OrganizationEntity org = primaryOrganization(userId);
+        return issueTokens(user, org);
+    }
+
+    private void revokeAllRefreshTokens(UUID userId) {
+        Instant now = Instant.now();
+        for (RefreshTokenEntity token : refreshTokenRepository.findByUserIdAndRevokedAtIsNull(userId)) {
+            token.setRevokedAt(now);
+            refreshTokenRepository.save(token);
+        }
     }
 
     private TokenResponse issueTokens(UserEntity user, OrganizationEntity org) {

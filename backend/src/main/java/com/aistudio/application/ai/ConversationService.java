@@ -570,6 +570,9 @@ public class ConversationService {
             return;
         }
         Instant anchor = conversation.getUpdatedAt() != null ? conversation.getUpdatedAt() : conversation.getCreatedAt();
+        if (anchor == null) {
+            anchor = Instant.now();
+        }
         conversation.setRetentionExpiresAt(anchor.plus(days, ChronoUnit.DAYS));
     }
 

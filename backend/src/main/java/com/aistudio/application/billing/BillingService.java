@@ -13,6 +13,7 @@ import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.project.ProjectStatus;
 import com.aistudio.infrastructure.billing.AiUsageJdbcRepository;
 import com.aistudio.infrastructure.config.BillingProperties;
+import com.aistudio.infrastructure.metrics.BillingUsageMetrics;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
 import com.aistudio.infrastructure.persistence.entity.PlanEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
@@ -52,6 +53,7 @@ public class BillingService {
     private final BillingPort billingPort;
     private final BillingProperties billingProperties;
     private final ObjectMapper objectMapper;
+    private final BillingUsageMetrics billingUsageMetrics;
 
     public BillingService(
             PlanRepository planRepository,
@@ -62,7 +64,8 @@ public class BillingService {
             ProjectAuthorizationService authorizationService,
             BillingPort billingPort,
             BillingProperties billingProperties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            BillingUsageMetrics billingUsageMetrics
     ) {
         this.planRepository = planRepository;
         this.subscriptionRepository = subscriptionRepository;
@@ -73,6 +76,7 @@ public class BillingService {
         this.billingPort = billingPort;
         this.billingProperties = billingProperties;
         this.objectMapper = objectMapper;
+        this.billingUsageMetrics = billingUsageMetrics;
     }
 
     @Transactional
@@ -250,10 +254,12 @@ public class BillingService {
         int used = usageRepository.getCount(organizationId, today);
         if (used < plan.getMaxAiActionsPerDay()) {
             usageRepository.incrementIncluded(organizationId, today);
+            billingUsageMetrics.recordIncludedAction();
             return;
         }
         if (plan.getPriceCentsPerAiActionOverage() > 0) {
             usageRepository.incrementOverage(organizationId, today);
+            billingUsageMetrics.recordOverageAction();
             return;
         }
         throw new DomainException(

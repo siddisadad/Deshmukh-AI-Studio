@@ -41,8 +41,9 @@ Read in order; each document builds on the previous.
 | 34 | [34-MULTI-PROVIDER-ROUTING-GUIDE.md](34-MULTI-PROVIDER-ROUTING-GUIDE.md) | Multi-provider AI routing and failover |
 | 35 | [35-THREAD-EXPORT-REDACTION-GUIDE.md](35-THREAD-EXPORT-REDACTION-GUIDE.md) | Thread export redaction policies |
 | 36 | [36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md](36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md) | AI provider health probes and circuit breaking |
+| 37 | [37-BILLING-USAGE-DASHBOARDS-GUIDE.md](37-BILLING-USAGE-DASHBOARDS-GUIDE.md) | Usage-based billing Grafana dashboards |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.31-beta** adds AI provider health probes and circuit breaking — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.32-beta** adds usage-based billing dashboards — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

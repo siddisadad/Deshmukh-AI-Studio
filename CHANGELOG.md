@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.32-beta] — 2026-08-08
+
+### Added
+
+- Usage-based billing Prometheus metrics — AI action counters, daily/MTD overage gauges, active seats
+- Grafana dashboard **AI Studio Billing Usage** (`uid: aistudio-billing`)
+- `scripts/write-grafana-billing-dashboard.sh` — validate dashboard JSON
+- `docs/37-BILLING-USAGE-DASHBOARDS-GUIDE.md`
+
 ## [0.2.31-beta] — 2026-08-08
 
 ### Added

@@ -11,9 +11,7 @@ import com.aistudio.infrastructure.persistence.repository.PlanRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
-import com.stripe.model.billingportal.Session;
 import com.stripe.param.CustomerCreateParams;
-import com.stripe.param.billingportal.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.LineItem;
 import java.util.UUID;
@@ -94,8 +92,8 @@ public class StripeBillingAdapter implements BillingPort {
         String customerId = ensureCustomer(organizationId);
         String resolvedReturn = blankToDefault(returnUrl, appBaseUrl + "/settings/billing");
         try {
-            Session portal = Session.create(
-                    SessionCreateParams.builder()
+            com.stripe.model.billingportal.Session portal = com.stripe.model.billingportal.Session.create(
+                    com.stripe.param.billingportal.SessionCreateParams.builder()
                             .setCustomer(customerId)
                             .setReturnUrl(resolvedReturn)
                             .build()

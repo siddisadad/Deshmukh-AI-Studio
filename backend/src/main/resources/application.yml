@@ -77,6 +77,12 @@ aistudio:
     enabled: ${SSO_ENABLED:true}
     provider: ${SSO_PROVIDER:mock}
     app-base-url: ${SSO_APP_BASE_URL:${BILLING_APP_BASE_URL:http://localhost:5173}}
+    oidc:
+      issuer-uri: ${OIDC_ISSUER_URI:}
+      client-id: ${OIDC_CLIENT_ID:}
+      client-secret: ${OIDC_CLIENT_SECRET:}
+      display-name: ${OIDC_DISPLAY_NAME:Continue with SSO}
+      scopes: ${OIDC_SCOPES:openid email profile}
 
 springdoc:
   api-docs:

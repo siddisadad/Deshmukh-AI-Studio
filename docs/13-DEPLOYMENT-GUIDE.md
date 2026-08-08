@@ -272,6 +272,22 @@ Optional: set `plans.stripe_price_id` in the database (migration `V13`) instead 
 
 Default `BILLING_PROVIDER=mock` keeps mock checkout for local dev and CI.
 
+### OIDC SSO (production)
+
+Set `SSO_PROVIDER=oidc` and configure the IdP (Okta, Google Workspace, Azure AD, etc.):
+
+| Variable | Purpose |
+|---|---|
+| `OIDC_ISSUER_URI` | Issuer URL (discovery at `/.well-known/openid-configuration`) |
+| `OIDC_CLIENT_ID` | OAuth client ID |
+| `OIDC_CLIENT_SECRET` | OAuth client secret |
+| `OIDC_DISPLAY_NAME` | Button label in login UI (optional) |
+| `OIDC_SCOPES` | Defaults to `openid email profile` |
+
+Register redirect URI: `https://<app-host>/auth/sso/callback`
+
+Default `SSO_PROVIDER=mock` for local dev and CI E2E.
+
 ### Cloud Agent environment builds
 
 Repository config lives in `.cursor/environment.json` (install, start, dev-server terminals). After merging to `main`:

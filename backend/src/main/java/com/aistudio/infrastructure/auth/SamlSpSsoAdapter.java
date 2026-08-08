@@ -3,7 +3,6 @@ package com.aistudio.infrastructure.auth;
 import com.aistudio.application.auth.SsoPort;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.config.SsoProperties;
-import com.onelogin.saml2.authn.AuthnRequest;
 import com.onelogin.saml2.authn.SamlResponse;
 import com.onelogin.saml2.http.HttpRequest;
 import com.onelogin.saml2.settings.Saml2Settings;
@@ -59,19 +58,13 @@ public class SamlSpSsoAdapter implements SsoPort {
         }
         try {
             Saml2Settings settings = settingsService.settings();
-            AuthnRequest authnRequest = new AuthnRequest(settings, false, false, true);
-            String samlRequest = authnRequest.getEncodedAuthnRequest(true);
-            String idpUrl = settings.getIdpSingleSignOnServiceUrl().toString();
-            String authorizationUrl = idpUrl
-                    + (idpUrl.contains("?") ? "&" : "?")
-                    + "SAMLRequest=" + encode(samlRequest)
-                    + "&RelayState=" + encode(state);
+            SamlAuthnRedirectBuilder.Redirect redirect = SamlAuthnRedirectBuilder.build(settings, state);
             pendingStarts.put(state, new PendingStart(
                     redirectUri.trim(),
-                    authnRequest.getId(),
+                    redirect.requestId(),
                     System.currentTimeMillis() + 600_000L
             ));
-            return new AuthorizationStart(authorizationUrl, state);
+            return new AuthorizationStart(redirect.authorizationUrl(), state);
         } catch (Exception ex) {
             throw new DomainException("VALIDATION_ERROR", "Failed to start SAML authorization");
         }

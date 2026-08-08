@@ -46,7 +46,10 @@ public record SsoProperties(
             String entityId,
             String acsUrl,
             String displayName,
-            boolean stubMode
+            boolean stubMode,
+            String spPrivateKey,
+            String spCertificate,
+            boolean wantEncryptedAssertions
     ) {
         public boolean configured() {
             return metadataUrl != null
@@ -55,6 +58,13 @@ public record SsoProperties(
                     && !entityId.isBlank()
                     && acsUrl != null
                     && !acsUrl.isBlank();
+        }
+
+        public boolean spSigningConfigured() {
+            return spPrivateKey != null
+                    && !spPrivateKey.isBlank()
+                    && spCertificate != null
+                    && !spCertificate.isBlank();
         }
 
         public String resolvedDisplayName() {

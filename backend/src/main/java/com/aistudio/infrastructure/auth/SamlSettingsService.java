@@ -31,6 +31,12 @@ public class SamlSettingsService {
                             + "SAML_METADATA_URL, SAML_ENTITY_ID, and SAML_ACS_URL"
             );
         }
+        if (ssoProperties.saml().wantEncryptedAssertions()
+                && !ssoProperties.saml().spSigningConfigured()) {
+            throw new IllegalStateException(
+                    "SAML_WANT_ENCRYPTED_ASSERTIONS requires SAML_SP_PRIVATE_KEY and SAML_SP_CERTIFICATE"
+            );
+        }
     }
 
     Saml2Settings settings() {
@@ -61,10 +67,31 @@ public class SamlSettingsService {
         values.put("onelogin.saml2.idp.entityid", idp.entityId());
         values.put("onelogin.saml2.idp.single_sign_on_service.url", idp.singleSignOnUrl());
         values.put("onelogin.saml2.idp.x509cert", idp.signingCertificate());
-        values.put("onelogin.saml2.security.authnrequest_signed", false);
+
+        boolean signRequests = ssoProperties.saml().spSigningConfigured();
+        if (signRequests) {
+            values.put("onelogin.saml2.sp.privatekey", SamlPemUtils.normalizePrivateKey(ssoProperties.saml().spPrivateKey()));
+            values.put("onelogin.saml2.sp.x509cert", SamlPemUtils.normalizeCertificate(ssoProperties.saml().spCertificate()));
+            values.put("onelogin.saml2.security.authnrequest_signed", true);
+        } else {
+            values.put("onelogin.saml2.security.authnrequest_signed", false);
+        }
+
         values.put("onelogin.saml2.security.want_messages_signed", false);
         values.put("onelogin.saml2.security.want_assertions_signed", true);
         values.put("onelogin.saml2.security.want_nameid_encrypted", false);
+
+        boolean wantEncrypted = ssoProperties.saml().wantEncryptedAssertions()
+                && idp.encryptionCertificate() != null
+                && !idp.encryptionCertificate().isBlank();
+        values.put("onelogin.saml2.security.want_assertions_encrypted", wantEncrypted);
+        if (wantEncrypted) {
+            Map<String, String> certMulti = new HashMap<>();
+            certMulti.put("signing", idp.signingCertificate());
+            certMulti.put("encryption", idp.encryptionCertificate());
+            values.put("onelogin.saml2.idp.x509certMulti", certMulti);
+        }
+
         try {
             SettingsBuilder builder = new SettingsBuilder();
             builder.fromValues(values);

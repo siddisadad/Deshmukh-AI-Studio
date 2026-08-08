@@ -120,7 +120,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Streaming AI responses | SSE chat + reconnect/retry UX + token metering UI ([23-STREAMING-TOKEN-UX-GUIDE.md](23-STREAMING-TOKEN-UX-GUIDE.md)) | Provider-native streaming APIs |
 | Observability | JSON logs, Prometheus, Grafana, Loki alerts, retention, queue metrics, export archives | Glacier lifecycle + cross-region ([21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md)) | Real-time multi-region Loki query |
 | Billing / plans | Stripe checkout + webhook + usage history + invoice list ([22-BILLING-USAGE-INVOICES-GUIDE.md](22-BILLING-USAGE-INVOICES-GUIDE.md)) | Usage-based pricing / seat metering |
-| SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub + SP binding ([20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md)) | Signed AuthnRequest / encrypted assertions |
+| SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub + SP binding + signed AuthnRequest / encrypted assertions ([26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md)) | Multi-IdP / metadata refresh automation |
 | Multi-thread conversations | Per-assistant threads + search + share + export + archive sync ([19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md)) | Retention policies + legal hold ([25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md](25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md)) | Compliance export on purge |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue metrics + autoscaling playbook ([18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md)) | K8s HPA / cloud-native autoscaling |

@@ -108,6 +108,9 @@ aistudio:
       acs-url: ${SAML_ACS_URL:}
       display-name: ${SAML_DISPLAY_NAME:Continue with SAML}
       stub-mode: ${SAML_STUB_MODE:true}
+      sp-private-key: ${SAML_SP_PRIVATE_KEY:}
+      sp-certificate: ${SAML_SP_CERTIFICATE:}
+      want-encrypted-assertions: ${SAML_WANT_ENCRYPTED_ASSERTIONS:false}
 
 springdoc:
   api-docs:

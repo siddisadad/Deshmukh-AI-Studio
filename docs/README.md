@@ -30,8 +30,9 @@ Read in order; each document builds on the previous.
 | 23 | [23-STREAMING-TOKEN-UX-GUIDE.md](23-STREAMING-TOKEN-UX-GUIDE.md) | SSE streaming token UX + usage metadata |
 | 24 | [24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md) | Automated Stripe/OIDC/SAML/SMTP staging probes |
 | 25 | [25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md](25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md) | Chat thread retention policy + legal hold |
+| 26 | [26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md) | SAML signed AuthnRequest + encrypted assertions |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.20-beta** adds chat retention and legal hold — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.21-beta** adds SAML SP signing — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

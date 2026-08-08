@@ -7,8 +7,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stripe.net.Webhook;
+import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -70,7 +73,7 @@ class StripeWebhookControllerIT {
                 }
                 """.formatted(orgId, orgId);
 
-        String signature = Webhook.Util.generateSigHeader(payload, WEBHOOK_SECRET, 300);
+        String signature = signStripePayload(payload, WEBHOOK_SECRET);
 
         mockMvc.perform(post("/api/v1/billing/stripe/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,6 +97,15 @@ class StripeWebhookControllerIT {
                         .content("{\"id\":\"evt_bad\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTH_ERROR"));
+    }
+
+    private static String signStripePayload(String payload, String secret) throws Exception {
+        long timestamp = System.currentTimeMillis() / 1000;
+        String signed = timestamp + "." + payload;
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        String hex = HexFormat.of().formatHex(mac.doFinal(signed.getBytes(StandardCharsets.UTF_8)));
+        return "t=" + timestamp + ",v1=" + hex;
     }
 
     private JsonNode register(String email, String name) throws Exception {

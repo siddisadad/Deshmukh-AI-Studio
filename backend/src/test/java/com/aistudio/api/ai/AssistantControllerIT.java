@@ -421,7 +421,8 @@ class AssistantControllerIT {
         mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/retention-purge")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.purgedCount").value(1));
+                .andExpect(jsonPath("$.purgedCount").value(1))
+                .andExpect(jsonPath("$.exportedCount").value(0));
 
         mockMvc.perform(get("/api/v1/conversations/" + expiredThread)
                         .header("Authorization", "Bearer " + token))
@@ -430,6 +431,72 @@ class AssistantControllerIT {
         mockMvc.perform(get("/api/v1/conversations/" + heldThread)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void complianceExportOnRetentionPurge() throws Exception {
+        JsonNode auth = register("compliance" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Compliance Proj","projectKey":"CP","description":"compliance"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(patch("/api/v1/projects/" + projectId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"chatRetentionDays":1}
+                                """))
+                .andExpect(status().isOk());
+
+        UUID expiredThread = createThread(token, projectId, "DEVELOPER", "Export before purge");
+        mockMvc.perform(post("/api/v1/conversations/" + expiredThread + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"purge me"}
+                                """))
+                .andExpect(status().isOk());
+
+        try (var connection = java.sql.DriverManager.getConnection(
+                SharedTestPostgres.jdbcUrl(),
+                SharedTestPostgres.username(),
+                SharedTestPostgres.password())) {
+            try (var ps = connection.prepareStatement(
+                    "UPDATE conversations SET updated_at = NOW() - INTERVAL '2 days', "
+                            + "retention_expires_at = NOW() - INTERVAL '1 day' WHERE id = ?")) {
+                ps.setObject(1, expiredThread);
+                ps.executeUpdate();
+            }
+        }
+
+        MvcResult purgeResult = mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/retention-purge")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"complianceExport":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Purged-Count", "1"))
+                .andExpect(header().string("X-Exported-Count", "1"))
+                .andReturn();
+
+        byte[] gzipBody = purgeResult.getResponse().getContentAsByteArray();
+        org.assertj.core.api.Assertions.assertThat(gzipBody.length).isGreaterThan(0);
+        String json = new String(new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(gzipBody))
+                .readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        org.assertj.core.api.Assertions.assertThat(json).contains("purgeReason");
+        org.assertj.core.api.Assertions.assertThat(json).contains("purge me");
+
+        mockMvc.perform(get("/api/v1/conversations/" + expiredThread)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {

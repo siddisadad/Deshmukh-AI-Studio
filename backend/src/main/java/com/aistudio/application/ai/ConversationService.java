@@ -7,7 +7,6 @@ import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SharedConversationResponse;
-import com.aistudio.api.ai.dto.RetentionPurgeResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -25,6 +24,7 @@ import com.aistudio.infrastructure.persistence.repository.ConversationRepository
 import com.aistudio.infrastructure.persistence.repository.MessageRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.shared.util.TokenHashUtils;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,14 +199,39 @@ public class ConversationService {
     }
 
     @Transactional
-    public RetentionPurgeResponse purgeExpiredConversations(UUID projectId, UUID userId) {
+    public RetentionPurgeResult purgeExpiredConversations(
+            UUID projectId,
+            UUID userId,
+            boolean complianceExport
+    ) {
         authorizationService.requireProjectEdit(projectId, userId);
         Instant now = Instant.now();
         List<ConversationEntity> expired = conversationRepository.findExpiredForRetention(projectId, now);
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        byte[] complianceArchive = null;
+        String complianceFilename = null;
+        if (complianceExport && !expired.isEmpty()) {
+            complianceArchive = buildCompliancePurgeArchive(project, expired, now);
+            complianceFilename = safeCompliancePurgeFilename(project, now);
+        }
         for (ConversationEntity conversation : expired) {
             conversationRepository.delete(conversation);
         }
-        return new RetentionPurgeResponse(expired.size());
+        return new RetentionPurgeResult(
+                expired.size(),
+                complianceExport ? expired.size() : 0,
+                complianceFilename,
+                complianceArchive
+        );
+    }
+
+    public record RetentionPurgeResult(
+            int purgedCount,
+            int exportedCount,
+            String complianceArchiveFilename,
+            byte[] complianceArchiveBody
+    ) {
     }
 
     @Transactional
@@ -703,6 +729,63 @@ public class ConversationService {
                         "createdAt", m.getCreatedAt()))
                 .toList());
         return map;
+    }
+
+    private Map<String, Object> complianceConversationExportMap(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            Instant purgedAt
+    ) {
+        Map<String, Object> map = conversationExportMap(conversation, messages);
+        map.put("legalHold", conversation.isLegalHold());
+        map.put("retentionExpiresAt", conversation.getRetentionExpiresAt());
+        map.put("createdAt", conversation.getCreatedAt());
+        map.put("updatedAt", conversation.getUpdatedAt());
+        map.put("purgeReason", "retention_expired");
+        map.put("purgedAt", purgedAt);
+        return map;
+    }
+
+    private byte[] buildCompliancePurgeArchive(
+            ProjectEntity project,
+            List<ConversationEntity> expired,
+            Instant purgedAt
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("projectId", project.getId());
+        payload.put("projectKey", project.getProjectKey());
+        payload.put("projectName", project.getName());
+        payload.put("purgedAt", purgedAt);
+        payload.put("purgeReason", "retention_expired");
+        payload.put("purgedCount", expired.size());
+        List<Map<String, Object>> conversations = new ArrayList<>();
+        for (ConversationEntity conversation : expired) {
+            List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+            conversations.add(complianceConversationExportMap(conversation, messages, purgedAt));
+        }
+        payload.put("conversations", conversations);
+        try {
+            byte[] json = exportObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(payload);
+            ByteArrayOutputStream gzip = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzos = new GZIPOutputStream(gzip)) {
+                gzos.write(json);
+            }
+            return gzip.toByteArray();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to build compliance purge archive", ex);
+        }
+    }
+
+    private String safeCompliancePurgeFilename(ProjectEntity project, Instant purgedAt) {
+        String base = project.getProjectKey() == null ? "project" : project.getProjectKey().trim();
+        base = base.replaceAll("[^a-zA-Z0-9._-]+", "-").replaceAll("-+", "-");
+        if (base.isBlank() || base.equals("-")) {
+            base = "project";
+        }
+        if (base.length() > 20) {
+            base = base.substring(0, 20);
+        }
+        return base + "-compliance-purge-" + purgedAt.toString().substring(0, 10) + ".json.gz";
     }
 
     private String buildConversationMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {

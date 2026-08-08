@@ -34,8 +34,9 @@ Read in order; each document builds on the previous.
 | 27 | [27-LOKI-MULTI-REGION-QUERY-GUIDE.md](27-LOKI-MULTI-REGION-QUERY-GUIDE.md) | Real-time multi-region Loki query |
 | 28 | [28-BILLING-SEAT-USAGE-METERING-GUIDE.md](28-BILLING-SEAT-USAGE-METERING-GUIDE.md) | Seat metering + usage-based AI overage |
 | 29 | [29-PROVIDER-NATIVE-STREAMING-GUIDE.md](29-PROVIDER-NATIVE-STREAMING-GUIDE.md) | OpenAI/Anthropic native SSE streaming |
+| 30 | [30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md](30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md) | Compliance gzip export before retention purge |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.24-beta** adds provider-native streaming — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.25-beta** adds compliance export on purge — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

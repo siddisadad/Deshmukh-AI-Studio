@@ -24,7 +24,7 @@ Retention is anchored to **last update** (new messages refresh expiry).
 |--------|------|-------|
 | `PATCH` | `/projects/{id}` | `chatRetentionDays` (1–3650) or `clearChatRetention: true` |
 | `PATCH` | `/conversations/{id}` | `legalHold: true/false` |
-| `POST` | `/projects/{id}/conversations/retention-purge` | Returns `{ "purgedCount": N }` |
+| `POST` | `/projects/{id}/conversations/retention-purge` | Returns `{ "purgedCount", "exportedCount" }`; optional `{"complianceExport":true}` returns gzip archive ([30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md](30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md)) |
 
 Delete thread returns `LEGAL_HOLD` when hold is active.
 

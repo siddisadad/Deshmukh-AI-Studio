@@ -22,7 +22,7 @@ Read in order; each document builds on the previous.
 | 15 | [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md) | Okta, Azure AD, Google, Auth0 OIDC setup |
 | 16 | [16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md) | SAML SSO port stub (dev/CI; full SAML backlog) |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.10-beta** adds bulk thread archive export — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.11-beta** adds job queue depth metrics — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

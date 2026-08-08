@@ -24,9 +24,11 @@ export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
 ./scripts/write-grafana-federated-dashboard.sh
 ./scripts/write-grafana-billing-dashboard.sh
 ./scripts/sync-loki-ruler-regions.sh   # remote Loki rulers
+./scripts/write-alertmanager-config.sh
+./scripts/sync-alertmanager-regions.sh   # regional Alertmanager reload
 ```
 
-See [docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](../docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md).
+See [docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](../docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md) and [docs/39-ALERTMANAGER-ONCALL-GUIDE.md](../docs/39-ALERTMANAGER-ONCALL-GUIDE.md).
 
 ## Start stack
 
@@ -95,7 +97,8 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 
 **Logs (Loki ruler):** `monitoring/loki-alerts.yml` defines `ApiErrorLogsHigh`, `ApiWarnLogsHigh`, and `ApiLogsMissing` (prod JSON logs with `level` field).
 
-Both forward to Alertmanager (`monitoring/alertmanager.yml`).
+Both forward to Alertmanager (`monitoring/alertmanager.generated.yml` — generate with `./scripts/write-alertmanager-config.sh`).
 
 - Alertmanager UI: http://localhost:9093 (do not expose publicly without auth)
-- Default receiver logs alerts in the UI only; add `webhook_configs` or `email_configs` in `alertmanager.yml` for paging in production
+- Configure Slack / PagerDuty / webhook via env vars — see [docs/39-ALERTMANAGER-ONCALL-GUIDE.md](../docs/39-ALERTMANAGER-ONCALL-GUIDE.md)
+- Metric alerts include `cluster` from `PROMETHEUS_CLUSTER_NAME`; Loki alerts use `cluster: primary`

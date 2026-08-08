@@ -1,0 +1,17 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default
+  group_by: ['alertname', 'severity', 'cluster']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    # Add matchers above when on-call integrations are configured.
+
+receivers:
+  - name: default
+    # UI-only fallback — configure Slack/PagerDuty/webhook env vars for paging.
+  - name: cluster-default
+    # Regional grouping route; notifications use continue receivers above.

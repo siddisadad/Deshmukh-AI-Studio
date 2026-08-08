@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.34-beta] — 2026-08-08
+
+### Added
+
+- Alertmanager on-call integrations — `write-alertmanager-config.sh` generates Slack, PagerDuty, and webhook receivers
+- Cross-cluster routing by `severity` and `cluster` label; `PROMETHEUS_CLUSTER_NAME` external label on metric alerts
+- `sync-alertmanager-regions.sh` — verify and reload regional Alertmanagers (`ALERTMANAGER_QUERY_REGIONS`)
+- `docs/39-ALERTMANAGER-ONCALL-GUIDE.md`
+
 ## [0.2.33-beta] — 2026-08-08
 
 ### Added

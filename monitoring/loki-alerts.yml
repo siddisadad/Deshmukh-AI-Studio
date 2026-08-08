@@ -8,6 +8,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          cluster: primary
         annotations:
           summary: Elevated ERROR logs from AI Studio API
           description: API ERROR log rate exceeds 0.1 lines/s (prod JSON logs).
@@ -18,6 +19,7 @@ groups:
         for: 10m
         labels:
           severity: warning
+          cluster: primary
         annotations:
           summary: High WARN log rate on AI Studio API
           description: API WARN log rate exceeds 2 lines/s.
@@ -28,6 +30,7 @@ groups:
         for: 5m
         labels:
           severity: critical
+          cluster: primary
         annotations:
           summary: No API logs received
           description: Promtail has not shipped logs for service=api in 10 minutes.

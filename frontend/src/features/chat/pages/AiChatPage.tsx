@@ -2,6 +2,8 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
+  FormControlLabel,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -19,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
@@ -53,6 +56,7 @@ export function AiChatPage() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareResult, setShareResult] = useState<ConversationShareResult | null>(null);
   const [shareThreadId, setShareThreadId] = useState<string | null>(null);
+  const [newThreadPrivate, setNewThreadPrivate] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
   const threadsLoadedRef = useRef(false);
@@ -150,7 +154,10 @@ export function AiChatPage() {
     if (!projectId || sending) return;
     setError(null);
     try {
-      const created = await chatApi.createConversation(projectId, { assistantRole: role });
+      const created = await chatApi.createConversation(projectId, {
+        assistantRole: role,
+        visibility: newThreadPrivate ? 'PRIVATE' : 'PROJECT',
+      });
       setThreads((prev) => [created, ...prev]);
       setActiveThreadId(created.id);
       setMessages([]);
@@ -264,7 +271,10 @@ export function AiChatPage() {
     try {
       let conversationId = activeThreadId;
       if (!conversationId) {
-        const created = await chatApi.createConversation(projectId, { assistantRole: role });
+        const created = await chatApi.createConversation(projectId, {
+        assistantRole: role,
+        visibility: newThreadPrivate ? 'PRIVATE' : 'PROJECT',
+      });
         conversationId = created.id;
         setThreads((prev) => [created, ...prev]);
         setActiveThreadId(created.id);
@@ -402,6 +412,19 @@ export function AiChatPage() {
               New
             </Button>
           </Stack>
+          <FormControlLabel
+            sx={{ px: 0.5, mb: 1 }}
+            control={
+              <Checkbox
+                size="small"
+                checked={newThreadPrivate}
+                onChange={(e) => setNewThreadPrivate(e.target.checked)}
+                disabled={sending}
+                data-testid="chat-new-thread-private"
+              />
+            }
+            label={<Typography variant="caption">Private thread (only you)</Typography>}
+          />
           <TextField
             size="small"
             placeholder="Search threads"
@@ -426,13 +449,15 @@ export function AiChatPage() {
               >
                 <ListItemText
                   primary={
-                    <Typography noWrap sx={{ fontSize: 14 }}>
+                    <Typography noWrap sx={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {thread.visibility === 'PRIVATE' && <LockOutlinedIcon sx={{ fontSize: 14 }} />}
                       {thread.title || 'Untitled thread'}
                     </Typography>
                   }
                   secondary={
                     <Typography component="span" variant="caption" color="text.secondary">
                       {thread.messageCount} messages · {new Date(thread.updatedAt).toLocaleString()}
+                      {thread.visibility === 'PRIVATE' ? ' · private' : ''}
                       {thread.shareEnabled ? ' · shared' : ''}
                     </Typography>
                   }

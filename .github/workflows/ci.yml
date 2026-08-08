@@ -221,6 +221,10 @@ jobs:
           bash -n scripts/write-grafana-federated-dashboard.sh
           bash -n scripts/write-grafana-billing-dashboard.sh
           bash -n scripts/sync-loki-ruler-regions.sh
+          bash -n scripts/write-alertmanager-config.sh
+          bash -n scripts/sync-alertmanager-regions.sh
+          ./scripts/write-alertmanager-config.sh
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/alertmanager.generated.yml'))"
           LOKI_QUERY_REGIONS=ci=http://127.0.0.1:3100 ./scripts/write-grafana-federated-dashboard.sh
           python3 -c "import json; json.load(open('monitoring/grafana/dashboards/aistudio-federated.json'))"
           bash -n scripts/export-loki-logs.sh

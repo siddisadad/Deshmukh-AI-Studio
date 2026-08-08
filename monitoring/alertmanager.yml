@@ -1,14 +1,17 @@
 global:
   resolve_timeout: 5m
 
+# Reference template — run ./scripts/write-alertmanager-config.sh to generate
+# monitoring/alertmanager.generated.yml with Slack / PagerDuty / webhook receivers.
+# See docs/39-ALERTMANAGER-ONCALL-GUIDE.md
+
 route:
   receiver: default
-  group_by: ['alertname', 'severity']
+  group_by: ['alertname', 'severity', 'cluster']
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
 
 receivers:
   - name: default
-    # Alerts appear in the Alertmanager UI (http://localhost:9093). Add webhook_configs
-    # or email_configs here for paging in production.
+    # Alerts appear in the Alertmanager UI (http://localhost:9093).

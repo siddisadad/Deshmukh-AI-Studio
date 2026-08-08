@@ -44,6 +44,7 @@ public record SsoProperties(
     public record Saml(
             String metadataUrl,
             String entityId,
+            String acsUrl,
             String displayName,
             boolean stubMode
     ) {
@@ -51,7 +52,9 @@ public record SsoProperties(
             return metadataUrl != null
                     && !metadataUrl.isBlank()
                     && entityId != null
-                    && !entityId.isBlank();
+                    && !entityId.isBlank()
+                    && acsUrl != null
+                    && !acsUrl.isBlank();
         }
 
         public String resolvedDisplayName() {

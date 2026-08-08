@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Identity provider port (OIDC authorization-code flow; SAML stub for dev/CI).
- * Mock for local/CI; OIDC for production IdPs; SAML stub until full SP binding ships.
+ * Mock for local/CI; OIDC for most production IdPs; SAML stub or SP binding for SAML enterprises.
  */
 public interface SsoPort {
 

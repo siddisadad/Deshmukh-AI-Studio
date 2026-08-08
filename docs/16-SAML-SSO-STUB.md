@@ -1,8 +1,8 @@
 # SAML SSO stub (dev / CI)
 
-**Production IdPs:** use OIDC — [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md). Most enterprise IdPs (Okta, Entra ID, Google Workspace, Auth0) support OIDC alongside SAML.
+**Production IdPs:** use OIDC — [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md). For SAML enterprises, use SP binding — [20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md).
 
-**MVP scope:** full SAML SP-initiated login (HTTP-POST `SAMLResponse` binding) is **not implemented**. This document covers the **stub adapter** for local dev, CI, and wiring validation.
+**MVP scope:** this document covers the **stub adapter** for local dev, CI, and wiring validation. Set `SAML_STUB_MODE=false` for real SP-initiated SAML.
 
 ---
 
@@ -11,7 +11,7 @@
 | Setting | Behavior |
 |---|---|
 | `SSO_PROVIDER=saml` + `SAML_STUB_MODE=true` (default) | Dev/CI stub — redirect callback with mock `code` (like `SSO_PROVIDER=mock`) |
-| `SSO_PROVIDER=saml` + `SAML_STUB_MODE=false` | **Startup fails** — full SAML not shipped; use OIDC or keep stub mode |
+| `SSO_PROVIDER=saml` + `SAML_STUB_MODE=false` | Real SP-initiated SAML — see [20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md) |
 
 The stub implements `SsoPort` via `SamlSsoAdapter` so the login UI, `/auth/sso/callback`, and `SsoService` paths are exercised without an IdP.
 
@@ -27,11 +27,12 @@ SAML_STUB_MODE=true
 SAML_DISPLAY_NAME=Continue with SAML (stub)
 ```
 
-Optional (required only when `SAML_STUB_MODE=false` — will still fail until full SAML ships):
+Optional (required when `SAML_STUB_MODE=false`):
 
 ```bash
 SAML_METADATA_URL=https://idp.example.com/metadata
 SAML_ENTITY_ID=https://your-app.example.com/saml/metadata
+SAML_ACS_URL=https://your-app.example.com/api/v1/auth/sso/saml/acs
 ```
 
 Also set `CORS_ORIGINS` and `BILLING_APP_BASE_URL` to your app origin (same as OIDC).
@@ -47,16 +48,9 @@ Also set `CORS_ORIGINS` and `BILLING_APP_BASE_URL` to your app origin (same as O
 
 ---
 
-## 4. Future full SAML (backlog)
+## 4. Full SAML SP binding
 
-Planned depth (not in MVP):
-
-- SP metadata endpoint + signed `AuthnRequest`
-- HTTP-POST callback parsing `SAMLResponse`
-- Attribute mapping (`email`, `displayName`) to `SsoPort.UserInfo`
-- IdP metadata refresh from `SAML_METADATA_URL`
-
-Track in [09-DEVELOPMENT-ROADMAP.md](09-DEVELOPMENT-ROADMAP.md).
+Shipped in **v0.2.15-beta** — [20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md).
 
 ---
 

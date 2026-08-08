@@ -42,8 +42,9 @@ Read in order; each document builds on the previous.
 | 35 | [35-THREAD-EXPORT-REDACTION-GUIDE.md](35-THREAD-EXPORT-REDACTION-GUIDE.md) | Thread export redaction policies |
 | 36 | [36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md](36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md) | AI provider health probes and circuit breaking |
 | 37 | [37-BILLING-USAGE-DASHBOARDS-GUIDE.md](37-BILLING-USAGE-DASHBOARDS-GUIDE.md) | Usage-based billing Grafana dashboards |
+| 38 | [38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md](38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md) | Staging sign-off report archival in S3 |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.32-beta** adds usage-based billing dashboards — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.33-beta** adds staging sign-off S3 archival — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

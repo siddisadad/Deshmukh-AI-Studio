@@ -10,6 +10,7 @@ set -euo pipefail
 #
 # Env:
 #   STAGING_SIGNOFF_REPORT_DIR — report output directory (default ./reports/staging-signoff)
+#   STAGING_SIGNOFF_S3_URI — optional s3://bucket/prefix for off-site report archive
 #   STAGING_SIGNOFF_SKIP_DOGFOOD — skip staging-dogfood.sh (when invoked from dogfood step 7)
 #   STAGING_SIGNOFF_REQUIRE_HTTPS — fail when edge URL is not https (default 1 on prod-shaped hosts)
 #   STAGING_SIGNOFF_STREAM — run SSE chat stream probe (default 1)
@@ -329,6 +330,17 @@ echo ""
 echo "Sign-off report:"
 echo "  JSON: ${report_json}"
 echo "  Markdown: ${report_md}"
+
+if [[ -n "${STAGING_SIGNOFF_S3_URI:-}" ]]; then
+  if ! command -v aws >/dev/null; then
+    echo "STAGING_SIGNOFF_S3_URI is set but aws CLI was not found" >&2
+    exit 1
+  fi
+  s3_prefix="${STAGING_SIGNOFF_S3_URI%/}/${timestamp}"
+  aws s3 cp "$report_json" "${s3_prefix}/$(basename "$report_json")"
+  aws s3 cp "$report_md" "${s3_prefix}/$(basename "$report_md")"
+  echo "  S3: ${s3_prefix}/"
+fi
 
 if [[ "$signoff_failed" -ne 0 ]]; then
   echo "FAIL: staging sign-off checks failed for ${EDGE_URL}" >&2

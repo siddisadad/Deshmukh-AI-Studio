@@ -26,6 +26,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - MUI 7 Switch test IDs for plugins settings (TypeScript + Docker frontend build)
 - SSO/E2E compose env (`BILLING_APP_BASE_URL`, `SSO_APP_BASE_URL` on `:8088`)
+- GHCR publish includes git tag ref (`v0.1.0-beta`) alongside semver (`0.1.0-beta`)
+- `staging-ghcr-deploy.sh` loads `.env` before required-variable checks
 
 ## [0.0.1] — 2026-08-06
 

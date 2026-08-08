@@ -226,7 +226,7 @@ Images:
 - `ghcr.io/<owner>/<repo>/api:<tag>`
 - `ghcr.io/<owner>/<repo>/frontend:<tag>`
 
-Tags include branch name (`main`), semver (`v1.2.3`), and `sha-<short>`.
+Tags include branch name (`main`), git tag ref (`v0.1.0-beta`), semver (`0.1.0-beta` from `v0.1.0-beta`), and `sha-<short>`.
 
 Never store provider keys in workflow logs; use GitHub Secrets.
 
@@ -234,7 +234,7 @@ Never store provider keys in workflow logs; use GitHub Secrets.
 
 ```bash
 cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
-export IMAGE_TAG=main  # or sha-... / v0.1.0
+export IMAGE_TAG=main  # or sha-... / 0.1.0-beta / v0.1.0-beta
 docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
 docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 ./scripts/healthcheck.sh http://localhost:8088
@@ -248,7 +248,7 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 
 ```bash
 cp .env.example .env   # JWT_SECRET, DB_PASSWORD, CORS_ORIGINS (HTTPS)
-export IMAGE_TAG=main  # or sha-... / v0.1.0
+export IMAGE_TAG=main  # or sha-... / 0.1.0-beta / v0.1.0-beta
 docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```

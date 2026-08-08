@@ -311,7 +311,7 @@ Record for each staging release:
 | Field | Example |
 |---|---|
 | Date | 2026-08-08 |
-| `IMAGE_TAG` | `v0.2.35-beta` |
+| `IMAGE_TAG` | `v0.2.36-beta` |
 | Host | `https://staging.yourdomain.com` |
 | Providers | stripe / oidc / smtp / mock |
 | Automated | `staging-dogfood.sh` exit 0; optional `staging-signoff.sh` report ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md)) |

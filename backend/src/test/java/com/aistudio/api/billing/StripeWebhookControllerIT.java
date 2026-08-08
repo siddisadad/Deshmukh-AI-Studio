@@ -112,7 +112,7 @@ class StripeWebhookControllerIT {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","password":"Password123!","name":"%s"}
+                                {"email":"%s","password":"Str0ngPass!","displayName":"%s"}
                                 """.formatted(email, name)))
                 .andExpect(status().isCreated())
                 .andReturn();

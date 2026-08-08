@@ -1,8 +1,10 @@
 # Optional Prometheus + Grafana overlay (monitoring/README.md).
 # Requires METRICS_SCRAPE_TOKEN and monitoring/.prometheus-token (see scripts/write-prometheus-token.sh).
+# Optional: ./scripts/write-grafana-loki-regions.sh when LOKI_QUERY_REGIONS is set.
 #
 #   export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
 #   ./scripts/write-prometheus-token.sh
+#   ./scripts/write-grafana-loki-regions.sh
 #   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 services:

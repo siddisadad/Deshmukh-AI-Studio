@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.22-beta] — 2026-08-08
+
+### Added
+
+- `scripts/query-loki-multi-region.sh` — merge LogQL `query_range` results across regional Loki endpoints
+- `scripts/write-grafana-loki-regions.sh` — provision extra Grafana Loki datasources from `LOKI_QUERY_REGIONS`
+- Staging provider probes check each regional Loki `/ready` when configured
+- `docs/27-LOKI-MULTI-REGION-QUERY-GUIDE.md`
+
 ## [0.2.21-beta] — 2026-08-08
 
 ### Added

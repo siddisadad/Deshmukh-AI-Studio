@@ -23,7 +23,7 @@ Read in order; each document builds on the previous.
 | 16 | [16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md) | SAML SSO port stub (dev/CI; full SAML backlog) |
 | 17 | [17-LOG-ARCHIVE-GUIDE.md](17-LOG-ARCHIVE-GUIDE.md) | Loki export cron + S3 object-store backend |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.12-beta** adds Loki off-site log archive — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.13-beta** adds worker autoscaling playbooks — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

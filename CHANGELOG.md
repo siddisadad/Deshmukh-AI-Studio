@@ -6,9 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.4-beta] — 2026-08-08
+
 ### Added
 
 - Read-only conversation share links (`POST/DELETE /conversations/{id}/share`, public `GET /shared/conversations/{token}`)
+- Public SPA route `/shared/chat/:token` for read-only shared threads
+- `CONVERSATION_SHARE_TTL_SECONDS` (default 7 days) for share link expiry
+
+### Fixed
+
+- E2E: share button `data-testid` no longer matches `chat-thread-*` list locator
 
 ## [0.2.3-beta] — 2026-08-08
 

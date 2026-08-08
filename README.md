@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.2-beta
+export IMAGE_TAG=v0.2.3-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -131,8 +131,9 @@ uvicorn main:app --reload --port 8000
 - [x] Grafana/Prometheus monitoring overlay + staging dogfood script
 - [x] Thread search in chat; Alertmanager + Loki log shipping
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
+- [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.2-beta` adds dedicated job worker; `v0.2.1-beta` added thread search and full observability stack.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.3-beta` adds workspace health gates and Loki log alerts; `v0.2.2-beta` added dedicated job worker.
 
 ## Docs
 

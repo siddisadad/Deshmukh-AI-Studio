@@ -20,7 +20,7 @@ Read in order; each document builds on the previous.
 | 13 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Docker/Nginx production deploy |
 | 14 | [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) | Staging deploy, Stripe/OIDC dogfood, sign-off |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.5-beta** adds horizontal job worker scaling — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.6-beta** adds Loki log retention — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -118,7 +118,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
 | Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
-| Observability | JSON logs, health, smoke, Prometheus, Grafana, Alertmanager, Loki, log alerts, 30d log retention | Off-site log archive / S3 backend |
+| Observability | JSON logs, Prometheus, Grafana, Loki alerts, retention, queue metrics | Long-term Glacier lifecycle / cross-region |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)) | Full SAML SP binding |
 | Multi-thread conversations | Per-assistant threads + search + share + single/bulk export | Scheduled off-site sync |

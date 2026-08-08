@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Loki S3 object-store config (`monitoring/loki-config-s3.yml`) + `docker-compose.monitoring-s3.yml` overlay
+- `scripts/export-loki-logs.sh` — gzipped NDJSON export with optional S3 upload (`LOKI_ARCHIVE_S3_URI`)
+- `docs/17-LOG-ARCHIVE-GUIDE.md` — cron archive and S3 backend playbook
+
 ## [0.2.11-beta] — 2026-08-08
 
 ### Added

@@ -67,6 +67,14 @@ if [[ "$mail_provider" == "smtp" ]]; then
   require MAIL_PASSWORD
 fi
 
+loki_store="${LOKI_OBJECT_STORE:-filesystem}"
+if [[ "$loki_store" == "s3" ]]; then
+  require LOKI_S3_BUCKET
+  require LOKI_S3_REGION
+  require LOKI_S3_ACCESS_KEY_ID
+  require LOKI_S3_SECRET_ACCESS_KEY
+fi
+
 if [[ ${#missing[@]} -gt 0 ]]; then
   echo "Missing required environment variables:" >&2
   for v in "${missing[@]}"; do

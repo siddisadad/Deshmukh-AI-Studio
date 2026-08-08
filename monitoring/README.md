@@ -56,6 +56,12 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 Deletion is asynchronous (after compaction + `retention_delete_delay`). Align `max_query_lookback` with retention so Grafana Explore cannot query beyond retained data.
 
+### Off-site archive / S3 backend
+
+- **Export (cron):** `scripts/export-loki-logs.sh` → gzipped NDJSON; optional `LOKI_ARCHIVE_S3_URI` upload
+- **S3 object store:** `monitoring/loki-config-s3.yml` + `docker-compose.monitoring-s3.yml` overlay
+- Playbook: [docs/17-LOG-ARCHIVE-GUIDE.md](../docs/17-LOG-ARCHIVE-GUIDE.md)
+
 Staging-shaped stack:
 
 ```bash

@@ -315,8 +315,8 @@ class AssistantControllerIT {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString()).get("id").asText());
 
-        UUID thread1 = createThread(token, projectId, "DEVELOPER", "First thread");
-        UUID thread2 = createThread(token, projectId, "DEVELOPER", "Second thread");
+        UUID thread1 = createThread(token, projectId, "DEVELOPER", "API design");
+        UUID thread2 = createThread(token, projectId, "DEVELOPER", "Password reset");
 
         mockMvc.perform(post("/api/v1/conversations/" + thread1 + "/messages")
                         .header("Authorization", "Bearer " + token)
@@ -350,8 +350,8 @@ class AssistantControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("# Project archive: Bulk Export Proj")))
-                .andExpect(content().string(containsString("# First thread")))
-                .andExpect(content().string(containsString("# Second thread")));
+                .andExpect(content().string(containsString("# API design")))
+                .andExpect(content().string(containsString("# Password reset")));
     }
 
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {

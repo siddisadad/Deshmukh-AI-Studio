@@ -8,6 +8,7 @@ import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SendMessageRequest;
+import com.aistudio.api.ai.dto.RetentionPurgeResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.ai.AssistantRegistry;
 import com.aistudio.application.ai.ConversationService;
@@ -97,6 +98,15 @@ public class AssistantController {
                         "attachment; filename=\"" + exported.filename() + "\"")
                 .contentType(MediaType.parseMediaType(exported.contentType()))
                 .body(exported.body());
+    }
+
+    @PostMapping("/api/v1/projects/{projectId}/conversations/retention-purge")
+    @Operation(summary = "Delete expired conversation threads (skips legal hold)")
+    public RetentionPurgeResponse purgeExpiredConversations(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return conversationService.purgeExpiredConversations(projectId, user.getId());
     }
 
     @PostMapping("/api/v1/projects/{projectId}/conversations")

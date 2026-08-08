@@ -2,6 +2,7 @@ package com.aistudio.infrastructure.persistence.repository;
 
 import com.aistudio.domain.ai.AssistantRole;
 import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,4 +60,13 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
     );
 
     Optional<ConversationEntity> findByShareTokenHash(String shareTokenHash);
+
+    @Query("""
+            SELECT c FROM ConversationEntity c
+            WHERE c.projectId = :projectId
+            AND c.legalHold = false
+            AND c.retentionExpiresAt IS NOT NULL
+            AND c.retentionExpiresAt < :now
+            """)
+    List<ConversationEntity> findExpiredForRetention(@Param("projectId") UUID projectId, @Param("now") Instant now);
 }

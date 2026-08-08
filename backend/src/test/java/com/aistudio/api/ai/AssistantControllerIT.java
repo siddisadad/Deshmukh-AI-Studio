@@ -2,6 +2,7 @@ package com.aistudio.api.ai;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -20,6 +21,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import com.aistudio.support.IntegrationTestProperties;
+import com.aistudio.support.SharedTestPostgres;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -354,6 +356,80 @@ class AssistantControllerIT {
                 .andExpect(content().string(containsString("# Project archive: Bulk Export Proj")))
                 .andExpect(content().string(containsString("# API design")))
                 .andExpect(content().string(containsString("# Password reset")));
+    }
+
+    @Test
+    void legalHoldBlocksDeleteAndRetentionPurgeRemovesExpired() throws Exception {
+        JsonNode auth = register("retention" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Retention Proj","projectKey":"RT","description":"retention"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(patch("/api/v1/projects/" + projectId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"chatRetentionDays":1}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatRetentionDays").value(1));
+
+        UUID heldThread = createThread(token, projectId, "DEVELOPER", "Held thread");
+        UUID expiredThread = createThread(token, projectId, "DEVELOPER", "Expired thread");
+
+        mockMvc.perform(patch("/api/v1/conversations/" + heldThread)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"legalHold":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.legalHold").value(true));
+
+        mockMvc.perform(delete("/api/v1/conversations/" + heldThread)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("LEGAL_HOLD"));
+
+        mockMvc.perform(post("/api/v1/conversations/" + expiredThread + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"age this thread"}
+                                """))
+                .andExpect(status().isOk());
+
+        try (var connection = java.sql.DriverManager.getConnection(
+                SharedTestPostgres.jdbcUrl(),
+                SharedTestPostgres.username(),
+                SharedTestPostgres.password())) {
+            try (var ps = connection.prepareStatement(
+                    "UPDATE conversations SET updated_at = NOW() - INTERVAL '2 days', "
+                            + "retention_expires_at = NOW() - INTERVAL '1 day' WHERE id = ?")) {
+                ps.setObject(1, expiredThread);
+                ps.executeUpdate();
+            }
+        }
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations/retention-purge")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.purgedCount").value(1));
+
+        mockMvc.perform(get("/api/v1/conversations/" + expiredThread)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/conversations/" + heldThread)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
     }
 
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {

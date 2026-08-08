@@ -23,6 +23,7 @@ import {
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
@@ -173,8 +174,24 @@ export function AiChatPage() {
     }
   }
 
+  async function onToggleLegalHold(threadId: string, nextHold: boolean) {
+    if (sending) return;
+    setError(null);
+    try {
+      const updated = await chatApi.updateConversation(threadId, { legalHold: nextHold });
+      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...updated } : t)));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update legal hold');
+    }
+  }
+
   async function onDeleteThread(threadId: string) {
     if (sending) return;
+    const thread = threads.find((t) => t.id === threadId);
+    if (thread?.legalHold) {
+      setError('This thread is on legal hold and cannot be deleted');
+      return;
+    }
     setError(null);
     try {
       await chatApi.deleteConversation(threadId);
@@ -500,6 +517,10 @@ export function AiChatPage() {
                       {thread.messageCount} messages · {new Date(thread.updatedAt).toLocaleString()}
                       {thread.visibility === 'PRIVATE' ? ' · private' : ''}
                       {thread.shareEnabled ? ' · shared' : ''}
+                      {thread.legalHold ? ' · legal hold' : ''}
+                      {thread.retentionExpiresAt
+                        ? ` · expires ${new Date(thread.retentionExpiresAt).toLocaleDateString()}`
+                        : ''}
                     </Typography>
                   }
                 />
@@ -529,12 +550,25 @@ export function AiChatPage() {
                 </IconButton>
                 <IconButton
                   size="small"
+                  aria-label={thread.legalHold ? 'Release legal hold' : 'Place legal hold'}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    void onToggleLegalHold(thread.id, !thread.legalHold);
+                  }}
+                  disabled={sending}
+                  color={thread.legalHold ? 'warning' : 'default'}
+                  data-testid={`chat-legal-hold-${thread.id}`}
+                >
+                  <GavelOutlinedIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
                   aria-label="Delete thread"
                   onClick={(ev) => {
                     ev.stopPropagation();
                     void onDeleteThread(thread.id);
                   }}
-                  disabled={sending}
+                  disabled={sending || thread.legalHold}
                 >
                   ×
                 </IconButton>

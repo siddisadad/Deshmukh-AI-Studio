@@ -42,6 +42,9 @@ public class ProjectEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "chat_retention_days")
+    private Integer chatRetentionDays;
+
     @Column(name = "created_by")
     private UUID createdBy;
 

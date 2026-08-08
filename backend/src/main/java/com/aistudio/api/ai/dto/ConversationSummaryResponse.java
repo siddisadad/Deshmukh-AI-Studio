@@ -13,6 +13,8 @@ public record ConversationSummaryResponse(
         int messageCount,
         boolean shareEnabled,
         Instant shareExpiresAt,
-        String visibility
+        String visibility,
+        boolean legalHold,
+        Instant retentionExpiresAt
 ) {
 }

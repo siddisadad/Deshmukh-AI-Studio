@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.20-beta] — 2026-08-08
+
+### Added
+
+- Project `chatRetentionDays` policy with per-thread `retentionExpiresAt` computation
+- Conversation `legalHold` — blocks delete and automated purge
+- `POST /projects/{id}/conversations/retention-purge` + `scripts/scheduled-chat-retention.sh`
+- Chat UI legal-hold toggle; project settings retention + manual purge
+- `docs/25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md`
+
 ## [0.2.19-beta] — 2026-08-08
 
 ### Added

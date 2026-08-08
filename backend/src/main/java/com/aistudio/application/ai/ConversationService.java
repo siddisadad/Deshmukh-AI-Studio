@@ -7,6 +7,7 @@ import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SharedConversationResponse;
+import com.aistudio.api.ai.dto.RetentionPurgeResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -149,6 +151,9 @@ public class ConversationService {
                 : request.title().trim();
         created.setTitle(title);
         created.setVisibility(parseVisibility(request.visibility()));
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        applyRetentionFromProject(created, project);
         conversationRepository.save(created);
         return toSummary(created);
     }
@@ -182,13 +187,44 @@ public class ConversationService {
         if (request.visibility() != null && !request.visibility().isBlank()) {
             conversation.setVisibility(parseVisibility(request.visibility()));
         }
+        if (request.legalHold() != null) {
+            conversation.setLegalHold(request.legalHold());
+        }
+        ProjectEntity project = projectRepository.findById(conversation.getProjectId())
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        applyRetentionFromProject(conversation, project);
         conversationRepository.save(conversation);
         return toSummary(conversation);
     }
 
     @Transactional
+    public RetentionPurgeResponse purgeExpiredConversations(UUID projectId, UUID userId) {
+        authorizationService.requireProjectEdit(projectId, userId);
+        Instant now = Instant.now();
+        List<ConversationEntity> expired = conversationRepository.findExpiredForRetention(projectId, now);
+        for (ConversationEntity conversation : expired) {
+            conversationRepository.delete(conversation);
+        }
+        return new RetentionPurgeResponse(expired.size());
+    }
+
+    @Transactional
+    public void reapplyProjectRetentionPolicy(UUID projectId) {
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        List<ConversationEntity> conversations = conversationRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        for (ConversationEntity conversation : conversations) {
+            applyRetentionFromProject(conversation, project);
+            conversationRepository.save(conversation);
+        }
+    }
+
+    @Transactional
     public void deleteConversation(UUID conversationId, UUID userId) {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        if (conversation.isLegalHold()) {
+            throw new DomainException("LEGAL_HOLD", "Conversation is on legal hold and cannot be deleted");
+        }
         conversationRepository.delete(conversation);
     }
 
@@ -449,6 +485,9 @@ public class ConversationService {
         messageRepository.save(assistantMessage);
 
         conversation.setUpdatedAt(Instant.now());
+        ProjectEntity project = projectRepository.findById(conversation.getProjectId())
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        applyRetentionFromProject(conversation, project);
         conversationRepository.save(conversation);
         return assistantMessage;
     }
@@ -518,8 +557,23 @@ public class ConversationService {
                 (int) messageRepository.countByConversationId(entity.getId()),
                 entity.isShareEnabled() && isShareActive(entity),
                 entity.getShareExpiresAt(),
-                entity.getVisibility().name()
+                entity.getVisibility().name(),
+                entity.isLegalHold(),
+                entity.getRetentionExpiresAt()
         );
+    }
+
+    private void applyRetentionFromProject(ConversationEntity conversation, ProjectEntity project) {
+        Integer days = project.getChatRetentionDays();
+        if (days == null || days <= 0) {
+            conversation.setRetentionExpiresAt(null);
+            return;
+        }
+        Instant anchor = conversation.getUpdatedAt() != null ? conversation.getUpdatedAt() : conversation.getCreatedAt();
+        if (anchor == null) {
+            anchor = Instant.now();
+        }
+        conversation.setRetentionExpiresAt(anchor.plus(days, ChronoUnit.DAYS));
     }
 
     private ConversationShareResponse toShareResponse(ConversationEntity entity, String rawToken) {

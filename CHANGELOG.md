@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 - `scripts/validate-workspace.sh` — fast lint/build/unit-test gate (no Docker)
 - CI: frontend `npm run lint` + workspace validation in `environment-config` job
+- Loki ruler log-based alerts (`ApiErrorLogsHigh`, `ApiWarnLogsHigh`, `ApiLogsMissing`) → Alertmanager
 
 ### Changed
 

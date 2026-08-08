@@ -6,6 +6,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/validate-workspace.sh` — fast lint/build/unit-test gate (no Docker)
+- CI: frontend `npm run lint` + workspace validation in `environment-config` job
+
+### Changed
+
+- Cloud Agent `install.sh` attempts Docker Compose install when missing; clearer message when daemon is unavailable
+
+### Fixed
+
+- Staging dogfood sign-off example `IMAGE_TAG` updated to `v0.2.2-beta`
+- Deployment guide `IMAGE_TAG` examples aligned with current releases
+
 ## [0.2.2-beta] — 2026-08-08
 
 ### Added

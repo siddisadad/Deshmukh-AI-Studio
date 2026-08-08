@@ -59,6 +59,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Validate production-shaped compose locally (builds prod profile, healthcheck, teardown)
 ./scripts/deploy-dry-run.sh
 
+# Fast workspace gate (lint, build, unit tests — no Docker)
+./scripts/validate-workspace.sh
+
 # Validate staging-shaped compose locally (prod API profile, separate API/UI ports, no GHCR)
 ./scripts/staging-dry-run.sh
 

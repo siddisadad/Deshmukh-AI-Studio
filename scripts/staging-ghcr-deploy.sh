@@ -21,6 +21,8 @@ if [[ -f .env ]]; then
   set +a
 fi
 
+"${ROOT_DIR}/scripts/validate-staging-env.sh"
+
 if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
   echo "Docker Compose v2 is required" >&2
   exit 1

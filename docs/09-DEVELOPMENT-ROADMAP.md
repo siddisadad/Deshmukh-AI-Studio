@@ -118,8 +118,8 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
 | Streaming AI responses | SSE chat | Token UX polish, reconnect |
-| Billing / plans | Mock Stripe + entitlements UI | **Stripe checkout + webhook** (env-gated) |
-| SSO (OIDC/SAML) | Mock provider + callback | **Real OIDC** (env-gated) + IdP-specific guides |
+| Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
+| SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides, SAML |
 | Multi-thread conversations | Per-assistant threads | Thread search, sharing |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue | Dedicated worker service |

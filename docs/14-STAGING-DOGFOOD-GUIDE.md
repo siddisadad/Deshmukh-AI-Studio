@@ -51,7 +51,7 @@ Validate before deploy:
 
 ### 2.3 Deploy from GHCR
 
-Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (tags: `main`, `v0.2.26-beta`, `sha-…`).
+Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (tags: `main`, `v0.2.27-beta`, `sha-…`).
 
 ```bash
 docker login ghcr.io   # if packages are private

@@ -35,6 +35,15 @@ public class PlanEntity {
     @Column(name = "max_ai_actions_per_day", nullable = false)
     private int maxAiActionsPerDay;
 
+    @Column(name = "max_seats", nullable = false)
+    private int maxSeats = 3;
+
+    @Column(name = "price_cents_per_seat_monthly", nullable = false)
+    private int priceCentsPerSeatMonthly = 0;
+
+    @Column(name = "price_cents_per_ai_action_overage", nullable = false)
+    private int priceCentsPerAiActionOverage = 0;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
     private String features = "[]";

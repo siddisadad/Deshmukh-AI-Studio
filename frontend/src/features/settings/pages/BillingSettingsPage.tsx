@@ -131,7 +131,7 @@ export function BillingSettingsPage() {
       <Box>
         <Typography variant="h4">Billing & plans</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Manage your organization plan, project limits, and daily AI usage.
+          Manage plan limits, seat metering, and usage-based AI overage.
         </Typography>
       </Box>
 
@@ -166,7 +166,26 @@ export function BillingSettingsPage() {
 
           <Box>
             <Typography variant="body2" sx={{ mb: 0.5 }}>
+              Members: {overview.activeMemberCount} / {overview.maxSeats}
+            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={usagePercent(overview.activeMemberCount, overview.maxSeats)}
+            />
+            {overview.plan.priceCentsPerSeatMonthly > 0 && overview.activeMemberCount > 1 && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Est. seat cost: ${(overview.estimatedSeatCentsMonthly / 100).toFixed(2)}/mo (
+                {overview.plan.priceCentsPerSeatMonthly / 100} per extra seat)
+              </Typography>
+            )}
+          </Box>
+
+          <Box>
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
               AI actions today: {overview.aiActionsUsedToday} / {overview.maxAiActionsPerDay}
+              {overview.aiActionsOverageToday > 0
+                ? ` (+${overview.aiActionsOverageToday} overage)`
+                : ''}
             </Typography>
             <LinearProgress
               variant="determinate"
@@ -175,6 +194,13 @@ export function BillingSettingsPage() {
               }
               value={usagePercent(overview.aiActionsUsedToday, overview.maxAiActionsPerDay)}
             />
+            {overview.plan.priceCentsPerAiActionOverage > 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Period overage: {overview.periodOverageActions} actions · est. $
+                {(overview.estimatedOverageCentsThisPeriod / 100).toFixed(2)} (
+                {overview.plan.priceCentsPerAiActionOverage}¢/action)
+              </Typography>
+            )}
           </Box>
 
           {overview.billingProvider === 'stripe' && (
@@ -197,7 +223,10 @@ export function BillingSettingsPage() {
             {usageQuery.data.slice(-14).map((day) => (
               <Box key={day.date} sx={{ display: 'contents' }}>
                 <Typography variant="body2" color="text.secondary">{day.date}</Typography>
-                <Typography variant="body2" sx={{ textAlign: 'right' }}>{day.actionCount}</Typography>
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                  {day.actionCount}
+                  {day.overageCount > 0 ? ` (+${day.overageCount} over)` : ''}
+                </Typography>
               </Box>
             ))}
           </Box>
@@ -251,7 +280,13 @@ export function BillingSettingsPage() {
                     {plan.name} · {formatPrice(plan.priceCentsMonthly)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {plan.maxProjects} projects · {plan.maxAiActionsPerDay} AI actions/day
+                    {plan.maxProjects} projects · {plan.maxSeats} seats · {plan.maxAiActionsPerDay} AI/day
+                    {plan.priceCentsPerSeatMonthly > 0
+                      ? ` · $${(plan.priceCentsPerSeatMonthly / 100).toFixed(0)}/extra seat`
+                      : ''}
+                    {plan.priceCentsPerAiActionOverage > 0
+                      ? ` · ${plan.priceCentsPerAiActionOverage}¢/overage action`
+                      : ''}
                     {plan.features.length > 0 ? ` · ${plan.features.join(', ')}` : ''}
                   </Typography>
                 </Box>

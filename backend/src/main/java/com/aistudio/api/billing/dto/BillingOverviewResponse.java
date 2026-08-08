@@ -11,7 +11,13 @@ public record BillingOverviewResponse(
         Instant currentPeriodEnd,
         long activeProjectCount,
         int maxProjects,
+        long activeMemberCount,
+        int maxSeats,
         int aiActionsUsedToday,
-        int maxAiActionsPerDay
+        int aiActionsOverageToday,
+        int maxAiActionsPerDay,
+        int periodOverageActions,
+        int estimatedSeatCentsMonthly,
+        int estimatedOverageCentsThisPeriod
 ) {
 }

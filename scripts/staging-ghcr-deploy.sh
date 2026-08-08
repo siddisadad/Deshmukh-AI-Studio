@@ -44,8 +44,10 @@ COMPOSE=(
 echo "Pulling GHCR images (tag=${IMAGE_TAG})…"
 "${COMPOSE[@]}" pull
 
-echo "Starting staging stack (UI :${STAGING_UI_PORT}, API :${STAGING_API_PORT})…"
-"${COMPOSE[@]}" up -d
+export WORKER_REPLICAS="${WORKER_REPLICAS:-1}"
+
+echo "Starting staging stack (UI :${STAGING_UI_PORT}, API :${STAGING_API_PORT}, workers :${WORKER_REPLICAS})…"
+"${COMPOSE[@]}" up -d --scale "worker=${WORKER_REPLICAS}"
 
 echo "Waiting for health…"
 for i in $(seq 1 60); do
@@ -66,17 +68,23 @@ done
 echo "Running post-deploy smoke…"
 "${ROOT_DIR}/scripts/post-deploy-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
 
-echo "Checking worker health…"
+echo "Checking worker health (${WORKER_REPLICAS} replica(s))…"
 for i in $(seq 1 30); do
-  if "${COMPOSE[@]}" exec -T worker curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+  worker_ok=0
+  for cid in $("${COMPOSE[@]}" ps -q worker); do
+    if docker exec "$cid" curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+      worker_ok=$((worker_ok + 1))
+    fi
+  done
+  if [ "$worker_ok" -ge "$WORKER_REPLICAS" ]; then
     break
   fi
   if [ "$i" -eq 30 ]; then
-    echo "Worker did not become healthy" >&2
+    echo "Expected ${WORKER_REPLICAS} healthy worker(s), got ${worker_ok}" >&2
     "${COMPOSE[@]}" logs --no-color worker || true
     exit 1
   fi
   sleep 2
 done
 
-echo "Staging GHCR deploy healthy (IMAGE_TAG=${IMAGE_TAG}, dedicated job worker)."
+echo "Staging GHCR deploy healthy (IMAGE_TAG=${IMAGE_TAG}, workers=${WORKER_REPLICAS})."

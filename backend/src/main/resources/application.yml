@@ -79,6 +79,11 @@ aistudio:
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}
+    worker-id: ${AISTUDIO_JOBS_WORKER_ID:}
+    batch-size: ${JOB_BATCH_SIZE:5}
+    stale-lock-seconds: ${JOB_STALE_LOCK_SECONDS:900}
+    stale-reclaim-interval-ms: ${JOB_STALE_RECLAIM_INTERVAL_MS:60000}
+    max-attempts: ${JOB_MAX_ATTEMPTS:3}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

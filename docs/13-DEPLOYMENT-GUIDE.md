@@ -222,6 +222,16 @@ Staging GHCR deploy includes the worker automatically (`scripts/staging-ghcr-dep
 
 Worker uses the same API image, no public port. Health: `docker compose exec worker curl -fsS http://127.0.0.1:8080/actuator/health`.
 
+**Horizontal scaling:** multiple workers use Postgres `FOR UPDATE SKIP LOCKED` so each job is claimed by one replica. Scale with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  -f docker-compose.worker.yml -f docker-compose.worker-prod.yml \
+  up -d --scale worker=3
+```
+
+Or `WORKER_REPLICAS=3 ./scripts/staging-ghcr-deploy.sh`. Set `AISTUDIO_JOBS_WORKER_ID` per replica when using fixed hostnames (optional; defaults to random `worker-…` id). Stale `RUNNING` locks are reclaimed after `JOB_STALE_LOCK_SECONDS` (default 900).
+
 Local dev (`docker compose up`) keeps in-process polling enabled on the API for simplicity.
 
 ### Zero-downtime (MVP lite)

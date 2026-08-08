@@ -28,6 +28,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod,worker
       AISTUDIO_JOBS_WORKER_ENABLED: "true"
       JOB_POLL_INTERVAL_MS: ${JOB_POLL_INTERVAL_MS:-2000}
+      AISTUDIO_JOBS_WORKER_ID: ${AISTUDIO_JOBS_WORKER_ID:-}
     depends_on:
       postgres:
         condition: service_healthy

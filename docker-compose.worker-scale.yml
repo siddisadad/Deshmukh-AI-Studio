@@ -1,0 +1,13 @@
+# Optional overlay to run multiple job worker replicas (horizontal scaling).
+# Requires Postgres SKIP LOCKED claiming (BackgroundJobClaimer).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#     -f docker-compose.worker.yml -f docker-compose.worker-prod.yml \
+#     up -d --scale worker=3
+#
+# Or set WORKER_REPLICAS in scripts/staging-ghcr-deploy.sh
+
+services:
+  worker:
+    deploy:
+      replicas: 1

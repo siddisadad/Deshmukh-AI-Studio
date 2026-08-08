@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Horizontal job worker scaling: `FOR UPDATE SKIP LOCKED` claiming, `locked_by` / `locked_at`, stale lock reclaim
+- `docker compose up --scale worker=N` and `WORKER_REPLICAS` for staging GHCR deploy
+
 ## [0.2.4-beta] — 2026-08-08
 
 ### Added

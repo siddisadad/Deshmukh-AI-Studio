@@ -167,7 +167,14 @@ check_security_headers "security-headers-health" "${EDGE_URL}/actuator/health"
 echo "==> Public actuator leak"
 prom_status="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "${EDGE_URL}/actuator/prometheus")"
 if [[ "$prom_status" == "200" ]]; then
-  record_check "actuator-prometheus-edge" "fail" "public /actuator/prometheus returned 200"
+  prom_sample="$(curl -sS --max-time 15 "${EDGE_URL}/actuator/prometheus" | head -c 120)"
+  if printf '%s' "${prom_sample}" | grep -qiE '<html|<!doctype'; then
+    record_check "actuator-prometheus-edge" "pass" "SPA fallback only (not real metrics)"
+  elif printf '%s' "${prom_sample}" | grep -q 'http_server_requests'; then
+    record_check "actuator-prometheus-edge" "fail" "public /actuator/prometheus exposes metrics"
+  else
+    record_check "actuator-prometheus-edge" "fail" "unexpected 200 body on /actuator/prometheus"
+  fi
 else
   record_check "actuator-prometheus-edge" "pass" "status ${prom_status}"
 fi
@@ -242,12 +249,14 @@ if [[ "$stream_probe" == "1" ]]; then
     -H 'Content-Type: application/json' \
     -d '{"assistantRole":"DEVELOPER","title":"Signoff stream"}')"
   thread_id="$(json_get "${thread_json}" "['id']")"
-  stream_body="$(curl -fsS --max-time 120 -N \
+  set +e
+  stream_body="$(curl -sS --max-time 120 -N \
     -X POST "${API_BASE}/conversations/${thread_id}/messages/stream" \
     -H "Authorization: Bearer ${probe_token}" \
     -H 'Content-Type: application/json' \
     -H 'Accept: text/event-stream' \
-    -d '{"content":"Sign-off stream probe: reply with one short greeting"}')" || stream_body=""
+    -d '{"content":"Sign-off stream probe: reply with one short greeting"}' 2>/dev/null)"
+  set -e
   if [[ -n "$stream_body" ]] \
     && printf '%s' "$stream_body" | grep -q 'event:delta' \
     && printf '%s' "$stream_body" | grep -q 'event:done'; then

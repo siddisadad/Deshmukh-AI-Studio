@@ -47,9 +47,19 @@ if [ -f "$ROOT/backend/pom.xml" ]; then
   (cd "$ROOT/backend" && mvn -B -q dependency:go-offline -DskipTests)
 fi
 
-if [ -f "$ROOT/docker-compose.yml" ] && command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-  echo "Docker Compose available — start.sh can boot Postgres (pgvector) for local API dev"
-  if docker info >/dev/null 2>&1; then
-  (cd "$ROOT" && docker compose pull postgres 2>/dev/null || true)
+if [ -f "$ROOT/docker-compose.yml" ]; then
+  if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2 || true
+    fi
+  fi
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    echo "Docker Compose available — start.sh can boot Postgres (pgvector) for local API dev"
+    if docker info >/dev/null 2>&1; then
+      (cd "$ROOT" && docker compose pull postgres 2>/dev/null || true)
+    else
+      echo "Docker daemon not running — Postgres via compose unavailable until Docker starts"
+    fi
   fi
 fi

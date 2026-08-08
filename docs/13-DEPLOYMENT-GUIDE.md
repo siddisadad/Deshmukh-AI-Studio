@@ -249,7 +249,7 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 ```bash
 cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=main  # or sha-... / 0.1.0-beta / v0.1.1-beta
+export IMAGE_TAG=main  # or sha-... / 0.1.2-beta / v0.1.2-beta
 docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```

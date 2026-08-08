@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.26-beta] — 2026-08-08
+
+### Added
+
+- `scripts/staging-signoff.sh` — full live-host sign-off (dogfood gates + HTTPS, security headers, billing/SSO probes, SSE stream smoke)
+- JSON/Markdown sign-off reports (`STAGING_SIGNOFF_REPORT_DIR`)
+- `staging-dogfood.sh` step 7: optional `STAGING_SIGNOFF=1` full automation; integrated into `staging-dry-run.sh`
+- `docs/31-STAGING-LIVE-SIGNOFF-GUIDE.md`
+
 ## [0.2.25-beta] — 2026-08-08
 
 ### Added

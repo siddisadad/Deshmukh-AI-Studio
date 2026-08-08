@@ -23,9 +23,18 @@ fi
 echo "==> Prometheus metrics (must not be public on edge)"
 status="$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "${BASE_URL%/}/actuator/prometheus")"
 if [[ "$status" == "200" ]]; then
-  echo "FAIL: /actuator/prometheus is reachable without auth on the edge (expected 401/403/404)" >&2
-  exit 1
+  prom_sample="$(curl -sS --max-time 10 "${BASE_URL%/}/actuator/prometheus" | head -c 120)"
+  if printf '%s' "${prom_sample}" | grep -qiE '<html|<!doctype'; then
+    echo "Prometheus edge status ${status} with SPA fallback (OK — not real metrics)"
+  elif printf '%s' "${prom_sample}" | grep -q 'http_server_requests'; then
+    echo "FAIL: /actuator/prometheus exposes metrics without auth on the edge" >&2
+    exit 1
+  else
+    echo "FAIL: /actuator/prometheus returned 200 with unexpected body on the edge" >&2
+    exit 1
+  fi
+else
+  echo "Prometheus edge status ${status} (OK — scrape api:8080 internally with auth)"
 fi
-echo "Prometheus edge status ${status} (OK — scrape api:8080 internally with auth)"
 
 echo "OK: post-deploy smoke passed for ${BASE_URL}"

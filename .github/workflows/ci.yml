@@ -221,6 +221,7 @@ jobs:
           bash -n scripts/write-grafana-loki-regions.sh
           bash -n scripts/worker-scale-hint.sh
           bash -n scripts/staging-dogfood.sh
+          bash -n scripts/staging-signoff.sh
           bash -n scripts/staging-provider-probes.sh
           bash -n scripts/scheduled-chat-retention.sh
           bash -n scripts/write-prometheus-token.sh

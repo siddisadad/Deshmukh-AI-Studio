@@ -28,13 +28,13 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
   sso_provider="${SSO_PROVIDER:-mock}"
 fi
 
-echo "==> 1/6 validate-staging-env.sh"
+echo "==> 1/7 validate-staging-env.sh"
 "${ROOT_DIR}/scripts/validate-staging-env.sh"
 
-echo "==> 2/6 healthcheck (edge)"
+echo "==> 2/7 healthcheck (edge)"
 "${ROOT_DIR}/scripts/healthcheck.sh" "${EDGE_URL}"
 
-echo "==> 3/6 post-deploy-smoke (edge)"
+echo "==> 3/7 post-deploy-smoke (edge)"
 "${ROOT_DIR}/scripts/post-deploy-smoke.sh" "${EDGE_URL}"
 
 echo "==> 4/7 api-smoke (authenticated journey)"
@@ -63,26 +63,41 @@ else
   echo "==> 6/7 skipped — set METRICS_SCRAPE_TOKEN to verify internal Prometheus scrape"
 fi
 
-echo "==> 7/7 manual dogfood (operator)"
-echo "  - Register or login; create org project; requirements + tasks + documents"
-echo "  - AI chat: multi-thread + streaming (retry reconnect if mid-stream drop)"
-echo "  - RAG: upload/index document and search project context"
-if [[ "$billing_provider" == "stripe" ]]; then
-  echo "  - Stripe: checkout (test card), portal, webhook delivery to /api/v1/billing/stripe/webhook"
+echo "==> 7/7 live-host sign-off"
+if [[ "${STAGING_DOGFOOD_SKIP_MANUAL:-}" == "1" ]]; then
+  echo "Skipped manual checklist (STAGING_DOGFOOD_SKIP_MANUAL=1)"
+elif [[ "${STAGING_SIGNOFF:-}" == "1" ]] || [[ "${STAGING_DOGFOOD_FULL_SIGNOFF:-}" == "1" ]]; then
+  STAGING_SIGNOFF_SKIP_DOGFOOD=1 "${ROOT_DIR}/scripts/staging-signoff.sh" "${EDGE_URL}"
 else
-  echo "  - Billing: mock provider (set BILLING_PROVIDER=stripe for real dogfood)"
+  echo "  Manual UX checklist (docs/14-STAGING-DOGFOOD-GUIDE.md §9):"
+  echo "  - Register or login; create org project; requirements + tasks + documents"
+  echo "  - AI chat: multi-thread + streaming (retry reconnect if mid-stream drop)"
+  echo "  - RAG: upload/index document and search project context"
+  if [[ "$billing_provider" == "stripe" ]]; then
+    echo "  - Stripe: checkout (test card), portal, webhook delivery to /api/v1/billing/stripe/webhook"
+  else
+    echo "  - Billing: mock provider (set BILLING_PROVIDER=stripe for real dogfood)"
+  fi
+  if [[ "$sso_provider" == "oidc" ]]; then
+    echo "  - OIDC: SSO login start + callback on ${SSO_APP_BASE_URL:-<app-host>}/auth/sso/callback"
+  else
+    echo "  - SSO: mock provider (set SSO_PROVIDER=oidc for real IdP dogfood)"
+  fi
+  mail_provider="${MAIL_PROVIDER:-logging}"
+  if [[ "$mail_provider" == "smtp" ]]; then
+    echo "  - Mail: forgot-password email delivery via SMTP (${MAIL_HOST:-smtp})"
+  else
+    echo "  - Mail: logging provider (set MAIL_PROVIDER=smtp for real email)"
+  fi
+  echo "  - Monitoring: optional docker-compose.monitoring.yml + Grafana dashboard"
+  echo ""
+  echo "  For full automated sign-off + report:"
+  echo "    ./scripts/staging-signoff.sh ${EDGE_URL}"
+  echo "    # or: STAGING_SIGNOFF=1 ./scripts/staging-dogfood.sh ${EDGE_URL}"
+  echo ""
 fi
-if [[ "$sso_provider" == "oidc" ]]; then
-  echo "  - OIDC: SSO login start + callback on ${SSO_APP_BASE_URL:-<app-host>}/auth/sso/callback"
+if [[ "${STAGING_DOGFOOD_SKIP_MANUAL:-}" == "1" ]]; then
+  : # sign-off wrapper prints final OK
 else
-  echo "  - SSO: mock provider (set SSO_PROVIDER=oidc for real IdP dogfood)"
+  echo "OK: automated staging dogfood gates passed for edge ${EDGE_URL}"
 fi
-mail_provider="${MAIL_PROVIDER:-logging}"
-if [[ "$mail_provider" == "smtp" ]]; then
-  echo "  - Mail: forgot-password email delivery via SMTP (${MAIL_HOST:-smtp})"
-else
-  echo "  - Mail: logging provider (set MAIL_PROVIDER=smtp for real email)"
-fi
-echo "  - Monitoring: optional docker-compose.monitoring.yml + Grafana dashboard"
-echo ""
-echo "OK: automated staging dogfood gates passed for edge ${EDGE_URL}"

@@ -32,8 +32,9 @@ Read in order; each document builds on the previous.
 | 25 | [25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md](25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md) | Chat thread retention policy + legal hold |
 | 26 | [26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md) | SAML signed AuthnRequest + encrypted assertions |
 | 27 | [27-LOKI-MULTI-REGION-QUERY-GUIDE.md](27-LOKI-MULTI-REGION-QUERY-GUIDE.md) | Real-time multi-region Loki query |
+| 28 | [28-BILLING-SEAT-USAGE-METERING-GUIDE.md](28-BILLING-SEAT-USAGE-METERING-GUIDE.md) | Seat metering + usage-based AI overage |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.22-beta** adds multi-region Loki query — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.23-beta** adds billing seat and usage metering — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

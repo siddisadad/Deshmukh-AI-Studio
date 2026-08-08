@@ -11,5 +11,7 @@ public interface MembershipRepository extends JpaRepository<MembershipEntity, UU
 
     List<MembershipEntity> findByOrganizationIdOrderByCreatedAtAsc(UUID organizationId);
 
+    long countByOrganizationId(UUID organizationId);
+
     Optional<MembershipEntity> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
 }

@@ -8,6 +8,9 @@ public record PlanResponse(
         int priceCentsMonthly,
         int maxProjects,
         int maxAiActionsPerDay,
+        int maxSeats,
+        int priceCentsPerSeatMonthly,
+        int priceCentsPerAiActionOverage,
         List<String> features
 ) {
 }

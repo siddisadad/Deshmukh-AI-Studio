@@ -6,6 +6,9 @@ export interface Plan {
   priceCentsMonthly: number;
   maxProjects: number;
   maxAiActionsPerDay: number;
+  maxSeats: number;
+  priceCentsPerSeatMonthly: number;
+  priceCentsPerAiActionOverage: number;
   features: string[];
 }
 
@@ -18,8 +21,14 @@ export interface BillingOverview {
   currentPeriodEnd: string | null;
   activeProjectCount: number;
   maxProjects: number;
+  activeMemberCount: number;
+  maxSeats: number;
   aiActionsUsedToday: number;
+  aiActionsOverageToday: number;
   maxAiActionsPerDay: number;
+  periodOverageActions: number;
+  estimatedSeatCentsMonthly: number;
+  estimatedOverageCentsThisPeriod: number;
 }
 
 export interface CheckoutSession {
@@ -31,6 +40,7 @@ export interface CheckoutSession {
 export interface UsageDay {
   date: string;
   actionCount: number;
+  overageCount: number;
 }
 
 export interface Invoice {

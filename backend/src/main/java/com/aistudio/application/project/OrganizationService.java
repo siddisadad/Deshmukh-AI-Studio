@@ -3,6 +3,7 @@ package com.aistudio.application.project;
 import com.aistudio.api.organization.dto.AddMemberRequest;
 import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
+import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.organization.OrgRole;
@@ -28,17 +29,20 @@ public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final BillingService billingService;
 
     public OrganizationService(
             MembershipRepository membershipRepository,
             OrganizationRepository organizationRepository,
             UserRepository userRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            BillingService billingService
     ) {
         this.membershipRepository = membershipRepository;
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.authorizationService = authorizationService;
+        this.billingService = billingService;
     }
 
     @Transactional(readOnly = true)
@@ -86,6 +90,8 @@ public class OrganizationService {
         if (membershipRepository.findByOrganizationIdAndUserId(orgId, invitee.getId()).isPresent()) {
             throw new DomainException("CONFLICT", "User is already a member of this organization");
         }
+
+        billingService.requireCanAddMember(orgId);
 
         MembershipEntity membership = new MembershipEntity();
         membership.setOrganizationId(orgId);

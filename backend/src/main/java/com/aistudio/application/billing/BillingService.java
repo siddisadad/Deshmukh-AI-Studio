@@ -15,6 +15,7 @@ import com.aistudio.infrastructure.config.BillingProperties;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
 import com.aistudio.infrastructure.persistence.entity.PlanEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
+import com.aistudio.infrastructure.persistence.repository.MembershipRepository;
 import com.aistudio.infrastructure.persistence.repository.OrganizationSubscriptionRepository;
 import com.aistudio.infrastructure.persistence.repository.PlanRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
@@ -44,6 +45,7 @@ public class BillingService {
     private final PlanRepository planRepository;
     private final OrganizationSubscriptionRepository subscriptionRepository;
     private final ProjectRepository projectRepository;
+    private final MembershipRepository membershipRepository;
     private final AiUsageJdbcRepository usageRepository;
     private final ProjectAuthorizationService authorizationService;
     private final BillingPort billingPort;
@@ -54,6 +56,7 @@ public class BillingService {
             PlanRepository planRepository,
             OrganizationSubscriptionRepository subscriptionRepository,
             ProjectRepository projectRepository,
+            MembershipRepository membershipRepository,
             AiUsageJdbcRepository usageRepository,
             ProjectAuthorizationService authorizationService,
             BillingPort billingPort,
@@ -63,6 +66,7 @@ public class BillingService {
         this.planRepository = planRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.projectRepository = projectRepository;
+        this.membershipRepository = membershipRepository;
         this.usageRepository = usageRepository;
         this.authorizationService = authorizationService;
         this.billingPort = billingPort;
@@ -95,7 +99,14 @@ public class BillingService {
         OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
         PlanEntity plan = requirePlan(sub.getPlanCode());
         long projectCount = projectRepository.countByOrganizationIdAndStatus(organizationId, ProjectStatus.ACTIVE);
-        int usedToday = usageRepository.getCount(organizationId, LocalDate.now(ZoneOffset.UTC));
+        long memberCount = membershipRepository.countByOrganizationId(organizationId);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        int usedToday = usageRepository.getCount(organizationId, today);
+        int overageToday = usageRepository.getOverageCount(organizationId, today);
+        LocalDate periodStart = today.withDayOfMonth(1);
+        int periodOverage = usageRepository.sumOverageBetween(organizationId, periodStart, today);
+        int seatEstimate = estimateSeatCentsMonthly(plan, memberCount);
+        int overageEstimate = periodOverage * plan.getPriceCentsPerAiActionOverage();
         return new BillingOverviewResponse(
                 toPlan(plan),
                 sub.getStatus().name(),
@@ -105,8 +116,14 @@ public class BillingService {
                 sub.getCurrentPeriodEnd(),
                 projectCount,
                 plan.getMaxProjects(),
+                memberCount,
+                plan.getMaxSeats(),
                 usedToday,
-                plan.getMaxAiActionsPerDay()
+                overageToday,
+                plan.getMaxAiActionsPerDay(),
+                periodOverage,
+                seatEstimate,
+                overageEstimate
         );
     }
 
@@ -128,10 +145,17 @@ public class BillingService {
         PlanEntity plan = requirePlan(planCode);
         OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
         long projectCount = projectRepository.countByOrganizationIdAndStatus(organizationId, ProjectStatus.ACTIVE);
+        long memberCount = membershipRepository.countByOrganizationId(organizationId);
         if (projectCount > plan.getMaxProjects()) {
             throw new DomainException(
                     "PLAN_LIMIT",
                     "Active projects (" + projectCount + ") exceed " + plan.getName() + " limit (" + plan.getMaxProjects() + ")"
+            );
+        }
+        if (memberCount > plan.getMaxSeats()) {
+            throw new DomainException(
+                    "PLAN_LIMIT",
+                    "Members (" + memberCount + ") exceed " + plan.getName() + " seat limit (" + plan.getMaxSeats() + ")"
             );
         }
         sub.setPlanCode(planCode);
@@ -152,9 +176,14 @@ public class BillingService {
         LocalDate end = LocalDate.now(ZoneOffset.UTC);
         LocalDate start = end.minusDays(cappedDays - 1);
         var counts = usageRepository.getCountsBetween(organizationId, start, end);
+        var overageCounts = usageRepository.getOverageCountsBetween(organizationId, start, end);
         List<UsageDayResponse> history = new ArrayList<>();
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-            history.add(new UsageDayResponse(date, counts.getOrDefault(date, 0)));
+            history.add(new UsageDayResponse(
+                    date,
+                    counts.getOrDefault(date, 0),
+                    overageCounts.getOrDefault(date, 0)
+            ));
         }
         return history;
     }
@@ -185,6 +214,20 @@ public class BillingService {
     }
 
     @Transactional(readOnly = true)
+    public void requireCanAddMember(UUID organizationId) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        PlanEntity plan = requirePlan(sub.getPlanCode());
+        long memberCount = membershipRepository.countByOrganizationId(organizationId);
+        if (memberCount >= plan.getMaxSeats()) {
+            throw new DomainException(
+                    "PLAN_LIMIT",
+                    "Plan " + plan.getName() + " allows " + plan.getMaxSeats()
+                            + " members. Upgrade to invite more seats."
+            );
+        }
+    }
+
+    @Transactional(readOnly = true)
     public void requireCanCreateProject(UUID organizationId) {
         OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
         PlanEntity plan = requirePlan(sub.getPlanCode());
@@ -204,14 +247,19 @@ public class BillingService {
         PlanEntity plan = requirePlan(sub.getPlanCode());
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         int used = usageRepository.getCount(organizationId, today);
-        if (used >= plan.getMaxAiActionsPerDay()) {
-            throw new DomainException(
-                    "PLAN_LIMIT",
-                    "Daily AI action limit reached for plan " + plan.getName()
-                            + " (" + plan.getMaxAiActionsPerDay() + "/day). Upgrade or try tomorrow."
-            );
+        if (used < plan.getMaxAiActionsPerDay()) {
+            usageRepository.incrementIncluded(organizationId, today);
+            return;
         }
-        usageRepository.increment(organizationId, today);
+        if (plan.getPriceCentsPerAiActionOverage() > 0) {
+            usageRepository.incrementOverage(organizationId, today);
+            return;
+        }
+        throw new DomainException(
+                "PLAN_LIMIT",
+                "Daily AI action limit reached for plan " + plan.getName()
+                        + " (" + plan.getMaxAiActionsPerDay() + "/day). Upgrade or try tomorrow."
+        );
     }
 
     @Transactional
@@ -452,7 +500,18 @@ public class BillingService {
                 plan.getPriceCentsMonthly(),
                 plan.getMaxProjects(),
                 plan.getMaxAiActionsPerDay(),
+                plan.getMaxSeats(),
+                plan.getPriceCentsPerSeatMonthly(),
+                plan.getPriceCentsPerAiActionOverage(),
                 features
         );
+    }
+
+    private static int estimateSeatCentsMonthly(PlanEntity plan, long memberCount) {
+        if (plan.getPriceCentsPerSeatMonthly() <= 0 || memberCount <= 1) {
+            return plan.getPriceCentsMonthly();
+        }
+        long extraSeats = memberCount - 1;
+        return plan.getPriceCentsMonthly() + (int) (extraSeats * plan.getPriceCentsPerSeatMonthly());
     }
 }

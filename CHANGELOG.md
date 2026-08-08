@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.23-beta] — 2026-08-08
+
+### Added
+
+- Plan `max_seats` with invite enforcement and billing overview member counts
+- Per-seat monthly price estimates (`price_cents_per_seat_monthly`)
+- AI action overage metering (`price_cents_per_ai_action_overage`, `ai_usage_daily.overage_count`)
+- PRO/TEAM soft daily limits with overage tracking and period cost estimates
+- `docs/28-BILLING-SEAT-USAGE-METERING-GUIDE.md`
+
 ## [0.2.22-beta] — 2026-08-08
 
 ### Added

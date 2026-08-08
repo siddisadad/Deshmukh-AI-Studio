@@ -292,7 +292,7 @@ class AssistantControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(content().string(containsString("\"assistantRole\":\"DEVELOPER\"")))
+                .andExpect(content().string(containsString("\"assistantRole\" : \"DEVELOPER\"")))
                 .andExpect(content().string(containsString("Hello export")));
 
         mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")

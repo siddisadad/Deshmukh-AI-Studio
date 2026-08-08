@@ -32,15 +32,6 @@ export IMAGE_TAG="${IMAGE_TAG:-main}"
 export STAGING_UI_PORT="${STAGING_UI_PORT:-8088}"
 export STAGING_API_PORT="${STAGING_API_PORT:-8080}"
 
-if [[ -z "${JWT_SECRET:-}" ]]; then
-  echo "JWT_SECRET is required (set in .env or export)" >&2
-  exit 1
-fi
-if [[ -z "${CORS_ORIGINS:-}" ]]; then
-  echo "CORS_ORIGINS is required for prod profile (HTTPS origins)" >&2
-  exit 1
-fi
-
 COMPOSE=(
   docker compose
   -f docker-compose.yml

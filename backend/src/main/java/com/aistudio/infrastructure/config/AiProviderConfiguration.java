@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.config;
 
 import com.aistudio.application.ai.AiProviderPort;
+import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
 import com.aistudio.infrastructure.ai.AiProviderRegistry;
 import com.aistudio.infrastructure.ai.RoutingAiProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +21,20 @@ public class AiProviderConfiguration {
     }
 
     @Bean
-    AiProviderPort aiProviderPort(AiProperties properties, AiProviderRegistry registry) {
+    AiProviderCircuitBreaker aiProviderCircuitBreaker(AiProperties properties) {
+        AiProperties.CircuitBreaker config = properties.circuitBreaker();
+        if (config == null) {
+            return new AiProviderCircuitBreaker(false, 3, 60);
+        }
+        return new AiProviderCircuitBreaker(config.enabled(), config.failureThreshold(), config.openSeconds());
+    }
+
+    @Bean
+    AiProviderPort aiProviderPort(
+            AiProperties properties,
+            AiProviderRegistry registry,
+            AiProviderCircuitBreaker circuitBreaker
+    ) {
         String provider = normalize(properties.provider());
         if (provider == null || provider.isBlank()) {
             provider = "mock";
@@ -32,13 +46,13 @@ public class AiProviderConfiguration {
                         "aistudio.ai.provider=routing requires AI_PROVIDER_CHAIN (e.g. openai,anthropic,mock)"
                 );
             }
-            return new RoutingAiProvider(registry, chain);
+            return new RoutingAiProvider(registry, chain, circuitBreaker);
         }
         List<String> chain = new ArrayList<>();
         chain.add(provider);
         chain.addAll(parseList(properties.providerFallbacks()));
         if (chain.size() > 1) {
-            return new RoutingAiProvider(registry, chain);
+            return new RoutingAiProvider(registry, chain, circuitBreaker);
         }
         return registry.require(provider);
     }

@@ -40,8 +40,9 @@ Read in order; each document builds on the previous.
 | 33 | [33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md) | Federated Grafana dashboards + Loki ruler fan-out |
 | 34 | [34-MULTI-PROVIDER-ROUTING-GUIDE.md](34-MULTI-PROVIDER-ROUTING-GUIDE.md) | Multi-provider AI routing and failover |
 | 35 | [35-THREAD-EXPORT-REDACTION-GUIDE.md](35-THREAD-EXPORT-REDACTION-GUIDE.md) | Thread export redaction policies |
+| 36 | [36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md](36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md) | AI provider health probes and circuit breaking |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.30-beta** adds thread export redaction policies — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.31-beta** adds AI provider health probes and circuit breaking — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

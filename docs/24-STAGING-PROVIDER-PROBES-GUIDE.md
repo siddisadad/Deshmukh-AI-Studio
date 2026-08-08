@@ -20,6 +20,7 @@ Automated readiness checks for **real** Stripe, OIDC, SAML, and SMTP configurati
 | **Stripe** | `BILLING_PROVIDER=stripe` | Stripe API validates `STRIPE_PRO_PRICE_ID` and `STRIPE_TEAM_PRICE_ID` |
 | **SMTP** | `MAIL_PROVIDER=smtp` | TCP connect to `MAIL_HOST:MAIL_PORT` |
 | **Loki regions** | `LOKI_QUERY_REGIONS` set | Each regional Loki `/ready` |
+| **AI providers** | `AI_PROVIDER` not `mock` | `GET /assistants/provider-health?probe=true` — all configured providers `up` |
 
 Mock billing skips Stripe API calls. Logging mail skips SMTP connect.
 

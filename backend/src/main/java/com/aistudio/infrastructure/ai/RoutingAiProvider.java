@@ -16,11 +16,17 @@ public class RoutingAiProvider implements AiProviderPort {
 
     private final AiProviderRegistry registry;
     private final List<String> chain;
+    private final AiProviderCircuitBreaker circuitBreaker;
     private final ThreadLocal<String> activeProviderId = new ThreadLocal<>();
 
-    public RoutingAiProvider(AiProviderRegistry registry, List<String> chain) {
+    public RoutingAiProvider(
+            AiProviderRegistry registry,
+            List<String> chain,
+            AiProviderCircuitBreaker circuitBreaker
+    ) {
         this.registry = registry;
         this.chain = chain;
+        this.circuitBreaker = circuitBreaker;
     }
 
     @Override
@@ -28,6 +34,10 @@ public class RoutingAiProvider implements AiProviderPort {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
         for (String providerId : chain) {
+            if (circuitBreaker.shouldSkip(providerId)) {
+                log.warn("Skipping AI provider {} — circuit open", providerId);
+                continue;
+            }
             AiProviderPort provider = registry.get(providerId);
             if (provider == null) {
                 log.warn("Skipping AI provider {} — not configured", providerId);
@@ -35,9 +45,11 @@ public class RoutingAiProvider implements AiProviderPort {
             }
             try {
                 AiGenerationResult result = provider.generate(request);
+                circuitBreaker.recordSuccess(providerId);
                 activeProviderId.set(provider.providerId());
                 return result;
             } catch (AiProviderException ex) {
+                circuitBreaker.recordFailure(providerId);
                 lastFailure = ex;
                 log.warn("AI provider {} failed: {}", providerId, ex.getMessage());
             }
@@ -53,6 +65,10 @@ public class RoutingAiProvider implements AiProviderPort {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
         for (String providerId : chain) {
+            if (circuitBreaker.shouldSkip(providerId)) {
+                log.warn("Skipping AI provider {} — circuit open", providerId);
+                continue;
+            }
             AiProviderPort provider = registry.get(providerId);
             if (provider == null) {
                 log.warn("Skipping AI provider {} — not configured", providerId);
@@ -60,9 +76,11 @@ public class RoutingAiProvider implements AiProviderPort {
             }
             try {
                 AiGenerationResult result = provider.stream(request, onDelta);
+                circuitBreaker.recordSuccess(providerId);
                 activeProviderId.set(provider.providerId());
                 return result;
             } catch (AiProviderException ex) {
+                circuitBreaker.recordFailure(providerId);
                 lastFailure = ex;
                 log.warn("AI provider {} stream failed: {}", providerId, ex.getMessage());
             }

@@ -4,6 +4,7 @@ import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.config.AiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -43,6 +44,10 @@ public class AiProviderRegistry {
 
     public void register(String providerId, AiProviderPort provider) {
         providers.put(normalize(providerId), provider);
+    }
+
+    public List<String> configuredProviderIds() {
+        return List.copyOf(providers.keySet());
     }
 
     private static boolean hasApiKey(String apiKey) {

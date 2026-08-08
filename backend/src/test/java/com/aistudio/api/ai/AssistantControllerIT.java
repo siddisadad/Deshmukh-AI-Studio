@@ -41,6 +41,21 @@ class AssistantControllerIT {
     }
 
     @Test
+    void providerHealthReportsMockProvider() throws Exception {
+        mockMvc.perform(get("/api/v1/assistants/provider-health")
+                        .header("Authorization", "Bearer " + registerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.providers[?(@.id == 'mock')].configured").value(true))
+                .andExpect(jsonPath("$.providers[?(@.id == 'mock')].circuitState").value("closed"));
+
+        mockMvc.perform(get("/api/v1/assistants/provider-health")
+                        .param("probe", "true")
+                        .header("Authorization", "Bearer " + registerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.providers[?(@.id == 'mock')].probeStatus").value("up"));
+    }
+
+    @Test
     void listAssistantsAndChatAcrossMultipleThreads() throws Exception {
         mockMvc.perform(get("/api/v1/assistants")
                         .header("Authorization", "Bearer " + registerToken()))

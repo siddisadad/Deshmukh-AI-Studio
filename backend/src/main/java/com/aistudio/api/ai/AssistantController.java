@@ -1,5 +1,6 @@
 package com.aistudio.api.ai;
 
+import com.aistudio.api.ai.dto.AiProviderHealthResponse;
 import com.aistudio.api.ai.dto.AssistantsResponse;
 import com.aistudio.api.ai.dto.ChatMessageResponse;
 import com.aistudio.api.ai.dto.ConversationResponse;
@@ -11,6 +12,7 @@ import com.aistudio.api.ai.dto.SendMessageRequest;
 import com.aistudio.api.ai.dto.RetentionPurgeRequest;
 import com.aistudio.api.ai.dto.RetentionPurgeResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
+import com.aistudio.application.ai.AiProviderHealthService;
 import com.aistudio.application.ai.AssistantRegistry;
 import com.aistudio.application.ai.ConversationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
@@ -46,15 +48,18 @@ public class AssistantController {
 
     private final AssistantRegistry assistantRegistry;
     private final ConversationService conversationService;
+    private final AiProviderHealthService aiProviderHealthService;
     private final Executor sseTaskExecutor;
 
     public AssistantController(
             AssistantRegistry assistantRegistry,
             ConversationService conversationService,
+            AiProviderHealthService aiProviderHealthService,
             @Qualifier("sseTaskExecutor") Executor sseTaskExecutor
     ) {
         this.assistantRegistry = assistantRegistry;
         this.conversationService = conversationService;
+        this.aiProviderHealthService = aiProviderHealthService;
         this.sseTaskExecutor = sseTaskExecutor;
     }
 
@@ -70,6 +75,21 @@ public class AssistantController {
                         a.limitations(),
                         a.toolIds()
                 ))
+                .toList());
+    }
+
+    @GetMapping("/api/v1/assistants/provider-health")
+    @Operation(summary = "AI provider circuit state and optional live probes")
+    public AiProviderHealthResponse providerHealth(@RequestParam(defaultValue = "false") boolean probe) {
+        return new AiProviderHealthResponse(aiProviderHealthService.check(probe).stream()
+                .map(h -> new AiProviderHealthResponse.ProviderHealthDto(
+                        h.id(),
+                        h.configured(),
+                        h.circuitState(),
+                        h.failureCount(),
+                        h.circuitOpenUntil(),
+                        h.probeStatus() == null ? null : (h.probeStatus() ? "up" : "down"),
+                        h.probedAt()))
                 .toList());
     }
 

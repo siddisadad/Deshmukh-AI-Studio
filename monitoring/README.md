@@ -61,6 +61,7 @@ Deletion is asynchronous (after compaction + `retention_delete_delay`). Align `m
 - **Export (cron):** `scripts/export-loki-logs.sh` → gzipped NDJSON; optional `LOKI_ARCHIVE_S3_URI` upload
 - **S3 object store:** `monitoring/loki-config-s3.yml` + `docker-compose.monitoring-s3.yml` overlay
 - Playbook: [docs/17-LOG-ARCHIVE-GUIDE.md](../docs/17-LOG-ARCHIVE-GUIDE.md)
+- **Long-term tiering / DR:** [docs/21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](../docs/21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md)
 
 Staging-shaped stack:
 

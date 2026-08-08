@@ -79,7 +79,7 @@ Config file: `monitoring/loki-config-s3.yml` (schema `tsdb` + `object_store: s3`
 ### 2.3 Bucket policy
 
 - Restrict bucket to Loki IAM user / role (read/write on prefix).
-- Enable versioning or lifecycle transition to Glacier for long-term archive.
+- Enable versioning or lifecycle transition to Glacier for long-term archive — see [21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md).
 - Do not expose the bucket publicly.
 
 ---
@@ -95,6 +95,7 @@ Default stack keeps chunks on the `loki-data` volume (`monitoring/loki-config.ym
 - [monitoring/README.md](../monitoring/README.md) — Promtail, retention, alerts
 - [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) — monitoring overlay on staging/prod
 - [19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md) — conversation thread off-site archive
+- [21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md) — Glacier tiering + cross-region replication
 
 ---
 

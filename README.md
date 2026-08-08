@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.15-beta
+export IMAGE_TAG=v0.2.16-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -140,7 +140,7 @@ uvicorn main:app --reload --port 8000
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.15-beta` adds SAML SP binding; `v0.2.14-beta` added scheduled chat archive sync.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.16-beta` adds Glacier lifecycle + cross-region archive playbooks; `v0.2.15-beta` added SAML SP binding.
 
 ## Docs
 

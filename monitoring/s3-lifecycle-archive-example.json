@@ -1,0 +1,22 @@
+{
+  "Rules": [
+    {
+      "ID": "loki-exports-tiering",
+      "Filter": { "Prefix": "loki-exports/" },
+      "Status": "Enabled",
+      "Transitions": [
+        { "Days": 90, "StorageClass": "GLACIER" },
+        { "Days": 365, "StorageClass": "DEEP_ARCHIVE" }
+      ]
+    },
+    {
+      "ID": "chat-archives-tiering",
+      "Filter": { "Prefix": "chat-archives/" },
+      "Status": "Enabled",
+      "Transitions": [
+        { "Days": 90, "StorageClass": "GLACIER" },
+        { "Days": 365, "StorageClass": "DEEP_ARCHIVE" }
+      ]
+    }
+  ]
+}

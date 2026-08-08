@@ -3,7 +3,8 @@ package com.aistudio.application.auth;
 import java.util.List;
 
 /**
- * OIDC-shaped identity provider port. Mock for local/CI; swap for a real OIDC client.
+ * Identity provider port (OIDC authorization-code flow; SAML stub for dev/CI).
+ * Mock for local/CI; OIDC for production IdPs; SAML stub until full SP binding ships.
  */
 public interface SsoPort {
 

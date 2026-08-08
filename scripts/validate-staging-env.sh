@@ -48,6 +48,15 @@ if [[ "$sso_provider" == "oidc" ]]; then
   require SSO_APP_BASE_URL
 fi
 
+if [[ "$sso_provider" == "saml" ]]; then
+  require SSO_APP_BASE_URL
+  saml_stub="${SAML_STUB_MODE:-true}"
+  if [[ "$saml_stub" == "false" ]]; then
+    require SAML_METADATA_URL
+    require SAML_ENTITY_ID
+  fi
+fi
+
 mail_provider="${MAIL_PROVIDER:-logging}"
 if [[ "$mail_provider" == "smtp" ]]; then
   require MAIL_HOST

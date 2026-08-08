@@ -120,7 +120,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
 | Observability | JSON logs, health, smoke, Prometheus, Grafana, Alertmanager, Loki, log alerts, 30d log retention | Off-site log archive / S3 backend |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
-| SSO (OIDC/SAML) | Real OIDC adapter + IdP guides ([15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md)) | SAML |
+| SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)) | Full SAML SP binding |
 | Multi-thread conversations | Per-assistant threads + search + share links + export | Off-site archive (bulk) |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica | Autoscaling / queue depth metrics |

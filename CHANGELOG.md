@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- SAML SSO port stub (`SSO_PROVIDER=saml`, `SAML_STUB_MODE=true`) — dev/CI adapter until full SP binding
+- `docs/16-SAML-SSO-STUB.md` — stub env vars and smoke test; points production to OIDC
+
 ## [0.2.8-beta] — 2026-08-08
 
 ### Added

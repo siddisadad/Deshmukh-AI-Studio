@@ -152,6 +152,53 @@ class AssistantControllerIT {
                 .andExpect(jsonPath("$.messages.length()").value(2));
     }
 
+    @Test
+    void sharedConversationReadOnlyLink() throws Exception {
+        JsonNode auth = register("share" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Share Proj","projectKey":"SH","description":"share"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID threadId = createThread(token, projectId, "DEVELOPER", "Share me");
+
+        mockMvc.perform(post("/api/v1/conversations/" + threadId + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Hello shared world"}
+                                """))
+                .andExpect(status().isOk());
+
+        JsonNode share = objectMapper.readTree(mockMvc.perform(post("/api/v1/conversations/" + threadId + "/share")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.shareEnabled").value(true))
+                .andExpect(jsonPath("$.shareUrl").exists())
+                .andReturn().getResponse().getContentAsString());
+
+        String rawToken = share.get("token").asText();
+
+        mockMvc.perform(get("/api/v1/shared/conversations/" + rawToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Share me"))
+                .andExpect(jsonPath("$.assistantRole").value("DEVELOPER"))
+                .andExpect(jsonPath("$.messages.length()").value(2));
+
+        mockMvc.perform(delete("/api/v1/conversations/" + threadId + "/share")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/shared/conversations/" + rawToken))
+                .andExpect(status().isNotFound());
+    }
+
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {
         String payload = title == null
                 ? "{\"assistantRole\":\"%s\"}".formatted(role)

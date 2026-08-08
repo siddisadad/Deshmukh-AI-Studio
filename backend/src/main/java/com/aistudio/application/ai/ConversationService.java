@@ -2,8 +2,10 @@ package com.aistudio.application.ai;
 
 import com.aistudio.api.ai.dto.ChatMessageResponse;
 import com.aistudio.api.ai.dto.ConversationResponse;
+import com.aistudio.api.ai.dto.ConversationShareResponse;
 import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
+import com.aistudio.api.ai.dto.SharedConversationResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
@@ -14,7 +16,10 @@ import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
 import com.aistudio.infrastructure.persistence.entity.MessageEntity;
 import com.aistudio.infrastructure.persistence.repository.ConversationRepository;
 import com.aistudio.infrastructure.persistence.repository.MessageRepository;
+import com.aistudio.shared.util.TokenHashUtils;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,6 +52,8 @@ public class ConversationService {
     private final BillingService billingService;
     private final TransactionTemplate transactionTemplate;
     private final int maxMessages;
+    private final long shareTtlSeconds;
+    private final String appBaseUrl;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -58,7 +65,9 @@ public class ConversationService {
             AiProviderPort aiProviderPort,
             BillingService billingService,
             TransactionTemplate transactionTemplate,
-            @Value("${aistudio.ai.context.max-messages:20}") int maxMessages
+            @Value("${aistudio.ai.context.max-messages:20}") int maxMessages,
+            @Value("${aistudio.ai.conversation.share-ttl-seconds:604800}") long shareTtlSeconds,
+            @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -70,6 +79,8 @@ public class ConversationService {
         this.billingService = billingService;
         this.transactionTemplate = transactionTemplate;
         this.maxMessages = maxMessages;
+        this.shareTtlSeconds = shareTtlSeconds;
+        this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
     }
 
     @Transactional(readOnly = true)
@@ -154,6 +165,54 @@ public class ConversationService {
     public void deleteConversation(UUID conversationId, UUID userId) {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
         conversationRepository.delete(conversation);
+    }
+
+    @Transactional
+    public ConversationShareResponse enableShare(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        String rawToken = TokenHashUtils.generateOpaqueToken();
+        Instant now = Instant.now();
+        conversation.setShareEnabled(true);
+        conversation.setShareTokenHash(TokenHashUtils.sha256(rawToken));
+        conversation.setShareCreatedAt(now);
+        conversation.setShareExpiresAt(now.plusSeconds(shareTtlSeconds));
+        conversationRepository.save(conversation);
+        return toShareResponse(conversation, rawToken);
+    }
+
+    @Transactional
+    public void revokeShare(UUID conversationId, UUID userId) {
+        ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        clearShare(conversation);
+        conversationRepository.save(conversation);
+    }
+
+    @Transactional(readOnly = true)
+    public SharedConversationResponse getSharedConversation(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new DomainException("NOT_FOUND", "Shared conversation not found");
+        }
+        ConversationEntity conversation = conversationRepository
+                .findByShareTokenHash(TokenHashUtils.sha256(rawToken.trim()))
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Shared conversation not found"));
+        if (!isShareActive(conversation)) {
+            throw new DomainException("NOT_FOUND", "Shared conversation not found");
+        }
+        List<SharedConversationResponse.MessageDto> messages = messageRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversation.getId()).stream()
+                .map(m -> new SharedConversationResponse.MessageDto(
+                        m.getId(),
+                        m.getSender().name(),
+                        m.getContent(),
+                        m.getCreatedAt()
+                ))
+                .toList();
+        return new SharedConversationResponse(
+                conversation.getAssistantRole().name(),
+                conversation.getTitle(),
+                conversation.getShareExpiresAt(),
+                messages
+        );
     }
 
     @Transactional
@@ -341,8 +400,35 @@ public class ConversationService {
                 entity.getTitle(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                (int) messageRepository.countByConversationId(entity.getId())
+                (int) messageRepository.countByConversationId(entity.getId()),
+                entity.isShareEnabled() && isShareActive(entity),
+                entity.getShareExpiresAt()
         );
+    }
+
+    private ConversationShareResponse toShareResponse(ConversationEntity entity, String rawToken) {
+        String encoded = URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        String shareUrl = appBaseUrl + "/shared/chat/" + encoded;
+        return new ConversationShareResponse(
+                true,
+                shareUrl,
+                rawToken,
+                entity.getShareExpiresAt()
+        );
+    }
+
+    private boolean isShareActive(ConversationEntity entity) {
+        return entity.isShareEnabled()
+                && entity.getShareTokenHash() != null
+                && entity.getShareExpiresAt() != null
+                && entity.getShareExpiresAt().isAfter(Instant.now());
+    }
+
+    private void clearShare(ConversationEntity entity) {
+        entity.setShareEnabled(false);
+        entity.setShareTokenHash(null);
+        entity.setShareExpiresAt(null);
+        entity.setShareCreatedAt(null);
     }
 
     private ConversationResponse.MessageDto toMessageDto(MessageEntity entity) {

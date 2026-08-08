@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { http, refreshAccessToken } from '../../../shared/api/httpClient';
 import { useAuthStore } from '../../auth/store/authStore';
 import { ApiError } from '../../../shared/api/types';
@@ -26,6 +27,22 @@ export interface ConversationSummary {
   createdAt: string;
   updatedAt: string;
   messageCount: number;
+  shareEnabled: boolean;
+  shareExpiresAt: string | null;
+}
+
+export interface ConversationShareResult {
+  shareEnabled: boolean;
+  shareUrl: string;
+  token: string;
+  expiresAt: string;
+}
+
+export interface SharedConversation {
+  assistantRole: string;
+  title: string | null;
+  expiresAt: string;
+  messages: ChatMessage[];
 }
 
 export interface Conversation {
@@ -244,6 +261,14 @@ export const chatApi = {
     http.patch<ConversationSummary>(`/conversations/${conversationId}`, { title }).then((r) => r.data),
   deleteConversation: (conversationId: string) =>
     http.delete(`/conversations/${conversationId}`).then(() => undefined),
+  enableShare: (conversationId: string) =>
+    http.post<ConversationShareResult>(`/conversations/${conversationId}/share`).then((r) => r.data),
+  revokeShare: (conversationId: string) =>
+    http.delete(`/conversations/${conversationId}/share`).then(() => undefined),
+  getSharedConversation: (token: string) =>
+    axios
+      .get<SharedConversation>(`${baseURL}/shared/conversations/${encodeURIComponent(token)}`)
+      .then((r) => r.data),
   sendMessage: (conversationId: string, content: string) =>
     http.post<ChatResponse>(`/conversations/${conversationId}/messages`, { content }).then((r) => r.data),
   streamMessage: async (

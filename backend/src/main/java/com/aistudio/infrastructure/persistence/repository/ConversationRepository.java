@@ -3,6 +3,7 @@ package com.aistudio.infrastructure.persistence.repository;
 import com.aistudio.domain.ai.AssistantRole;
 import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -56,4 +57,6 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
             @Param("assistantRole") String assistantRole,
             @Param("q") String q
     );
+
+    Optional<ConversationEntity> findByShareTokenHash(String shareTokenHash);
 }

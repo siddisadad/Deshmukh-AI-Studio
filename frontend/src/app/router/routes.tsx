@@ -12,6 +12,7 @@ import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
 import { RequirementsPage } from '../../features/requirements/pages/RequirementsPage';
 import { TasksPage } from '../../features/tasks/pages/TasksPage';
 import { AiChatPage } from '../../features/chat/pages/AiChatPage';
+import { SharedChatPage } from '../../features/chat/pages/SharedChatPage';
 import { DocumentsPage } from '../../features/documents/pages/DocumentsPage';
 import { ProfileSettingsPage } from '../../features/settings/pages/ProfileSettingsPage';
 import { BillingSettingsPage } from '../../features/settings/pages/BillingSettingsPage';
@@ -22,6 +23,7 @@ import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 export const router = createBrowserRouter([
   // Public even when a session exists (email reset links must work while logged in).
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {
     element: <GuestRoute />,
     children: [

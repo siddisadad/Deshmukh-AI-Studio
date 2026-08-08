@@ -10,6 +10,13 @@
         </X509Data>
       </KeyInfo>
     </KeyDescriptor>
+    <KeyDescriptor use="encryption">
+      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+        <X509Data>
+          <X509Certificate>MIIC+zCCAeOgAwIBAgIJAL5Z2w8x8Y7TMA0GCSqGSIb3DQEBCwUAMIGLMQswCQYDVQQGEwJVUzELMAkGA1UECBMCQ0ExFjAUBgNVBAcTDU1vdW50YWluIFZpZXcxFDASBgNVBAoTC0Rlc2htb2NvIENvLjERMA8GA1UECxMIQ3J5cHRvIFBybzEZMBcGA1UEAxMQd3d3LmRlc2htb2NvLmNvbTEhMB8GCSqGSIb3DQEJARYSc3NsQWRtaW5AZGVzaG1vY28uY29tMB4XDTA0MDExNzA3NDUzNVoXDTA0MDIxNjA3NDUzNVowgY8xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEQMA4GA1UEChMHUHJpbWF0ZTELMAkGA1UECxMCU0ExGDAWBgNVBAMTD3ByaW1hdGVzYW1sc2lnbjETMBEGA1UEAxMKaWRwLmV4YW1wbGUuY29tMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDUoHY4LhpnRSdYfCvZBvQh1zEKAiSL6Z5nFq+rY6m2hO0PZAGI5ZqJ0zPr9uo9z3eqN8nNbv4feF3PnF7p4uT2AB0dAWg/oim3RdeD464eAIN08GQWKYjWeWKjYImWPM/G11Hu7w2l9af0hi1J4sRfHrHDA9WoXSazfX8mQwIDAQABMA0GCSqGSIb3DQEBBQUAA4GBAH4mpWHroBYjPt9Q0AIV9u5jUw6LRYaafH4VqWjnC27rIepXpouKKoVHemED7Eq2kfF+5ZL9u2EYul/W2auC2NxTKfUvGXZ5Y5nTCxE5bYjYs79maz5X+pFbx+n9NfRMYTkH2CUZ7PawX+D5fGyYl5pDFrzJyXvzBV5AWp2qS63k</X509Certificate>
+        </X509Data>
+      </KeyInfo>
+    </KeyDescriptor>
     <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
                          Location="https://idp.example.com/sso/redirect"/>
     <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"

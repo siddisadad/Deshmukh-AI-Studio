@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.aistudio.domain.common.DomainException;
@@ -18,6 +19,7 @@ class SamlIdpMetadataLoaderTest {
         assertEquals("https://idp.example.com/metadata", metadata.entityId());
         assertEquals("https://idp.example.com/sso/redirect", metadata.singleSignOnUrl());
         assertEquals(false, metadata.signingCertificate().contains(" "));
+        assertNotNull(metadata.encryptionCertificate());
     }
 
     @Test

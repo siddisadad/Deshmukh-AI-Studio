@@ -2,7 +2,7 @@
 
 Production SAML login for enterprises that require SP-initiated flows (HTTP-Redirect `AuthnRequest` + HTTP-POST `SAMLResponse`). Complements OIDC ([15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md)) and the dev stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)).
 
-**MVP scope:** SP-initiated login, IdP metadata from URL, ACS POST endpoint, SP metadata export. Signed AuthnRequests and encrypted assertions are not required for initial IdP wiring.
+**MVP scope:** SP-initiated login, IdP metadata from URL, ACS POST endpoint, SP metadata export. For signed AuthnRequests and encrypted assertions, see [26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md).
 
 ---
 
@@ -92,7 +92,7 @@ Also set `CORS_ORIGINS` and `BILLING_APP_BASE_URL` to the SPA origin.
 
 ```bash
 ./scripts/validate-staging-env.sh   # requires SAML_ACS_URL when SAML_STUB_MODE=false
-export IMAGE_TAG=v0.2.20-beta
+export IMAGE_TAG=v0.2.21-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 

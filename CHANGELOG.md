@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.21-beta] — 2026-08-08
+
+### Added
+
+- SAML signed HTTP-Redirect AuthnRequest (`Signature` / `SigAlg` query params) when `SAML_SP_PRIVATE_KEY` + `SAML_SP_CERTIFICATE` set
+- Optional encrypted assertion decryption via `SAML_WANT_ENCRYPTED_ASSERTIONS` + IdP encryption cert in metadata
+- `SamlAuthnRedirectBuilder`, `SamlPemUtils`; IdP metadata loader parses encryption `KeyDescriptor`
+- Staging env validation for SP key/cert when signing or encryption enabled
+- `docs/26-SAML-SIGNING-GUIDE.md`
+
 ## [0.2.20-beta] — 2026-08-08
 
 ### Added

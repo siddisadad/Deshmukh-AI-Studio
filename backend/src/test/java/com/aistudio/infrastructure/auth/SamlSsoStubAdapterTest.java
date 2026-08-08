@@ -47,7 +47,10 @@ class SamlSsoStubAdapterTest {
                         stubMode ? "" : "https://app.example.com/saml",
                         stubMode ? "" : "https://api.example.com/api/v1/auth/sso/saml/acs",
                         "Continue with SAML (stub)",
-                        stubMode
+                        stubMode,
+                        "",
+                        "",
+                        false
                 )
         );
     }

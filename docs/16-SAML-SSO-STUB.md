@@ -35,6 +35,8 @@ SAML_ENTITY_ID=https://your-app.example.com/saml/metadata
 SAML_ACS_URL=https://your-app.example.com/api/v1/auth/sso/saml/acs
 ```
 
+For signed AuthnRequests and encrypted assertions, see [26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md).
+
 Also set `CORS_ORIGINS` and `BILLING_APP_BASE_URL` to your app origin (same as OIDC).
 
 ---

@@ -34,7 +34,7 @@ class OidcSsoAdapterTest {
                         "Continue with Okta",
                         "openid email profile"
                 ),
-                new SsoProperties.Saml("", "", "", "", true)
+                new SsoProperties.Saml("", "", "", "", true, "", "", false)
         );
         OidcSsoAdapter adapter = new OidcSsoAdapter(
                 properties,

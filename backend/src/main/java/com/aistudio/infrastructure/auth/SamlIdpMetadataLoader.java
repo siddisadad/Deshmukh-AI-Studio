@@ -64,13 +64,18 @@ class SamlIdpMetadataLoader {
 
             String ssoUrl = findSsoUrl(idpDescriptor);
             String certificate = findSigningCertificate(idpDescriptor);
+            String encryptionCertificate = findEncryptionCertificate(idpDescriptor);
             if (ssoUrl == null || ssoUrl.isBlank()) {
                 throw new DomainException("VALIDATION_ERROR", "SAML metadata missing SingleSignOnService URL");
             }
             if (certificate == null || certificate.isBlank()) {
                 throw new DomainException("VALIDATION_ERROR", "SAML metadata missing signing X509Certificate");
             }
-            return new SamlIdpMetadata(entityId.trim(), ssoUrl.trim(), normalizeCertificate(certificate));
+            return new SamlIdpMetadata(
+                    entityId.trim(),
+                    ssoUrl.trim(),
+                    normalizeCertificate(certificate),
+                    encryptionCertificate == null ? null : normalizeCertificate(encryptionCertificate));
         } catch (DomainException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -109,6 +114,22 @@ class SamlIdpMetadataLoader {
             return postUrl;
         }
         return fallbackUrl;
+    }
+
+    private static String findEncryptionCertificate(Element idpDescriptor) {
+        NodeList keyDescriptors = idpDescriptor.getElementsByTagNameNS("*", "KeyDescriptor");
+        for (int i = 0; i < keyDescriptors.getLength(); i++) {
+            Element keyDescriptor = (Element) keyDescriptors.item(i);
+            String use = keyDescriptor.getAttribute("use");
+            if (use == null || use.isBlank() || !"encryption".equalsIgnoreCase(use)) {
+                continue;
+            }
+            NodeList certs = keyDescriptor.getElementsByTagNameNS("*", "X509Certificate");
+            if (certs.getLength() > 0) {
+                return certs.item(0).getTextContent();
+            }
+        }
+        return null;
     }
 
     private static String findSigningCertificate(Element idpDescriptor) {
@@ -151,6 +172,11 @@ class SamlIdpMetadataLoader {
         return certificate.replaceAll("\\s+", "");
     }
 
-    record SamlIdpMetadata(String entityId, String singleSignOnUrl, String signingCertificate) {
+    record SamlIdpMetadata(
+            String entityId,
+            String singleSignOnUrl,
+            String signingCertificate,
+            String encryptionCertificate
+    ) {
     }
 }

@@ -55,6 +55,14 @@ if [[ "$sso_provider" == "saml" ]]; then
     require SAML_METADATA_URL
     require SAML_ENTITY_ID
     require SAML_ACS_URL
+    if [[ -n "${SAML_SP_PRIVATE_KEY:-}" || -n "${SAML_SP_CERTIFICATE:-}" ]]; then
+      require SAML_SP_PRIVATE_KEY
+      require SAML_SP_CERTIFICATE
+    fi
+    if [[ "${SAML_WANT_ENCRYPTED_ASSERTIONS:-false}" == "true" ]]; then
+      require SAML_SP_PRIVATE_KEY
+      require SAML_SP_CERTIFICATE
+    fi
   fi
 fi
 

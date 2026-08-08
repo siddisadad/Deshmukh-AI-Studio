@@ -57,10 +57,11 @@ resolve_token() {
     echo "Set CHAT_ARCHIVE_ACCESS_TOKEN or CHAT_ARCHIVE_EMAIL + CHAT_ARCHIVE_PASSWORD" >&2
     exit 1
   fi
-  local login_json
+  local login_json payload
+  payload="$(CHAT_ARCHIVE_EMAIL="$CHAT_ARCHIVE_EMAIL" CHAT_ARCHIVE_PASSWORD="$CHAT_ARCHIVE_PASSWORD" python3 -c 'import json, os; print(json.dumps({"email": os.environ["CHAT_ARCHIVE_EMAIL"], "password": os.environ["CHAT_ARCHIVE_PASSWORD"]}))')"
   login_json="$(curl -fsS --max-time 30 -X POST "${API_BASE}/auth/login" \
     -H 'Content-Type: application/json' \
-    -d "{\"email\":\"${CHAT_ARCHIVE_EMAIL}\",\"password\":\"${CHAT_ARCHIVE_PASSWORD}\"}\")"
+    -d "$payload")"
   CHAT_ARCHIVE_ACCESS_TOKEN="$(json_get "${login_json}" "['accessToken']")"
   if [[ -z "${CHAT_ARCHIVE_ORG_ID:-}" ]]; then
     CHAT_ARCHIVE_ORG_ID="$(json_get "${login_json}" "['organization']['id']")"
@@ -74,13 +75,7 @@ resolve_org_id() {
   local me_json
   me_json="$(curl -fsS --max-time 20 "${API_BASE}/me" \
     -H "Authorization: Bearer ${CHAT_ARCHIVE_ACCESS_TOKEN}")"
-  CHAT_ARCHIVE_ORG_ID="$(python3 -c "
-import json, sys
-orgs = json.load(sys.stdin).get('organizations') or []
-if not orgs:
-    sys.exit('No organizations on /me — set CHAT_ARCHIVE_ORG_ID')
-print(orgs[0]['id'])
-" <<<"${me_json}")"
+  CHAT_ARCHIVE_ORG_ID="$(printf '%s' "$me_json" | python3 -c 'import json,sys; orgs=json.load(sys.stdin).get("organizations") or []; sys.exit("No organizations on /me — set CHAT_ARCHIVE_ORG_ID") if not orgs else None; print(orgs[0]["id"])')"
 }
 
 mkdir -p "$OUT_DIR"

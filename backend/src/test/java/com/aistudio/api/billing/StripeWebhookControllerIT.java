@@ -70,7 +70,7 @@ class StripeWebhookControllerIT {
                 }
                 """.formatted(orgId, orgId);
 
-        String signature = Webhook.Util.generateSigHeader(payload, WEBHOOK_SECRET, Webhook.Util.DEFAULT_TOLERANCE);
+        String signature = Webhook.Util.generateSigHeader(payload, WEBHOOK_SECRET, 300);
 
         mockMvc.perform(post("/api/v1/billing/stripe/webhook")
                         .contentType(MediaType.APPLICATION_JSON)

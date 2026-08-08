@@ -42,7 +42,9 @@ services:
       - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
       - ./monitoring/loki-alerts.yml:/loki/rules/fake/api-logs.yml:ro
       - loki-data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml -config.expand-env=true
+    environment:
+      LOKI_RETENTION_PERIOD: ${LOKI_RETENTION_PERIOD:-720h}
 
   promtail:
     image: grafana/promtail:3.1.0

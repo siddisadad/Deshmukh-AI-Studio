@@ -213,6 +213,7 @@ jobs:
       - name: Validate monitoring helper scripts
         run: |
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-alerts.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config.yml'))"
           bash -n scripts/staging-dogfood.sh
           bash -n scripts/write-prometheus-token.sh
           bash -n scripts/api-smoke.sh

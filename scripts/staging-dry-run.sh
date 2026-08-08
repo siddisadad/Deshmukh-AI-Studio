@@ -88,6 +88,9 @@ done
 API_URL="http://localhost:${STAGING_API_PORT}" \
   "${ROOT_DIR}/scripts/staging-provider-probes.sh" "http://localhost:${STAGING_UI_PORT}"
 
+STAGING_SIGNOFF_SKIP_DOGFOOD=1 STAGING_SIGNOFF_REQUIRE_HTTPS=0 \
+  "${ROOT_DIR}/scripts/staging-signoff.sh" "http://localhost:${STAGING_UI_PORT}"
+
 echo "Checking worker health…"
 for i in $(seq 1 30); do
   if "${COMPOSE[@]}" exec -T worker curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then

@@ -55,7 +55,7 @@ Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (ta
 
 ```bash
 docker login ghcr.io   # if packages are private
-export IMAGE_TAG=v0.2.25-beta
+export IMAGE_TAG=v0.2.26-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -95,9 +95,15 @@ The script runs:
 4. `api-smoke.sh` (authenticated API journey)
 5. `staging-provider-probes.sh` (Stripe/OIDC/SAML/SMTP readiness — [24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md))
 6. Optional internal `/actuator/prometheus` check
-7. Prints manual checklist items based on `BILLING_PROVIDER`, `SSO_PROVIDER`, and `MAIL_PROVIDER`
+7. Prints manual checklist items based on `BILLING_PROVIDER`, `SSO_PROVIDER`, and `MAIL_PROVIDER` — or runs full sign-off when `STAGING_SIGNOFF=1` ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md))
 
-CI runs `bash -n` on these scripts and `staging-dry-run.sh` invokes `api-smoke.sh` locally.
+For automated sign-off with JSON/Markdown report after gates pass:
+
+```bash
+./scripts/staging-signoff.sh https://staging.yourdomain.com
+```
+
+CI runs `bash -n` on these scripts; `staging-dry-run.sh` invokes API smoke, provider probes, and sign-off extras locally.
 
 ---
 
@@ -304,10 +310,10 @@ Record for each staging release:
 | Field | Example |
 |---|---|
 | Date | 2026-08-08 |
-| `IMAGE_TAG` | `v0.2.25-beta` |
+| `IMAGE_TAG` | `v0.2.26-beta` |
 | Host | `https://staging.yourdomain.com` |
 | Providers | stripe / oidc / smtp / mock |
-| Automated | `staging-dogfood.sh` exit 0 |
+| Automated | `staging-dogfood.sh` exit 0; optional `staging-signoff.sh` report ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md)) |
 | Manual | Checklist §9 complete |
 | Issues | Link to GitHub issues |
 

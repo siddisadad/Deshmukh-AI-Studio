@@ -35,8 +35,9 @@ Read in order; each document builds on the previous.
 | 28 | [28-BILLING-SEAT-USAGE-METERING-GUIDE.md](28-BILLING-SEAT-USAGE-METERING-GUIDE.md) | Seat metering + usage-based AI overage |
 | 29 | [29-PROVIDER-NATIVE-STREAMING-GUIDE.md](29-PROVIDER-NATIVE-STREAMING-GUIDE.md) | OpenAI/Anthropic native SSE streaming |
 | 30 | [30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md](30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md) | Compliance gzip export before retention purge |
+| 31 | [31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md) | Automated live-host sign-off + report |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.25-beta** adds compliance export on purge — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.26-beta** adds staging live-host sign-off automation — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

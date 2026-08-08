@@ -70,6 +70,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Staging dogfood gates (env + health + smoke + optional internal metrics)
 ./scripts/staging-dogfood.sh http://localhost:8088
+# Full live-host sign-off + report: ./scripts/staging-signoff.sh https://staging.example.com
 # Full Stripe/OIDC/manual checklist: docs/14-STAGING-DOGFOOD-GUIDE.md
 
 # Optional Prometheus + Grafana (internal metrics; see monitoring/README.md)
@@ -80,7 +81,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.25-beta
+export IMAGE_TAG=v0.2.26-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -140,7 +141,7 @@ uvicorn main:app --reload --port 8000
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.25-beta` adds compliance export on retention purge; `v0.2.24-beta` added provider-native streaming.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.26-beta` adds staging live-host sign-off automation; `v0.2.25-beta` added compliance export on purge.
 
 ## Docs
 

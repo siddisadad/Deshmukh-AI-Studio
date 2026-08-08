@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -301,6 +302,47 @@ class AssistantControllerIT {
 
         mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
                         .param("format", "pdf")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void exportConversationAppliesRedactionPolicy() throws Exception {
+        JsonNode auth = register("redactexport" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Redact Export Proj","projectKey":"RX","description":"redact"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID threadId = createThread(token, projectId, "DEVELOPER", "Sensitive thread");
+
+        mockMvc.perform(post("/api/v1/conversations/" + threadId + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Email admin@example.com token sk-abcdefghijklmnopqrstuvwxyz"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
+                        .param("format", "json")
+                        .param("redaction", "standard")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("[REDACTED_EMAIL]")))
+                .andExpect(content().string(containsString("[REDACTED_API_KEY]")))
+                .andExpect(content().string(containsString("\"redactionPolicy\" : \"standard\"")))
+                .andExpect(content().string(not(containsString("admin@example.com"))));
+
+        mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
+                        .param("format", "markdown")
+                        .param("redaction", "invalid")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }

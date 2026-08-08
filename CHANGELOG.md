@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.30-beta] — 2026-08-08
+
+### Added
+
+- Thread export redaction policies — `none`, `pii`, `secrets`, `standard` via `CHAT_EXPORT_REDACTION_POLICY` or `redaction` query param
+- Separate `CHAT_EXPORT_COMPLIANCE_REDACTION_POLICY` for retention purge archives (default `none`)
+- `ThreadExportRedactor` — regex redaction for emails, phones, tokens, API keys in exported messages
+- `scripts/scheduled-chat-archive.sh` forwards `CHAT_EXPORT_REDACTION_POLICY` to bulk export API
+- `docs/35-THREAD-EXPORT-REDACTION-GUIDE.md`
+
 ## [0.2.29-beta] — 2026-08-08
 
 ### Added

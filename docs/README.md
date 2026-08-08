@@ -39,8 +39,9 @@ Read in order; each document builds on the previous.
 | 32 | [32-STRIPE-METERED-PRICES-SYNC-GUIDE.md](32-STRIPE-METERED-PRICES-SYNC-GUIDE.md) | Stripe metered seat + AI overage sync |
 | 33 | [33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md) | Federated Grafana dashboards + Loki ruler fan-out |
 | 34 | [34-MULTI-PROVIDER-ROUTING-GUIDE.md](34-MULTI-PROVIDER-ROUTING-GUIDE.md) | Multi-provider AI routing and failover |
+| 35 | [35-THREAD-EXPORT-REDACTION-GUIDE.md](35-THREAD-EXPORT-REDACTION-GUIDE.md) | Thread export redaction policies |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.29-beta** adds multi-provider AI routing / failover — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.30-beta** adds thread export redaction policies — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -90,10 +90,11 @@ public class AssistantController {
             @PathVariable UUID projectId,
             @RequestParam(required = false) String assistantRole,
             @RequestParam(defaultValue = "markdown") String format,
+            @RequestParam(required = false) String redaction,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         ExportedConversation exported = conversationService.exportProjectConversations(
-                projectId, assistantRole, format, user.getId());
+                projectId, assistantRole, format, user.getId(), redaction);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + exported.filename() + "\"")
@@ -187,10 +188,11 @@ public class AssistantController {
     public ResponseEntity<byte[]> exportConversation(
             @PathVariable UUID conversationId,
             @RequestParam(defaultValue = "markdown") String format,
+            @RequestParam(required = false) String redaction,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         ExportedConversation exported = conversationService.exportConversation(
-                conversationId, user.getId(), format);
+                conversationId, user.getId(), format, redaction);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + exported.filename() + "\"")

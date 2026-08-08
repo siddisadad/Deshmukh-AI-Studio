@@ -69,6 +69,8 @@ public class ConversationService {
     private final int maxMessages;
     private final long shareTtlSeconds;
     private final String appBaseUrl;
+    private final ThreadExportRedactionPolicy defaultExportRedactionPolicy;
+    private final ThreadExportRedactionPolicy complianceExportRedactionPolicy;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -84,7 +86,9 @@ public class ConversationService {
             ObjectMapper objectMapper,
             @Value("${aistudio.ai.context.max-messages:20}") int maxMessages,
             @Value("${aistudio.ai.conversation.share-ttl-seconds:604800}") long shareTtlSeconds,
-            @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl
+            @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl,
+            @Value("${aistudio.ai.conversation.export-redaction-policy:none}") String exportRedactionPolicy,
+            @Value("${aistudio.ai.conversation.compliance-export-redaction-policy:none}") String complianceExportRedactionPolicy
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -102,6 +106,8 @@ public class ConversationService {
         this.maxMessages = maxMessages;
         this.shareTtlSeconds = shareTtlSeconds;
         this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
+        this.defaultExportRedactionPolicy = ThreadExportRedactionPolicy.fromWireValue(exportRedactionPolicy);
+        this.complianceExportRedactionPolicy = ThreadExportRedactionPolicy.fromWireValue(complianceExportRedactionPolicy);
     }
 
     @Transactional(readOnly = true)
@@ -275,14 +281,15 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public ExportedConversation exportConversation(UUID conversationId, UUID userId, String format) {
+    public ExportedConversation exportConversation(UUID conversationId, UUID userId, String format, String redaction) {
         ConversationEntity conversation = requireConversationAccess(conversationId, userId);
         List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
         String normalizedFormat = normalizeExportFormat(format);
+        ThreadExportRedactionPolicy redactionPolicy = resolveExportRedactionPolicy(redaction);
         if ("json".equals(normalizedFormat)) {
-            return exportAsJson(conversation, messages);
+            return exportAsJson(conversation, messages, redactionPolicy);
         }
-        return exportAsMarkdown(conversation, messages);
+        return exportAsMarkdown(conversation, messages, redactionPolicy);
     }
 
     @Transactional(readOnly = true)
@@ -290,7 +297,8 @@ public class ConversationService {
             UUID projectId,
             String roleValue,
             String format,
-            UUID userId
+            UUID userId,
+            String redaction
     ) {
         authorizationService.requireProjectAccess(projectId, userId);
         ProjectEntity project = projectRepository.findById(projectId)
@@ -306,10 +314,11 @@ public class ConversationService {
                 .filter(c -> canViewConversation(c, userId))
                 .toList();
         String normalizedFormat = normalizeExportFormat(format);
+        ThreadExportRedactionPolicy redactionPolicy = resolveExportRedactionPolicy(redaction);
         if ("json".equals(normalizedFormat)) {
-            return exportProjectAsJson(project, visible);
+            return exportProjectAsJson(project, visible, redactionPolicy);
         }
-        return exportProjectAsMarkdown(project, visible);
+        return exportProjectAsMarkdown(project, visible, redactionPolicy);
     }
 
     @Transactional(readOnly = true)
@@ -653,10 +662,21 @@ public class ConversationService {
         return normalized;
     }
 
-    private ExportedConversation exportAsJson(ConversationEntity conversation, List<MessageEntity> messages) {
+    private ThreadExportRedactionPolicy resolveExportRedactionPolicy(String redactionParam) {
+        if (redactionParam != null && !redactionParam.isBlank()) {
+            return ThreadExportRedactionPolicy.fromWireValue(redactionParam);
+        }
+        return defaultExportRedactionPolicy;
+    }
+
+    private ExportedConversation exportAsJson(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
         try {
             byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsBytes(conversationExportMap(conversation, messages));
+                    .writeValueAsBytes(conversationExportMap(conversation, messages, redactionPolicy));
             return new ExportedConversation(
                     body,
                     MediaType.APPLICATION_JSON_VALUE,
@@ -666,12 +686,21 @@ public class ConversationService {
         }
     }
 
-    private ExportedConversation exportAsMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {
-        byte[] body = buildConversationMarkdown(conversation, messages).getBytes(StandardCharsets.UTF_8);
+    private ExportedConversation exportAsMarkdown(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
+        byte[] body = buildConversationMarkdown(conversation, messages, redactionPolicy)
+                .getBytes(StandardCharsets.UTF_8);
         return new ExportedConversation(body, "text/markdown; charset=UTF-8", safeExportFilename(conversation, "md"));
     }
 
-    private ExportedConversation exportProjectAsJson(ProjectEntity project, List<ConversationEntity> conversations) {
+    private ExportedConversation exportProjectAsJson(
+            ProjectEntity project,
+            List<ConversationEntity> conversations,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("projectId", project.getId());
         payload.put("projectKey", project.getProjectKey());
@@ -681,7 +710,7 @@ public class ConversationService {
         List<Map<String, Object>> conversationPayloads = new ArrayList<>();
         for (ConversationEntity conversation : conversations) {
             List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-            conversationPayloads.add(conversationExportMap(conversation, messages));
+            conversationPayloads.add(conversationExportMap(conversation, messages, redactionPolicy));
         }
         payload.put("conversations", conversationPayloads);
         try {
@@ -695,16 +724,24 @@ public class ConversationService {
         }
     }
 
-    private ExportedConversation exportProjectAsMarkdown(ProjectEntity project, List<ConversationEntity> conversations) {
+    private ExportedConversation exportProjectAsMarkdown(
+            ProjectEntity project,
+            List<ConversationEntity> conversations,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
         StringBuilder markdown = new StringBuilder();
         markdown.append("# Project archive: ").append(project.getName()).append("\n\n");
         markdown.append("- **Project key:** ").append(project.getProjectKey()).append("\n");
         markdown.append("- **Exported:** ").append(Instant.now()).append("\n");
-        markdown.append("- **Threads:** ").append(conversations.size()).append("\n\n");
+        markdown.append("- **Threads:** ").append(conversations.size()).append("\n");
+        if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
+            markdown.append("- **Redaction:** ").append(redactionPolicy.wireValue()).append("\n");
+        }
+        markdown.append("\n");
         markdown.append("---\n\n");
         for (ConversationEntity conversation : conversations) {
             List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-            markdown.append(buildConversationMarkdown(conversation, messages)).append("\n\n---\n\n");
+            markdown.append(buildConversationMarkdown(conversation, messages, redactionPolicy)).append("\n\n---\n\n");
         }
         byte[] body = markdown.toString().getBytes(StandardCharsets.UTF_8);
         return new ExportedConversation(
@@ -713,7 +750,11 @@ public class ConversationService {
                 safeProjectExportFilename(project, "md"));
     }
 
-    private Map<String, Object> conversationExportMap(ConversationEntity conversation, List<MessageEntity> messages) {
+    private Map<String, Object> conversationExportMap(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", conversation.getId());
         map.put("projectId", conversation.getProjectId());
@@ -721,11 +762,14 @@ public class ConversationService {
         map.put("title", conversation.getTitle());
         map.put("visibility", conversation.getVisibility().name());
         map.put("exportedAt", Instant.now());
+        if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
+            map.put("redactionPolicy", redactionPolicy.wireValue());
+        }
         map.put("messages", messages.stream()
                 .map(m -> Map.of(
                         "id", m.getId(),
                         "sender", m.getSender().name(),
-                        "content", m.getContent(),
+                        "content", redactMessageContent(m.getContent(), redactionPolicy),
                         "createdAt", m.getCreatedAt()))
                 .toList());
         return map;
@@ -736,7 +780,8 @@ public class ConversationService {
             List<MessageEntity> messages,
             Instant purgedAt
     ) {
-        Map<String, Object> map = conversationExportMap(conversation, messages);
+        Map<String, Object> map = conversationExportMap(
+                conversation, messages, complianceExportRedactionPolicy);
         map.put("legalHold", conversation.isLegalHold());
         map.put("retentionExpiresAt", conversation.getRetentionExpiresAt());
         map.put("createdAt", conversation.getCreatedAt());
@@ -788,20 +833,32 @@ public class ConversationService {
         return base + "-compliance-purge-" + purgedAt.toString().substring(0, 10) + ".json.gz";
     }
 
-    private String buildConversationMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {
+    private String buildConversationMarkdown(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy
+    ) {
         StringBuilder markdown = new StringBuilder();
         markdown.append("# ").append(conversation.getTitle() == null ? "Conversation" : conversation.getTitle())
                 .append("\n\n");
         markdown.append("- **Assistant:** ").append(conversation.getAssistantRole().name()).append("\n");
         markdown.append("- **Visibility:** ").append(conversation.getVisibility().name()).append("\n");
-        markdown.append("- **Exported:** ").append(Instant.now()).append("\n\n");
+        markdown.append("- **Exported:** ").append(Instant.now()).append("\n");
+        if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
+            markdown.append("- **Redaction:** ").append(redactionPolicy.wireValue()).append("\n");
+        }
+        markdown.append("\n");
         markdown.append("---\n\n");
         for (MessageEntity message : messages) {
             String label = message.getSender() == MessageSender.USER ? "User" : "Assistant";
             markdown.append("### ").append(label).append(" — ").append(message.getCreatedAt()).append("\n\n");
-            markdown.append(message.getContent()).append("\n\n");
+            markdown.append(redactMessageContent(message.getContent(), redactionPolicy)).append("\n\n");
         }
         return markdown.toString();
+    }
+
+    private static String redactMessageContent(String content, ThreadExportRedactionPolicy redactionPolicy) {
+        return ThreadExportRedactor.redact(content, redactionPolicy);
     }
 
     private String safeExportFilename(ConversationEntity conversation, String extension) {

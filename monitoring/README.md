@@ -45,6 +45,17 @@ Filter by request id when debugging:
 {service="api"} | json | requestId="your-request-id"
 ```
 
+### Retention
+
+Loki compactor deletes logs older than `LOKI_RETENTION_PERIOD` (default **720h / 30 days**). Requires `compactor.retention_enabled` and a 24h TSDB index period (configured in `loki-config.yml`). Compactor marker files live on the `loki-data` volume (`/loki/compactor`).
+
+```bash
+export LOKI_RETENTION_PERIOD=2160h   # 90 days
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+```
+
+Deletion is asynchronous (after compaction + `retention_delete_delay`). Align `max_query_lookback` with retention so Grafana Explore cannot query beyond retained data.
+
 Staging-shaped stack:
 
 ```bash

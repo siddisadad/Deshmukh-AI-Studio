@@ -24,6 +24,14 @@ schema_config:
         prefix: index_
         period: 24h
 
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
 ruler:
   alertmanager_url: http://alertmanager:9093
   enable_alertmanager_v2: true
@@ -34,3 +42,6 @@ ruler:
 
 limits_config:
   allow_structured_metadata: false
+  # Default 30d; override via LOKI_RETENTION_PERIOD (e.g. 720h, 90d). Minimum 24h.
+  retention_period: ${LOKI_RETENTION_PERIOD:-720h}
+  max_query_lookback: ${LOKI_RETENTION_PERIOD:-720h}

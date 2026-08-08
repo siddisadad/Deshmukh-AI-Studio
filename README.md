@@ -132,6 +132,7 @@ uvicorn main:app --reload --port 8000
 - [x] Thread search in chat; Alertmanager + Loki log shipping
 - [x] Read-only conversation share links (public read-only URL)
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
+- [x] Loki log retention (compactor, default 30d)
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 

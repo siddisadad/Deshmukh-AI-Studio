@@ -37,11 +37,14 @@ echo "==> 2/6 healthcheck (edge)"
 echo "==> 3/6 post-deploy-smoke (edge)"
 "${ROOT_DIR}/scripts/post-deploy-smoke.sh" "${EDGE_URL}"
 
-echo "==> 4/6 api-smoke (authenticated journey)"
+echo "==> 4/7 api-smoke (authenticated journey)"
 "${ROOT_DIR}/scripts/api-smoke.sh" "${EDGE_URL}"
 
+echo "==> 5/7 staging-provider-probes (Stripe/OIDC/SAML/SMTP readiness)"
+"${ROOT_DIR}/scripts/staging-provider-probes.sh" "${EDGE_URL}"
+
 if [[ -n "${METRICS_SCRAPE_TOKEN:-}" ]]; then
-  echo "==> 5/6 internal Prometheus metrics (${API_URL})"
+  echo "==> 6/7 internal Prometheus metrics (${API_URL})"
   status="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' \
     -H "Authorization: Bearer ${METRICS_SCRAPE_TOKEN}" \
     "${API_URL%/}/actuator/prometheus")"
@@ -57,10 +60,10 @@ if [[ -n "${METRICS_SCRAPE_TOKEN:-}" ]]; then
   fi
   echo "Internal metrics OK"
 else
-  echo "==> 5/6 skipped — set METRICS_SCRAPE_TOKEN to verify internal Prometheus scrape"
+  echo "==> 6/7 skipped — set METRICS_SCRAPE_TOKEN to verify internal Prometheus scrape"
 fi
 
-echo "==> 6/6 manual dogfood (operator)"
+echo "==> 7/7 manual dogfood (operator)"
 echo "  - Register or login; create org project; requirements + tasks + documents"
 echo "  - AI chat: multi-thread + streaming (retry reconnect if mid-stream drop)"
 echo "  - RAG: upload/index document and search project context"

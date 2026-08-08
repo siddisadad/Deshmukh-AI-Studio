@@ -124,6 +124,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Multi-thread conversations | Per-assistant threads + search + share + single/bulk export + scheduled off-site sync ([19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md)) | Retention policies / legal hold |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue metrics + autoscaling playbook ([18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md)) | K8s HPA / cloud-native autoscaling |
+| Staging dogfood | Automated gates + manual checklist ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md)) | Provider readiness probes ([24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md)) | Full live-host sign-off automation |
 
 ---
 

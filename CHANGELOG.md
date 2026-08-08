@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.19-beta] — 2026-08-08
+
+### Added
+
+- `scripts/staging-provider-probes.sh` — automated Stripe/OIDC/SAML/SMTP readiness probes
+- Integrated into `staging-dogfood.sh` (step 5/7) and `staging-dry-run.sh`
+- `docs/24-STAGING-PROVIDER-PROBES-GUIDE.md` — probe matrix and troubleshooting
+
 ## [0.2.18-beta] — 2026-08-08
 
 ### Added

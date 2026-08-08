@@ -85,6 +85,8 @@ done
 
 "${ROOT_DIR}/scripts/healthcheck.sh" "http://localhost:${STAGING_UI_PORT}"
 "${ROOT_DIR}/scripts/api-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
+API_URL="http://localhost:${STAGING_API_PORT}" \
+  "${ROOT_DIR}/scripts/staging-provider-probes.sh" "http://localhost:${STAGING_UI_PORT}"
 
 echo "Checking worker health…"
 for i in $(seq 1 30); do

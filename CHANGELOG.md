@@ -6,9 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.6-beta] — 2026-08-08
+
 ### Added
 
-- Loki log retention via compactor (`LOKI_RETENTION_PERIOD`, default 720h / 30 days)
+- Loki compactor log retention (`LOKI_RETENTION_PERIOD`, default 720h / 30 days)
+- `max_query_lookback` aligned with retention for Grafana Explore
 
 ## [0.2.5-beta] — 2026-08-08
 

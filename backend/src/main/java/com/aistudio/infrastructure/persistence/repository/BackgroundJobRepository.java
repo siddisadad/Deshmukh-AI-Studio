@@ -18,5 +18,7 @@ public interface BackgroundJobRepository extends JpaRepository<BackgroundJobEnti
             """)
     List<BackgroundJobEntity> findPending(Pageable pageable);
 
+    long countByStatus(JobStatus status);
+
     long countByProjectIdAndStatus(UUID projectId, JobStatus status);
 }

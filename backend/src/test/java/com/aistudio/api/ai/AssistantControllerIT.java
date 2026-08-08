@@ -96,7 +96,7 @@ class AssistantControllerIT {
 
         mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
                         .param("assistantRole", "DEVELOPER")
-                        .param("q", "password")
+                        .param("q", "middleware")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))

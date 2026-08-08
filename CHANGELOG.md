@@ -4,6 +4,16 @@ All notable changes to the **Production MVP** (Spring Boot + React) track.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning targets [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Optional `docker-compose.monitoring.yml` with Prometheus + Grafana
+- Grafana dashboard, alert rules, and `monitoring/README.md`
+- `METRICS_SCRAPE_TOKEN` for internal `/actuator/prometheus` scrapes (JWT alternative)
+- `scripts/staging-dogfood.sh` automated staging validation gates
+- `scripts/write-prometheus-token.sh` for Prometheus bearer token file
+
 ## [0.1.2-beta] — 2026-08-08
 
 ### Added

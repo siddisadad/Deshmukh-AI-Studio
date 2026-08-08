@@ -39,6 +39,8 @@ aistudio:
       access-token-ttl: ${JWT_ACCESS_TTL:15m}
       refresh-token-ttl: ${JWT_REFRESH_TTL:7d}
     hsts-enabled: ${HSTS_ENABLED:false}
+  metrics:
+    scrape-token: ${METRICS_SCRAPE_TOKEN:}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:

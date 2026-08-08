@@ -65,6 +65,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Post-deploy smoke (health + info; after staging/prod is up)
 ./scripts/post-deploy-smoke.sh http://localhost:8088
 
+# Staging dogfood gates (env + health + smoke + optional internal metrics)
+./scripts/staging-dogfood.sh http://localhost:8088
+
+# Optional Prometheus + Grafana (internal metrics; see monitoring/README.md)
+export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
+./scripts/write-prometheus-token.sh
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh

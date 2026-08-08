@@ -92,7 +92,7 @@ Also set `CORS_ORIGINS` and `BILLING_APP_BASE_URL` to the SPA origin.
 
 ```bash
 ./scripts/validate-staging-env.sh   # requires SAML_ACS_URL when SAML_STUB_MODE=false
-export IMAGE_TAG=v0.2.19-beta
+export IMAGE_TAG=v0.2.20-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 

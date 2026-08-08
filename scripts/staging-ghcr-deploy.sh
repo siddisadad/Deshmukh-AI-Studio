@@ -60,4 +60,7 @@ done
 
 "${ROOT_DIR}/scripts/healthcheck.sh" "http://localhost:${STAGING_UI_PORT}"
 
+echo "Running post-deploy smoke…"
+"${ROOT_DIR}/scripts/post-deploy-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
+
 echo "Staging GHCR deploy healthy (IMAGE_TAG=${IMAGE_TAG})."

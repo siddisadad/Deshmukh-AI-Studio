@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.8-beta] — 2026-08-08
+
 ### Added
 
 - Conversation thread export (`GET /conversations/{id}/export`) — JSON or Markdown download

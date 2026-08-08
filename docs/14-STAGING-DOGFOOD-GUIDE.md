@@ -192,14 +192,18 @@ Redeploy API after changes.
 - [ ] Logout and SSO login again — same user, org/project access intact
 - [ ] User without org gets onboarding path (not a blank error)
 
-### 6.4 IdP-specific notes
+### 6.4 IdP-specific setup
 
-| IdP | Issuer tip |
+Detailed step-by-step guides for **Okta**, **Microsoft Entra ID**, **Google**, and **Auth0**: [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md).
+
+Quick issuer reference:
+
+| IdP | `OIDC_ISSUER_URI` example |
 |---|---|
-| Okta | Issuer like `https://{org}.okta.com/oauth2/default` |
-| Azure AD | Issuer `https://login.microsoftonline.com/{tenant}/v2.0` |
-| Google | Issuer `https://accounts.google.com`; restrict OAuth client to staging host |
-| Auth0 | Issuer `https://{tenant}.auth0.com/` |
+| Okta | `https://{org}.okta.com/oauth2/default` |
+| Azure AD | `https://login.microsoftonline.com/{tenant-id}/v2.0` |
+| Google | `https://accounts.google.com` |
+| Auth0 | `https://{tenant}.auth0.com/` |
 
 Full SAML is not in MVP; use OIDC or mock SSO for staging.
 

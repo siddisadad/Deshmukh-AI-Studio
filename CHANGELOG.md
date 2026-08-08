@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- `docs/18-JOB-WORKER-AUTOSCALING-GUIDE.md` — worker scaling playbook (queue depth, alerts, `WORKER_REPLICAS`)
+- `scripts/worker-scale-hint.sh` — suggest replica count from `aistudio.jobs.queue.depth`
+
 ## [0.2.12-beta] — 2026-08-08
 
 ### Added

@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Prometheus gauges `aistudio.jobs.queue.depth` by job status (pending/running/failed, etc.)
+- Grafana dashboard panel + Alertmanager rule for high pending queue depth
+
 ## [0.2.10-beta] — 2026-08-08
 
 ### Added

@@ -123,7 +123,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)) | Full SAML SP binding |
 | Multi-thread conversations | Per-assistant threads + search + share + single/bulk export | Scheduled off-site sync |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
-| Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica | Autoscaling / queue depth metrics |
+| Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue depth metrics | Worker autoscaling playbooks |
 
 ---
 

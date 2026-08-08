@@ -19,6 +19,7 @@ Read in order; each document builds on the previous.
 | 12 | [12-TESTING-STRATEGY.md](12-TESTING-STRATEGY.md) | Test pyramid & gates |
 | 13 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Docker/Nginx production deploy |
 | 14 | [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) | Staging deploy, Stripe/OIDC dogfood, sign-off |
+| 15 | [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md) | Okta, Azure AD, Google, Auth0 OIDC setup |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.7-beta** adds private threads + share links — see [CHANGELOG.md](../CHANGELOG.md).
 

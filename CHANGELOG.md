@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- `docs/15-OIDC-IDP-GUIDE.md` — step-by-step OIDC setup for Okta, Entra ID, Google, Auth0
+
 ## [0.2.7-beta] — 2026-08-08
 
 ### Added

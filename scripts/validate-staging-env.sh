@@ -45,6 +45,7 @@ if [[ "$sso_provider" == "oidc" ]]; then
   require OIDC_ISSUER_URI
   require OIDC_CLIENT_ID
   require OIDC_CLIENT_SECRET
+  require SSO_APP_BASE_URL
 fi
 
 mail_provider="${MAIL_PROVIDER:-logging}"

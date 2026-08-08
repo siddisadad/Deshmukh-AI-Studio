@@ -61,10 +61,24 @@ export interface ChatResponse {
   model: string;
 }
 
+export interface StreamUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  streamChars: number;
+  deltaCount: number;
+}
+
+export interface StreamDoneResult {
+  assistantMessage: ChatMessage;
+  provider: string;
+  model: string;
+  usage?: StreamUsage;
+}
+
 export interface StreamHandlers {
   onUser?: (message: ChatMessage) => void;
   onDelta?: (text: string) => void;
-  onDone?: (result: { assistantMessage: ChatMessage; provider: string; model: string }) => void;
+  onDone?: (result: StreamDoneResult) => void;
   onError?: (message: string) => void;
 }
 
@@ -115,6 +129,45 @@ async function readStreamError(response: Response): Promise<string> {
     // ignore
   }
   return message;
+}
+
+function parseStreamUsage(parsed: Record<string, unknown>): StreamUsage | undefined {
+  const raw = parsed.usage as Record<string, unknown> | undefined;
+  if (!raw || typeof raw !== 'object') {
+    return undefined;
+  }
+  const streamChars = Number(raw.streamChars);
+  const deltaCount = Number(raw.deltaCount);
+  if (!Number.isFinite(streamChars) || !Number.isFinite(deltaCount)) {
+    return undefined;
+  }
+  const usage: StreamUsage = { streamChars, deltaCount };
+  if (raw.inputTokens != null && Number.isFinite(Number(raw.inputTokens))) {
+    usage.inputTokens = Number(raw.inputTokens);
+  }
+  if (raw.outputTokens != null && Number.isFinite(Number(raw.outputTokens))) {
+    usage.outputTokens = Number(raw.outputTokens);
+  }
+  return usage;
+}
+
+/** Batches rapid SSE deltas to one RAF flush for smoother rendering. */
+export function createDeltaBatcher(onFlush: (text: string) => void): (delta: string) => void {
+  let pending = '';
+  let scheduled = false;
+  return (delta: string) => {
+    pending += delta;
+    if (!scheduled) {
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        if (pending) {
+          onFlush(pending);
+          pending = '';
+        }
+      });
+    }
+  };
 }
 
 function triggerBlobDownload(blob: Blob, disposition: string | undefined, defaultFilename: string) {
@@ -186,9 +239,13 @@ export async function parseSseStream(
           } else if (eventName === 'delta') {
             handlers.onDelta?.(String(parsed.text || ''));
           } else if (eventName === 'done') {
-            handlers.onDone?.(
-              parsed as unknown as { assistantMessage: ChatMessage; provider: string; model: string },
-            );
+            const usage = parseStreamUsage(parsed);
+            handlers.onDone?.({
+              assistantMessage: parsed.assistantMessage as ChatMessage,
+              provider: String(parsed.provider || ''),
+              model: String(parsed.model || ''),
+              ...(usage ? { usage } : {}),
+            });
           } else if (eventName === 'error') {
             handlers.onError?.(String(parsed.message || 'Stream failed'));
           }
@@ -370,7 +427,7 @@ export const chatApi = {
               userMessageId = message.id;
               handlers.onUser?.(message);
             },
-            onDelta: handlers.onDelta,
+            onDelta: handlers.onDelta ? createDeltaBatcher(handlers.onDelta) : undefined,
             onDone: handlers.onDone,
             onError: handlers.onError,
           },

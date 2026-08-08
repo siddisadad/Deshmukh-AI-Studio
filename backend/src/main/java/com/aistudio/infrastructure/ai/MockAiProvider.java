@@ -15,7 +15,10 @@ public class MockAiProvider implements AiProviderPort {
     @Override
     public AiGenerationResult generate(AiGenerationRequest request) {
         String text = buildText(request);
-        return new AiGenerationResult(text, "mock-1", null, null);
+        int inputTokens = estimateTokens(request.systemPrompt())
+                + request.messages().stream().mapToInt(m -> estimateTokens(m.content())).sum();
+        int outputTokens = estimateTokens(text);
+        return new AiGenerationResult(text, "mock-1", inputTokens, outputTokens);
     }
 
     @Override
@@ -157,5 +160,13 @@ public class MockAiProvider implements AiProviderPort {
             return "";
         }
         return value.length() <= max ? value : value.substring(0, max) + "\n…[truncated]";
+    }
+
+    /** Rough token estimate for mock metering (chars / 4). */
+    private static int estimateTokens(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        return Math.max(1, text.length() / 4);
     }
 }

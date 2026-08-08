@@ -117,7 +117,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Item | Status on `main` | Next depth |
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
-| Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
+| Streaming AI responses | SSE chat + reconnect/retry UX + token metering UI ([23-STREAMING-TOKEN-UX-GUIDE.md](23-STREAMING-TOKEN-UX-GUIDE.md)) | Provider-native streaming APIs |
 | Observability | JSON logs, Prometheus, Grafana, Loki alerts, retention, queue metrics, export archives | Glacier lifecycle + cross-region ([21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md)) | Real-time multi-region Loki query |
 | Billing / plans | Stripe checkout + webhook + usage history + invoice list ([22-BILLING-USAGE-INVOICES-GUIDE.md](22-BILLING-USAGE-INVOICES-GUIDE.md)) | Usage-based pricing / seat metering |
 | SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub + SP binding ([20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md)) | Signed AuthnRequest / encrypted assertions |

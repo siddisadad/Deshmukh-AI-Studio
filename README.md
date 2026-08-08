@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.17-beta
+export IMAGE_TAG=v0.2.18-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -140,7 +140,7 @@ uvicorn main:app --reload --port 8000
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.17-beta` adds billing usage metering and invoices; `v0.2.16-beta` added Glacier archive playbooks.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.18-beta` adds streaming token UX and SSE usage metadata; `v0.2.17-beta` added billing usage metering.
 
 ## Docs
 

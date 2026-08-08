@@ -66,7 +66,13 @@ aistudio:
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
   billing:
+    provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}
+    stripe:
+      api-key: ${STRIPE_API_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+      pro-price-id: ${STRIPE_PRO_PRICE_ID:}
+      team-price-id: ${STRIPE_TEAM_PRICE_ID:}
   sso:
     enabled: ${SSO_ENABLED:true}
     provider: ${SSO_PROVIDER:mock}

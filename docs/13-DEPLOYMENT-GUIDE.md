@@ -253,6 +253,25 @@ docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```
 
+### Stripe billing (production)
+
+Set `BILLING_PROVIDER=stripe` and Stripe secrets in `.env` (never commit):
+
+| Variable | Purpose |
+|---|---|
+| `STRIPE_API_KEY` | Secret key (`sk_live_…` or `sk_test_…`) |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret from Stripe Dashboard webhook endpoint |
+| `STRIPE_PRO_PRICE_ID` | Price ID for Pro plan |
+| `STRIPE_TEAM_PRICE_ID` | Price ID for Team plan |
+
+Webhook URL (public HTTPS): `https://<api-host>/api/v1/billing/stripe/webhook`
+
+Subscribe to `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+
+Optional: set `plans.stripe_price_id` in the database (migration `V13`) instead of env price IDs.
+
+Default `BILLING_PROVIDER=mock` keeps mock checkout for local dev and CI.
+
 ### Cloud Agent environment builds
 
 Repository config lives in `.cursor/environment.json` (install, start, dev-server terminals). After merging to `main`:

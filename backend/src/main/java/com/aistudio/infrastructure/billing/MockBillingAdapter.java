@@ -4,12 +4,14 @@ import com.aistudio.application.billing.BillingPort;
 import com.aistudio.domain.billing.PlanCode;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * Dev/CI billing adapter. Swap for StripeBillingAdapter when keys are configured.
  */
 @Component
+@ConditionalOnProperty(name = "aistudio.billing.provider", havingValue = "mock", matchIfMissing = true)
 public class MockBillingAdapter implements BillingPort {
 
     private final String appBaseUrl;

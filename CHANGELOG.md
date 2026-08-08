@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.12-beta] — 2026-08-08
+
 ### Added
 
 - Loki S3 object-store config (`monitoring/loki-config-s3.yml`) + `docker-compose.monitoring-s3.yml` overlay

@@ -18,8 +18,9 @@ Read in order; each document builds on the previous.
 | 11 | [11-CODING-STANDARDS.md](11-CODING-STANDARDS.md) | Engineering standards |
 | 12 | [12-TESTING-STRATEGY.md](12-TESTING-STRATEGY.md) | Test pyramid & gates |
 | 13 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Docker/Nginx production deploy |
+| 14 | [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) | Staging deploy, Stripe/OIDC dogfood, sign-off |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. See [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.0-beta** adds SSE reconnect, observability overlay, and staging dogfood gates — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

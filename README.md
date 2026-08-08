@@ -67,6 +67,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Staging dogfood gates (env + health + smoke + optional internal metrics)
 ./scripts/staging-dogfood.sh http://localhost:8088
+# Full Stripe/OIDC/manual checklist: docs/14-STAGING-DOGFOOD-GUIDE.md
 
 # Optional Prometheus + Grafana (internal metrics; see monitoring/README.md)
 export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"

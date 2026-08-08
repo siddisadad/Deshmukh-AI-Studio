@@ -190,6 +190,15 @@ export function AiChatPage() {
     }
   }
 
+  async function onExportAllThreads() {
+    if (!projectId || sending) return;
+    try {
+      await chatApi.downloadProjectExport(projectId, 'markdown', role);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to export threads');
+    }
+  }
+
   async function onExportThread(threadId: string) {
     if (sending) return;
     try {
@@ -411,16 +420,26 @@ export function AiChatPage() {
         }}
       >
         <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', flexDirection: 'column', minHeight: 280 }} aria-label="Conversation threads">
-          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 0.5 }}>
+          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 0.5, gap: 0.5 }}>
             <Typography variant="subtitle2">Threads</Typography>
-            <Button
-              size="small"
-              onClick={() => void onNewThread()}
-              disabled={sending}
-              data-testid="chat-new-thread"
-            >
-              New
-            </Button>
+            <Stack direction="row" spacing={0.5}>
+              <Button
+                size="small"
+                onClick={() => void onExportAllThreads()}
+                disabled={sending || threads.length === 0}
+                data-testid="chat-export-all-threads"
+              >
+                Export all
+              </Button>
+              <Button
+                size="small"
+                onClick={() => void onNewThread()}
+                disabled={sending}
+                data-testid="chat-new-thread"
+              >
+                New
+              </Button>
+            </Stack>
           </Stack>
           <FormControlLabel
             sx={{ px: 0.5, mb: 1 }}

@@ -82,6 +82,23 @@ public class AssistantController {
         return conversationService.listConversations(projectId, assistantRole, q, user.getId());
     }
 
+    @GetMapping("/api/v1/projects/{projectId}/conversations/export")
+    @Operation(summary = "Export all visible conversation threads for a project as JSON or Markdown archive")
+    public ResponseEntity<byte[]> exportProjectConversations(
+            @PathVariable UUID projectId,
+            @RequestParam(required = false) String assistantRole,
+            @RequestParam(defaultValue = "markdown") String format,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        ExportedConversation exported = conversationService.exportProjectConversations(
+                projectId, assistantRole, format, user.getId());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + exported.filename() + "\"")
+                .contentType(MediaType.parseMediaType(exported.contentType()))
+                .body(exported.body());
+    }
+
     @PostMapping("/api/v1/projects/{projectId}/conversations")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new conversation thread")

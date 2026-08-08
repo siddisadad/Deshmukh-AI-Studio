@@ -19,8 +19,10 @@ import com.aistudio.domain.ai.MessageSender;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
 import com.aistudio.infrastructure.persistence.entity.MessageEntity;
+import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.repository.ConversationRepository;
 import com.aistudio.infrastructure.persistence.repository.MessageRepository;
+import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.aistudio.shared.util.TokenHashUtils;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -28,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +54,7 @@ public class ConversationService {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final ProjectRepository projectRepository;
     private final ProjectAuthorizationService authorizationService;
     private final AssistantRegistry assistantRegistry;
     private final ContextBuilder contextBuilder;
@@ -66,6 +70,7 @@ public class ConversationService {
     public ConversationService(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
+            ProjectRepository projectRepository,
             ProjectAuthorizationService authorizationService,
             AssistantRegistry assistantRegistry,
             ContextBuilder contextBuilder,
@@ -80,6 +85,7 @@ public class ConversationService {
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
+        this.projectRepository = projectRepository;
         this.authorizationService = authorizationService;
         this.assistantRegistry = assistantRegistry;
         this.contextBuilder = contextBuilder;
@@ -215,6 +221,33 @@ public class ConversationService {
             return exportAsJson(conversation, messages);
         }
         return exportAsMarkdown(conversation, messages);
+    }
+
+    @Transactional(readOnly = true)
+    public ExportedConversation exportProjectConversations(
+            UUID projectId,
+            String roleValue,
+            String format,
+            UUID userId
+    ) {
+        authorizationService.requireProjectAccess(projectId, userId);
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        List<ConversationEntity> conversations;
+        if (roleValue == null || roleValue.isBlank()) {
+            conversations = conversationRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+        } else {
+            conversations = conversationRepository.findByProjectIdAndAssistantRoleOrderByUpdatedAtDesc(
+                    projectId, parseRole(roleValue));
+        }
+        List<ConversationEntity> visible = conversations.stream()
+                .filter(c -> canViewConversation(c, userId))
+                .toList();
+        String normalizedFormat = normalizeExportFormat(format);
+        if ("json".equals(normalizedFormat)) {
+            return exportProjectAsJson(project, visible);
+        }
+        return exportProjectAsMarkdown(project, visible);
     }
 
     @Transactional(readOnly = true)
@@ -521,22 +554,9 @@ public class ConversationService {
     }
 
     private ExportedConversation exportAsJson(ConversationEntity conversation, List<MessageEntity> messages) {
-        Map<String, Object> payload = Map.of(
-                "id", conversation.getId(),
-                "projectId", conversation.getProjectId(),
-                "assistantRole", conversation.getAssistantRole().name(),
-                "title", conversation.getTitle(),
-                "visibility", conversation.getVisibility().name(),
-                "exportedAt", Instant.now(),
-                "messages", messages.stream()
-                        .map(m -> Map.of(
-                                "id", m.getId(),
-                                "sender", m.getSender().name(),
-                                "content", m.getContent(),
-                                "createdAt", m.getCreatedAt()))
-                        .toList());
         try {
-            byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(payload);
+            byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsBytes(conversationExportMap(conversation, messages));
             return new ExportedConversation(
                     body,
                     MediaType.APPLICATION_JSON_VALUE,
@@ -547,6 +567,71 @@ public class ConversationService {
     }
 
     private ExportedConversation exportAsMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {
+        byte[] body = buildConversationMarkdown(conversation, messages).getBytes(StandardCharsets.UTF_8);
+        return new ExportedConversation(body, "text/markdown; charset=UTF-8", safeExportFilename(conversation, "md"));
+    }
+
+    private ExportedConversation exportProjectAsJson(ProjectEntity project, List<ConversationEntity> conversations) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("projectId", project.getId());
+        payload.put("projectKey", project.getProjectKey());
+        payload.put("projectName", project.getName());
+        payload.put("exportedAt", Instant.now());
+        payload.put("conversationCount", conversations.size());
+        List<Map<String, Object>> conversationPayloads = new ArrayList<>();
+        for (ConversationEntity conversation : conversations) {
+            List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+            conversationPayloads.add(conversationExportMap(conversation, messages));
+        }
+        payload.put("conversations", conversationPayloads);
+        try {
+            byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(payload);
+            return new ExportedConversation(
+                    body,
+                    MediaType.APPLICATION_JSON_VALUE,
+                    safeProjectExportFilename(project, "json"));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to serialize project conversation archive", ex);
+        }
+    }
+
+    private ExportedConversation exportProjectAsMarkdown(ProjectEntity project, List<ConversationEntity> conversations) {
+        StringBuilder markdown = new StringBuilder();
+        markdown.append("# Project archive: ").append(project.getName()).append("\n\n");
+        markdown.append("- **Project key:** ").append(project.getProjectKey()).append("\n");
+        markdown.append("- **Exported:** ").append(Instant.now()).append("\n");
+        markdown.append("- **Threads:** ").append(conversations.size()).append("\n\n");
+        markdown.append("---\n\n");
+        for (ConversationEntity conversation : conversations) {
+            List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+            markdown.append(buildConversationMarkdown(conversation, messages)).append("\n\n---\n\n");
+        }
+        byte[] body = markdown.toString().getBytes(StandardCharsets.UTF_8);
+        return new ExportedConversation(
+                body,
+                "text/markdown; charset=UTF-8",
+                safeProjectExportFilename(project, "md"));
+    }
+
+    private Map<String, Object> conversationExportMap(ConversationEntity conversation, List<MessageEntity> messages) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", conversation.getId());
+        map.put("projectId", conversation.getProjectId());
+        map.put("assistantRole", conversation.getAssistantRole().name());
+        map.put("title", conversation.getTitle());
+        map.put("visibility", conversation.getVisibility().name());
+        map.put("exportedAt", Instant.now());
+        map.put("messages", messages.stream()
+                .map(m -> Map.of(
+                        "id", m.getId(),
+                        "sender", m.getSender().name(),
+                        "content", m.getContent(),
+                        "createdAt", m.getCreatedAt()))
+                .toList());
+        return map;
+    }
+
+    private String buildConversationMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {
         StringBuilder markdown = new StringBuilder();
         markdown.append("# ").append(conversation.getTitle() == null ? "Conversation" : conversation.getTitle())
                 .append("\n\n");
@@ -559,8 +644,7 @@ public class ConversationService {
             markdown.append("### ").append(label).append(" — ").append(message.getCreatedAt()).append("\n\n");
             markdown.append(message.getContent()).append("\n\n");
         }
-        byte[] body = markdown.toString().getBytes(StandardCharsets.UTF_8);
-        return new ExportedConversation(body, "text/markdown; charset=UTF-8", safeExportFilename(conversation, "md"));
+        return markdown.toString();
     }
 
     private String safeExportFilename(ConversationEntity conversation, String extension) {
@@ -573,6 +657,18 @@ public class ConversationService {
             base = base.substring(0, 60);
         }
         return base + "-" + conversation.getId().toString().substring(0, 8) + "." + extension;
+    }
+
+    private String safeProjectExportFilename(ProjectEntity project, String extension) {
+        String base = project.getProjectKey() == null ? "project" : project.getProjectKey().trim();
+        base = base.replaceAll("[^a-zA-Z0-9._-]+", "-").replaceAll("-+", "-");
+        if (base.isBlank() || base.equals("-")) {
+            base = "project";
+        }
+        if (base.length() > 20) {
+            base = base.substring(0, 20);
+        }
+        return base + "-threads-" + project.getId().toString().substring(0, 8) + "." + extension;
     }
 
     private record PreparedChat(

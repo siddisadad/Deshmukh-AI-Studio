@@ -57,4 +57,4 @@ export IMAGE_TAG=v0.2.23-beta
 # Invite until seat limit on FREE org
 ```
 
-Stripe checkout still uses base plan price; seat/overage estimates are in-app metering for MVP (invoice via portal when Stripe metered prices are configured).
+Stripe checkout still uses base plan price when metered IDs are omitted. With metered price IDs configured, checkout attaches seat + AI overage items and `scheduled-stripe-usage-sync.sh` reports usage — see [32-STRIPE-METERED-PRICES-SYNC-GUIDE.md](32-STRIPE-METERED-PRICES-SYNC-GUIDE.md).

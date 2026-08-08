@@ -81,7 +81,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.26-beta
+export IMAGE_TAG=v0.2.27-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -141,7 +141,7 @@ uvicorn main:app --reload --port 8000
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.26-beta` adds staging live-host sign-off automation; `v0.2.25-beta` added compliance export on purge.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.27-beta` adds Stripe metered prices sync; `v0.2.26-beta` added staging live-host sign-off automation.
 
 ## Docs
 

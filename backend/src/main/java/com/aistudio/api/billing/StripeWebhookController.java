@@ -1,6 +1,7 @@
 package com.aistudio.api.billing;
 
 import com.aistudio.application.billing.BillingService;
+import com.aistudio.api.billing.dto.StripeMeteredSyncResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -26,5 +27,11 @@ public class StripeWebhookController {
     ) {
         billingService.handleStripeWebhook(payload, signature);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/v1/billing/stripe/sync-metered-usage")
+    @Operation(summary = "Sync seat + AI overage usage to Stripe metered prices (BILLING_USAGE_SYNC_TOKEN)")
+    public StripeMeteredSyncResponse syncMeteredUsage() {
+        return billingService.syncStripeMeteredUsage();
     }
 }

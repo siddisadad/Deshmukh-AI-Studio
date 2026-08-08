@@ -11,10 +11,16 @@ import com.aistudio.infrastructure.persistence.repository.PlanRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
+import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionItem;
+import com.stripe.model.UsageRecord;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.UsageRecordCreateOnSubscriptionItemParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.LineItem;
 import com.stripe.param.InvoiceListParams;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,7 +65,7 @@ public class StripeBillingAdapter implements BillingPort {
     ) {
         PlanEntity plan = planRepository.findById(planCode)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Plan not found"));
-        String priceId = resolvePriceId(plan);
+        String priceId = resolveBasePriceId(plan);
         if (priceId == null || priceId.isBlank()) {
             throw new DomainException(
                     "CONFIG_ERROR",
@@ -70,19 +76,27 @@ public class StripeBillingAdapter implements BillingPort {
         String resolvedSuccess = blankToDefault(successUrl, appBaseUrl + "/settings/billing?checkout=success");
         String resolvedCancel = blankToDefault(cancelUrl, appBaseUrl + "/settings/billing?checkout=cancel");
 
+        SessionCreateParams.Builder builder = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+                .setCustomer(customerId)
+                .setSuccessUrl(resolvedSuccess)
+                .setCancelUrl(resolvedCancel)
+                .setClientReferenceId(organizationId.toString())
+                .putMetadata("organizationId", organizationId.toString())
+                .putMetadata("planCode", planCode.name())
+                .addLineItem(LineItem.builder().setPrice(priceId).setQuantity(1L).build());
+
+        String seatMeteredPriceId = resolveSeatMeteredPriceId(plan);
+        if (seatMeteredPriceId != null && !seatMeteredPriceId.isBlank()) {
+            builder.addLineItem(LineItem.builder().setPrice(seatMeteredPriceId).build());
+        }
+        String aiOverageMeteredPriceId = resolveAiOverageMeteredPriceId(plan);
+        if (aiOverageMeteredPriceId != null && !aiOverageMeteredPriceId.isBlank()) {
+            builder.addLineItem(LineItem.builder().setPrice(aiOverageMeteredPriceId).build());
+        }
+
         try {
-            com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.create(
-                    SessionCreateParams.builder()
-                            .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-                            .setCustomer(customerId)
-                            .setSuccessUrl(resolvedSuccess)
-                            .setCancelUrl(resolvedCancel)
-                            .setClientReferenceId(organizationId.toString())
-                            .putMetadata("organizationId", organizationId.toString())
-                            .putMetadata("planCode", planCode.name())
-                            .addLineItem(LineItem.builder().setPrice(priceId).setQuantity(1L).build())
-                            .build()
-            );
+            com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.create(builder.build());
             return new CheckoutSession(session.getId(), session.getUrl());
         } catch (StripeException ex) {
             throw new DomainException("BILLING_ERROR", "Stripe checkout failed: " + ex.getMessage());
@@ -107,7 +121,7 @@ public class StripeBillingAdapter implements BillingPort {
     }
 
     @Override
-    public List<BillingPort.InvoiceSummary> listInvoices(UUID organizationId, int limit) {
+    public List<InvoiceSummary> listInvoices(UUID organizationId, int limit) {
         String customerId = ensureCustomer(organizationId);
         int cappedLimit = Math.min(Math.max(limit, 1), 24);
         try {
@@ -117,7 +131,7 @@ public class StripeBillingAdapter implements BillingPort {
                             .setLimit((long) cappedLimit)
                             .build()
             ).getData().stream()
-                    .map(invoice -> new BillingPort.InvoiceSummary(
+                    .map(invoice -> new InvoiceSummary(
                             invoice.getId(),
                             invoice.getNumber(),
                             invoice.getStatus(),
@@ -131,6 +145,86 @@ public class StripeBillingAdapter implements BillingPort {
         } catch (StripeException ex) {
             throw new DomainException("BILLING_ERROR", "Stripe invoice list failed: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public void refreshSubscriptionItems(UUID organizationId, String externalSubscriptionId) {
+        if (externalSubscriptionId == null || externalSubscriptionId.isBlank()) {
+            return;
+        }
+        OrganizationSubscriptionEntity sub = subscriptionRepository.findByOrganizationId(organizationId)
+                .orElse(null);
+        if (sub == null) {
+            return;
+        }
+        try {
+            Subscription subscription = Subscription.retrieve(externalSubscriptionId);
+            applySubscriptionItemIds(sub, subscription);
+            subscriptionRepository.save(sub);
+        } catch (StripeException ex) {
+            throw new DomainException("BILLING_ERROR", "Stripe subscription retrieve failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public MeteredUsageSyncResult reportMeteredUsage(
+            UUID organizationId,
+            long seatQuantity,
+            long aiOverageQuantity,
+            long timestampEpochSeconds
+    ) {
+        OrganizationSubscriptionEntity sub = subscriptionRepository.findByOrganizationId(organizationId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Subscription not found"));
+        if (sub.getExternalSubscriptionId() == null || sub.getExternalSubscriptionId().isBlank()) {
+            return MeteredUsageSyncResult.skipped("No Stripe subscription for org " + organizationId);
+        }
+        PlanEntity plan = planRepository.findById(sub.getPlanCode())
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Plan not found"));
+        if (sub.getStripeSeatSubscriptionItemId() == null || sub.getStripeAiOverageSubscriptionItemId() == null) {
+            refreshSubscriptionItems(organizationId, sub.getExternalSubscriptionId());
+            sub = subscriptionRepository.findByOrganizationId(organizationId).orElse(sub);
+        }
+        List<String> details = new ArrayList<>();
+        boolean anySynced = false;
+        try {
+            if (sub.getStripeSeatSubscriptionItemId() != null
+                    && !sub.getStripeSeatSubscriptionItemId().isBlank()
+                    && resolveSeatMeteredPriceId(plan) != null) {
+                UsageRecord.createOnSubscriptionItem(
+                        sub.getStripeSeatSubscriptionItemId(),
+                        UsageRecordCreateOnSubscriptionItemParams.builder()
+                                .setQuantity(seatQuantity)
+                                .setTimestamp(timestampEpochSeconds)
+                                .setAction(UsageRecordCreateOnSubscriptionItemParams.Action.SET)
+                                .build()
+                );
+                details.add("seats=" + seatQuantity);
+                anySynced = true;
+            }
+            if (sub.getStripeAiOverageSubscriptionItemId() != null
+                    && !sub.getStripeAiOverageSubscriptionItemId().isBlank()
+                    && aiOverageQuantity > 0
+                    && resolveAiOverageMeteredPriceId(plan) != null) {
+                UsageRecord.createOnSubscriptionItem(
+                        sub.getStripeAiOverageSubscriptionItemId(),
+                        UsageRecordCreateOnSubscriptionItemParams.builder()
+                                .setQuantity(aiOverageQuantity)
+                                .setTimestamp(timestampEpochSeconds)
+                                .setAction(UsageRecordCreateOnSubscriptionItemParams.Action.INCREMENT)
+                                .build()
+                );
+                details.add("aiOverage+=" + aiOverageQuantity);
+                anySynced = true;
+            }
+        } catch (StripeException ex) {
+            return MeteredUsageSyncResult.failed("Stripe usage record failed: " + ex.getMessage());
+        }
+        if (!anySynced) {
+            return MeteredUsageSyncResult.skipped("Metered price IDs or subscription items not configured");
+        }
+        sub.setStripeMeteredUsageSyncedAt(Instant.ofEpochSecond(timestampEpochSeconds));
+        subscriptionRepository.save(sub);
+        return MeteredUsageSyncResult.synced(String.join(", ", details));
     }
 
     private String ensureCustomer(UUID organizationId) {
@@ -154,7 +248,32 @@ public class StripeBillingAdapter implements BillingPort {
         }
     }
 
-    private String resolvePriceId(PlanEntity plan) {
+    private void applySubscriptionItemIds(OrganizationSubscriptionEntity sub, Subscription subscription) {
+        PlanEntity plan = planRepository.findById(sub.getPlanCode()).orElse(null);
+        if (plan == null || subscription.getItems() == null) {
+            return;
+        }
+        String basePriceId = resolveBasePriceId(plan);
+        String seatPriceId = resolveSeatMeteredPriceId(plan);
+        String aiPriceId = resolveAiOverageMeteredPriceId(plan);
+        for (SubscriptionItem item : subscription.getItems().getData()) {
+            if (item.getPrice() == null) {
+                continue;
+            }
+            String priceId = item.getPrice().getId();
+            if (basePriceId != null && priceId.equals(basePriceId)) {
+                sub.setStripeBaseSubscriptionItemId(item.getId());
+            }
+            if (seatPriceId != null && priceId.equals(seatPriceId)) {
+                sub.setStripeSeatSubscriptionItemId(item.getId());
+            }
+            if (aiPriceId != null && priceId.equals(aiPriceId)) {
+                sub.setStripeAiOverageSubscriptionItemId(item.getId());
+            }
+        }
+    }
+
+    private String resolveBasePriceId(PlanEntity plan) {
         if (plan.getStripePriceId() != null && !plan.getStripePriceId().isBlank()) {
             return plan.getStripePriceId();
         }
@@ -164,6 +283,34 @@ public class StripeBillingAdapter implements BillingPort {
         }
         if (plan.getCode() == PlanCode.TEAM) {
             return stripe.teamPriceId();
+        }
+        return null;
+    }
+
+    private String resolveSeatMeteredPriceId(PlanEntity plan) {
+        if (plan.getStripeSeatMeteredPriceId() != null && !plan.getStripeSeatMeteredPriceId().isBlank()) {
+            return plan.getStripeSeatMeteredPriceId();
+        }
+        BillingProperties.Stripe stripe = billingProperties.stripe();
+        if (plan.getCode() == PlanCode.PRO) {
+            return stripe.proSeatMeteredPriceId();
+        }
+        if (plan.getCode() == PlanCode.TEAM) {
+            return stripe.teamSeatMeteredPriceId();
+        }
+        return null;
+    }
+
+    private String resolveAiOverageMeteredPriceId(PlanEntity plan) {
+        if (plan.getStripeAiOverageMeteredPriceId() != null && !plan.getStripeAiOverageMeteredPriceId().isBlank()) {
+            return plan.getStripeAiOverageMeteredPriceId();
+        }
+        BillingProperties.Stripe stripe = billingProperties.stripe();
+        if (plan.getCode() == PlanCode.PRO) {
+            return stripe.proAiOverageMeteredPriceId();
+        }
+        if (plan.getCode() == PlanCode.TEAM) {
+            return stripe.teamAiOverageMeteredPriceId();
         }
         return null;
     }

@@ -31,7 +31,7 @@ class JwtAuthFilterMetricsScrapeTest {
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthFilter(jwtService, userRepository, "metrics-scrape-test-token");
+        filter = new JwtAuthFilter(jwtService, userRepository, "metrics-scrape-test-token", "");
         SecurityContextHolder.clearContext();
     }
 

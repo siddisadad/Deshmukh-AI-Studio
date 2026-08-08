@@ -4,6 +4,7 @@ import com.aistudio.api.billing.dto.BillingOverviewResponse;
 import com.aistudio.api.billing.dto.CheckoutResponse;
 import com.aistudio.api.billing.dto.InvoiceResponse;
 import com.aistudio.api.billing.dto.PlanResponse;
+import com.aistudio.api.billing.dto.StripeMeteredSyncResponse;
 import com.aistudio.api.billing.dto.UsageDayResponse;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.billing.PlanCode;
@@ -337,6 +338,46 @@ public class BillingService {
         subscriptionRepository.save(sub);
     }
 
+    @Transactional
+    public StripeMeteredSyncResponse syncStripeMeteredUsage() {
+        if (!"stripe".equals(billingPort.providerId())) {
+            return new StripeMeteredSyncResponse(0, 0, 0, 0, List.of("Billing provider is not stripe"));
+        }
+        List<OrganizationSubscriptionEntity> subscriptions = subscriptionRepository
+                .findByExternalSubscriptionIdIsNotNullAndPlanCodeIn(List.of(PlanCode.PRO, PlanCode.TEAM));
+        int processed = 0;
+        int synced = 0;
+        int skipped = 0;
+        int failed = 0;
+        List<String> messages = new ArrayList<>();
+        long timestampEpochSeconds = Instant.now().getEpochSecond();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        for (OrganizationSubscriptionEntity sub : subscriptions) {
+            processed++;
+            UUID organizationId = sub.getOrganizationId();
+            long memberCount = membershipRepository.countByOrganizationId(organizationId);
+            long seatQuantity = Math.max(0L, memberCount - 1L);
+            int aiOverageToday = usageRepository.sumOverageBetween(organizationId, today, today);
+            BillingPort.MeteredUsageSyncResult result = billingPort.reportMeteredUsage(
+                    organizationId,
+                    seatQuantity,
+                    aiOverageToday,
+                    timestampEpochSeconds
+            );
+            if (result.synced()) {
+                synced++;
+                messages.add(organizationId + ": " + result.detail());
+            } else if (result.skipped()) {
+                skipped++;
+                messages.add(organizationId + ": skip — " + result.detail());
+            } else {
+                failed++;
+                messages.add(organizationId + ": fail — " + result.detail());
+            }
+        }
+        return new StripeMeteredSyncResponse(processed, synced, skipped, failed, messages);
+    }
+
     private void handleCheckoutSessionCompleted(Session session) {
         UUID organizationId = parseOrganizationId(session);
         if (organizationId == null) {
@@ -354,6 +395,9 @@ public class BillingService {
                 SubscriptionStatus.ACTIVE,
                 null
         );
+        if (session.getSubscription() != null && !session.getSubscription().isBlank()) {
+            billingPort.refreshSubscriptionItems(organizationId, session.getSubscription());
+        }
     }
 
     private void handleSubscriptionUpdated(Subscription subscription) {
@@ -372,6 +416,7 @@ public class BillingService {
             sub.setCurrentPeriodEnd(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
         }
         subscriptionRepository.save(sub);
+        billingPort.refreshSubscriptionItems(sub.getOrganizationId(), subscription.getId());
     }
 
     private void handleSubscriptionDeleted(Subscription subscription) {
@@ -383,6 +428,9 @@ public class BillingService {
         sub.setStatus(SubscriptionStatus.ACTIVE);
         sub.setExternalSubscriptionId(null);
         sub.setCurrentPeriodEnd(null);
+        sub.setStripeBaseSubscriptionItemId(null);
+        sub.setStripeSeatSubscriptionItemId(null);
+        sub.setStripeAiOverageSubscriptionItemId(null);
         subscriptionRepository.save(sub);
     }
 

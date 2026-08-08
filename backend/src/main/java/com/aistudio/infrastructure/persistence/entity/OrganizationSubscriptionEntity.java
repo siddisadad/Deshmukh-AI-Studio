@@ -44,6 +44,18 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "current_period_end")
     private Instant currentPeriodEnd;
 
+    @Column(name = "stripe_base_subscription_item_id", length = 120)
+    private String stripeBaseSubscriptionItemId;
+
+    @Column(name = "stripe_seat_subscription_item_id", length = 120)
+    private String stripeSeatSubscriptionItemId;
+
+    @Column(name = "stripe_ai_overage_subscription_item_id", length = 120)
+    private String stripeAiOverageSubscriptionItemId;
+
+    @Column(name = "stripe_metered_usage_synced_at")
+    private Instant stripeMeteredUsageSyncedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

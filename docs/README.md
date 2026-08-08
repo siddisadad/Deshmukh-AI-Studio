@@ -36,8 +36,9 @@ Read in order; each document builds on the previous.
 | 29 | [29-PROVIDER-NATIVE-STREAMING-GUIDE.md](29-PROVIDER-NATIVE-STREAMING-GUIDE.md) | OpenAI/Anthropic native SSE streaming |
 | 30 | [30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md](30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md) | Compliance gzip export before retention purge |
 | 31 | [31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md) | Automated live-host sign-off + report |
+| 32 | [32-STRIPE-METERED-PRICES-SYNC-GUIDE.md](32-STRIPE-METERED-PRICES-SYNC-GUIDE.md) | Stripe metered seat + AI overage sync |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.26-beta** adds staging live-host sign-off automation — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.27-beta** adds Stripe metered prices sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

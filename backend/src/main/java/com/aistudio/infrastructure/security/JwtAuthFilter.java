@@ -22,15 +22,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final String metricsScrapeToken;
+    private final String billingUsageSyncToken;
 
     public JwtAuthFilter(
             JwtService jwtService,
             UserRepository userRepository,
-            @Value("${aistudio.metrics.scrape-token:}") String metricsScrapeToken
+            @Value("${aistudio.metrics.scrape-token:}") String metricsScrapeToken,
+            @Value("${aistudio.billing.usage-sync-token:}") String billingUsageSyncToken
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.metricsScrapeToken = metricsScrapeToken;
+        this.billingUsageSyncToken = billingUsageSyncToken;
     }
 
     @Override
@@ -40,6 +43,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         if (authenticateMetricsScrape(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        if (authenticateBillingUsageSync(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -83,6 +90,32 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         AuthenticatedUser principal = new AuthenticatedUser(
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 "metrics@internal",
+                null);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                principal, null, principal.getAuthorities());
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        return true;
+    }
+
+    private boolean authenticateBillingUsageSync(HttpServletRequest request) {
+        if (billingUsageSyncToken == null || billingUsageSyncToken.isBlank()) {
+            return false;
+        }
+        if (!request.getRequestURI().endsWith("/api/v1/billing/stripe/sync-metered-usage")) {
+            return false;
+        }
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (header == null || !header.startsWith("Bearer ")) {
+            return false;
+        }
+        String token = header.substring(7);
+        if (!token.equals(billingUsageSyncToken)) {
+            return false;
+        }
+        AuthenticatedUser principal = new AuthenticatedUser(
+                UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                "billing-sync@internal",
                 null);
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());

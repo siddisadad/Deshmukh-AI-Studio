@@ -14,12 +14,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
+@ConditionalOnProperty(name = "aistudio.jobs.worker-enabled", havingValue = "true", matchIfMissing = true)
 public class BackgroundJobWorker {
 
     private static final Logger log = LoggerFactory.getLogger(BackgroundJobWorker.class);

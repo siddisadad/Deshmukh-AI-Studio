@@ -35,6 +35,8 @@ COMPOSE=(
   -f docker-compose.yml
   -f docker-compose.prod.yml
   -f docker-compose.dry-run.yml
+  -f docker-compose.worker.yml
+  -f docker-compose.worker-prod.yml
 )
 
 cleanup() {
@@ -63,4 +65,17 @@ done
 
 "${ROOT_DIR}/scripts/healthcheck.sh" "http://localhost:${DRY_RUN_UI_PORT}"
 
-echo "Deploy dry-run passed (prod profile, edge nginx, Flyway on startup)."
+echo "Checking worker health…"
+for i in $(seq 1 30); do
+  if "${COMPOSE[@]}" exec -T worker curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "Worker did not become healthy" >&2
+    "${COMPOSE[@]}" logs --no-color worker || true
+    exit 1
+  fi
+  sleep 2
+done
+
+echo "Deploy dry-run passed (prod profile, edge nginx, Flyway on startup, dedicated job worker)."

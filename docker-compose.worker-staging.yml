@@ -1,0 +1,19 @@
+# GHCR image override for worker service (use with docker-compose.worker.yml + staging).
+services:
+  worker:
+    image: ${API_IMAGE:-ghcr.io/siddisadad/deshmukh-ai-studio/api:${IMAGE_TAG:-main}}
+    build: !reset
+    pull_policy: always
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for staging}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required for staging}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required for staging}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      BILLING_APP_BASE_URL: ${BILLING_APP_BASE_URL:-http://localhost:8088}
+      SSO_APP_BASE_URL: ${SSO_APP_BASE_URL:-http://localhost:8088}
+      BILLING_PROVIDER: ${BILLING_PROVIDER:-mock}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SSO_ENABLED: ${SSO_ENABLED:-true}
+      SSO_PROVIDER: ${SSO_PROVIDER:-mock}

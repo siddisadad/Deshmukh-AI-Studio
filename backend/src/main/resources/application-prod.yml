@@ -17,6 +17,8 @@ springdoc:
 aistudio:
   security:
     hsts-enabled: true
+  jobs:
+    worker-enabled: false
 
 # Console JSON formatting is configured in logback-spring.xml (prod profile).
 logging:

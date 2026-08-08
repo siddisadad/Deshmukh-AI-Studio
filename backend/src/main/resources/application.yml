@@ -76,6 +76,7 @@ aistudio:
       max-chars: ${RAG_MAX_CHARS:6000}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
+    worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

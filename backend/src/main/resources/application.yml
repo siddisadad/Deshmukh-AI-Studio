@@ -28,6 +28,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+  health:
+    mail:
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
@@ -39,6 +42,11 @@ aistudio:
       access-token-ttl: ${JWT_ACCESS_TTL:15m}
       refresh-token-ttl: ${JWT_REFRESH_TTL:7d}
     hsts-enabled: ${HSTS_ENABLED:false}
+  metrics:
+    scrape-token: ${METRICS_SCRAPE_TOKEN:}
+  mail:
+    provider: ${MAIL_PROVIDER:logging}
+    from: ${MAIL_FROM:noreply@localhost}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:

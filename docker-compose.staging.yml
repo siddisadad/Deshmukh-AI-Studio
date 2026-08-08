@@ -37,6 +37,14 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       OIDC_DISPLAY_NAME: ${OIDC_DISPLAY_NAME:-Continue with SSO}
       OIDC_SCOPES: ${OIDC_SCOPES:-openid email profile}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-logging}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      METRICS_SCRAPE_TOKEN: ${METRICS_SCRAPE_TOKEN:-}
     ports:
       - "${STAGING_API_PORT:-8080}:8080"
     restart: unless-stopped

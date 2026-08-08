@@ -34,7 +34,16 @@ if [ -f "$ROOT/e2e/package.json" ]; then
   (cd "$ROOT/e2e" && npm ci)
 fi
 
-if [ -f "$ROOT/backend/pom.xml" ] && command -v mvn >/dev/null 2>&1; then
+if [ -f "$ROOT/backend/pom.xml" ]; then
+  if ! command -v mvn >/dev/null 2>&1; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y maven
+    else
+      echo "maven is required for the Spring Boot API" >&2
+      exit 1
+    fi
+  fi
   (cd "$ROOT/backend" && mvn -B -q dependency:go-offline -DskipTests)
 fi
 

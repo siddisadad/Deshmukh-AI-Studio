@@ -6,6 +6,7 @@ venv/
 .env
 backups/
 *.sql.gz
+monitoring/.prometheus-token
 .DS_Store
 .pytest_cache/
 backend/target/

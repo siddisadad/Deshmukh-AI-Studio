@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
@@ -31,6 +34,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 public class ConversationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
@@ -163,13 +168,18 @@ public class ConversationService {
                     .name("user")
                     .data(toChatDto(prepared.userMessage()), MediaType.APPLICATION_JSON));
 
+            AtomicBoolean clientDisconnected = new AtomicBoolean(false);
             AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
+                if (clientDisconnected.get()) {
+                    return;
+                }
                 try {
                     emitter.send(SseEmitter.event()
                             .name("delta")
                             .data(Map.of("text", delta), MediaType.APPLICATION_JSON));
                 } catch (IOException ex) {
-                    throw new IllegalStateException("Failed to write SSE delta", ex);
+                    clientDisconnected.set(true);
+                    log.warn("SSE client disconnected during stream for conversation {}", conversationId);
                 }
             });
 
@@ -184,10 +194,14 @@ public class ConversationService {
                     "provider", aiProviderPort.providerId(),
                     "model", result.model()
             );
-            emitter.send(SseEmitter.event()
-                    .name("done")
-                    .data(done, MediaType.APPLICATION_JSON));
-            emitter.complete();
+            if (!clientDisconnected.get()) {
+                emitter.send(SseEmitter.event()
+                        .name("done")
+                        .data(done, MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } else {
+                emitter.complete();
+            }
         } catch (Exception ex) {
             try {
                 emitter.send(SseEmitter.event()

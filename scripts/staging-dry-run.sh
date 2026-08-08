@@ -66,5 +66,6 @@ for i in $(seq 1 60); do
 done
 
 "${ROOT_DIR}/scripts/healthcheck.sh" "http://localhost:${STAGING_UI_PORT}"
+"${ROOT_DIR}/scripts/api-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
 
-echo "Staging dry-run passed (prod profile API, GHCR-shaped ports, Flyway on startup)."
+echo "Staging dry-run passed (prod profile API, GHCR-shaped ports, Flyway on startup, API smoke)."

@@ -1,0 +1,37 @@
+# Optional Prometheus + Grafana overlay (monitoring/README.md).
+# Requires METRICS_SCRAPE_TOKEN and monitoring/.prometheus-token (see scripts/write-prometheus-token.sh).
+#
+#   export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
+#   ./scripts/write-prometheus-token.sh
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+
+services:
+  api:
+    environment:
+      METRICS_SCRAPE_TOKEN: ${METRICS_SCRAPE_TOKEN:?METRICS_SCRAPE_TOKEN is required for monitoring overlay}
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/.prometheus-token:/etc/prometheus/token:ro
+    depends_on:
+      api:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

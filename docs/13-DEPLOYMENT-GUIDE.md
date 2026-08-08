@@ -249,7 +249,7 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 ```bash
 cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=main  # or sha-... / 0.1.2-beta / v0.1.2-beta
+export IMAGE_TAG=main  # or sha-... / 0.2.0-beta / v0.2.0-beta
 docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```
@@ -308,7 +308,9 @@ Draft builds from feature branches validate install but cannot be promoted — m
 - Ship JSON stdout to Loki/ELK when ready (no agent required in-repo)
 - Uptime: `./scripts/healthcheck.sh https://staging.example.com` (edge `/actuator/health` + SPA)
 - Post-deploy: `./scripts/post-deploy-smoke.sh https://staging.example.com` (health, info, confirms prometheus is not on the public edge)
+- **Dogfood:** `./scripts/staging-dogfood.sh https://staging.example.com` (env validation + health + smoke + optional internal metrics)
 - **Prometheus:** `GET /actuator/prometheus` on the API (authenticated; not proxied by nginx). Scrape from the internal Docker network or VPN, not the public hostname.
+- **Monitoring overlay:** `docker-compose.monitoring.yml` + `monitoring/README.md` (Grafana dashboard, alert rules, `METRICS_SCRAPE_TOKEN`)
 - Disk alerts for Postgres volume (host/ops)
 
 ---

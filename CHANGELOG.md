@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.13-beta] — 2026-08-08
+
 ### Added
 
 - `docs/18-JOB-WORKER-AUTOSCALING-GUIDE.md` — worker scaling playbook (queue depth, alerts, `WORKER_REPLICAS`)

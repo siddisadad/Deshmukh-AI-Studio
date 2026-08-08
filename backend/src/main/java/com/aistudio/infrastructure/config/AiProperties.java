@@ -5,6 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "aistudio.ai")
 public record AiProperties(
         String provider,
+        String providerChain,
+        String providerFallbacks,
         OpenAi openai,
         Anthropic anthropic,
         Context context,

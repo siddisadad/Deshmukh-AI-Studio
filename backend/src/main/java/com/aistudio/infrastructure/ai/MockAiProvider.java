@@ -5,11 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnProperty(name = "aistudio.ai.provider", havingValue = "mock", matchIfMissing = true)
 public class MockAiProvider implements AiProviderPort {
 
     @Override

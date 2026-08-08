@@ -38,8 +38,9 @@ Read in order; each document builds on the previous.
 | 31 | [31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md) | Automated live-host sign-off + report |
 | 32 | [32-STRIPE-METERED-PRICES-SYNC-GUIDE.md](32-STRIPE-METERED-PRICES-SYNC-GUIDE.md) | Stripe metered seat + AI overage sync |
 | 33 | [33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md) | Federated Grafana dashboards + Loki ruler fan-out |
+| 34 | [34-MULTI-PROVIDER-ROUTING-GUIDE.md](34-MULTI-PROVIDER-ROUTING-GUIDE.md) | Multi-provider AI routing and failover |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.28-beta** adds federated Grafana + Loki ruler fan-out — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.29-beta** adds multi-provider AI routing / failover — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

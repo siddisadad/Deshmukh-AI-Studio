@@ -87,6 +87,8 @@ class AnthropicProviderStreamTest {
         return new AiProperties(
                 "anthropic",
                 null,
+                null,
+                null,
                 new AiProperties.Anthropic("sk-ant-test", "claude-sonnet-4-20250514", baseUrl),
                 null,
                 null,

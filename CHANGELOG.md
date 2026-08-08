@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.29-beta] — 2026-08-08
+
+### Added
+
+- Multi-provider AI routing — `AI_PROVIDER=routing` + `AI_PROVIDER_CHAIN` or per-provider `AI_PROVIDER_FALLBACKS`
+- `AiProviderRegistry`, `RoutingAiProvider`, `AiProviderConfiguration` — ordered failover for `generate()` and `stream()`
+- `docs/34-MULTI-PROVIDER-ROUTING-GUIDE.md`
+
 ## [0.2.28-beta] — 2026-08-08
 
 ### Added

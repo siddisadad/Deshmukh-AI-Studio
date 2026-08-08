@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: worker
+  application:
+    name: ai-studio-worker
+
+aistudio:
+  jobs:
+    worker-enabled: true

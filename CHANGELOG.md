@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Dedicated background job worker container (`docker-compose.worker.yml`) — API disables in-process polling in `prod` profile; worker runs `prod,worker` profiles
+- `AISTUDIO_JOBS_WORKER_ENABLED` env gate for `BackgroundJobWorker` scheduling
+- Deploy/staging scripts verify worker health alongside API smoke checks
+
 ## [0.2.1-beta] — 2026-08-08
 
 ### Added

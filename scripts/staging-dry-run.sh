@@ -38,6 +38,8 @@ COMPOSE=(
   -f docker-compose.yml
   -f docker-compose.staging.yml
   -f docker-compose.staging-local.yml
+  -f docker-compose.worker.yml
+  -f docker-compose.worker-prod.yml
 )
 
 cleanup() {
@@ -68,4 +70,17 @@ done
 "${ROOT_DIR}/scripts/healthcheck.sh" "http://localhost:${STAGING_UI_PORT}"
 "${ROOT_DIR}/scripts/api-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
 
-echo "Staging dry-run passed (prod profile API, GHCR-shaped ports, Flyway on startup, API smoke)."
+echo "Checking worker health…"
+for i in $(seq 1 30); do
+  if "${COMPOSE[@]}" exec -T worker curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "Worker did not become healthy" >&2
+    "${COMPOSE[@]}" logs --no-color worker || true
+    exit 1
+  fi
+  sleep 2
+done
+
+echo "Staging dry-run passed (prod profile API, dedicated worker, GHCR-shaped ports, Flyway, API smoke)."

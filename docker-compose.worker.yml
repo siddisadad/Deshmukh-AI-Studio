@@ -1,0 +1,40 @@
+# Dedicated background job worker overlay (docs/13-DEPLOYMENT-GUIDE.md).
+# Disables in-process job polling on api; runs a separate worker container.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.worker.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-compose.worker.yml up -d
+
+services:
+  api:
+    environment:
+      AISTUDIO_JOBS_WORKER_ENABLED: "false"
+
+  worker:
+    build: ./backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-aistudio}
+      DB_USER: ${DB_USER:-aistudio}
+      DB_PASSWORD: ${DB_PASSWORD:-aistudio}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-please-use-a-long-random-secret-key}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8088}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-30}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-mock}
+      RAG_ENABLED: ${RAG_ENABLED:-true}
+      SPRING_PROFILES_ACTIVE: prod,worker
+      AISTUDIO_JOBS_WORKER_ENABLED: "true"
+      JOB_POLL_INTERVAL_MS: ${JOB_POLL_INTERVAL_MS:-2000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped

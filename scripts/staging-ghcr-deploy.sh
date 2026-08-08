@@ -36,6 +36,9 @@ COMPOSE=(
   docker compose
   -f docker-compose.yml
   -f docker-compose.staging.yml
+  -f docker-compose.worker.yml
+  -f docker-compose.worker-prod.yml
+  -f docker-compose.worker-staging.yml
 )
 
 echo "Pulling GHCR images (tag=${IMAGE_TAG})…"
@@ -63,4 +66,17 @@ done
 echo "Running post-deploy smoke…"
 "${ROOT_DIR}/scripts/post-deploy-smoke.sh" "http://localhost:${STAGING_UI_PORT}"
 
-echo "Staging GHCR deploy healthy (IMAGE_TAG=${IMAGE_TAG})."
+echo "Checking worker health…"
+for i in $(seq 1 30); do
+  if "${COMPOSE[@]}" exec -T worker curl -fsS --max-time 5 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "Worker did not become healthy" >&2
+    "${COMPOSE[@]}" logs --no-color worker || true
+    exit 1
+  fi
+  sleep 2
+done
+
+echo "Staging GHCR deploy healthy (IMAGE_TAG=${IMAGE_TAG}, dedicated job worker)."

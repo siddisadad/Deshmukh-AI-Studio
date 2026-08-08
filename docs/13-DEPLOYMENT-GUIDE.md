@@ -198,7 +198,31 @@ Disable Swagger UI in prod (`springdoc.swagger-ui.enabled=false`).
 ```bash
 ./scripts/deploy-dry-run.sh
 ```
-Builds `docker-compose.yml` + `docker-compose.prod.yml`, probes edge health on `http://localhost:8090`, then tears down. CI runs the same script on every push/PR.
+Builds `docker-compose.yml` + `docker-compose.prod.yml` + dedicated job worker overlay, probes edge health on `http://localhost:8090`, verifies worker health, then tears down. CI runs the same script on every push/PR.
+
+### Background job worker (production)
+
+Async jobs (knowledge reindex, document generate) are queued in Postgres. By default the API **does not** poll in `prod` profile (`aistudio.jobs.worker-enabled=false`). Run a dedicated worker container:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  -f docker-compose.worker.yml \
+  -f docker-compose.worker-prod.yml \
+  up -d
+```
+
+Staging GHCR deploy includes the worker automatically (`scripts/staging-ghcr-deploy.sh`).
+
+| Variable | API (prod) | Worker |
+|---|---|---|
+| `AISTUDIO_JOBS_WORKER_ENABLED` | `false` (via compose overlay) | `true` |
+| `SPRING_PROFILES_ACTIVE` | `prod` | `prod,worker` |
+
+Worker uses the same API image, no public port. Health: `docker compose exec worker curl -fsS http://127.0.0.1:8080/actuator/health`.
+
+Local dev (`docker compose up`) keeps in-process polling enabled on the API for simplicity.
 
 ### Zero-downtime (MVP lite)
 - `docker compose up -d --no-deps --build api` then reload nginx.

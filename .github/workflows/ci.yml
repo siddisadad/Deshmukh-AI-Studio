@@ -201,6 +201,7 @@ jobs:
         run: |
           bash -n scripts/staging-dogfood.sh
           bash -n scripts/write-prometheus-token.sh
+          bash -n scripts/api-smoke.sh
           if ./scripts/write-prometheus-token.sh; then
             echo "expected failure without METRICS_SCRAPE_TOKEN" >&2
             exit 1

@@ -17,6 +17,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - `METRICS_SCRAPE_TOKEN` for internal `/actuator/prometheus` scrapes (JWT alternative)
 - `scripts/staging-dogfood.sh` automated staging validation gates
 - `scripts/write-prometheus-token.sh` for Prometheus bearer token file
+- SMTP mail adapter (`MAIL_PROVIDER=smtp`) for password-reset emails
+- `scripts/api-smoke.sh` automated register → project API journey (used in staging dogfood)
 
 ## [0.1.2-beta] — 2026-08-08
 

@@ -47,6 +47,16 @@ if [[ "$sso_provider" == "oidc" ]]; then
   require OIDC_CLIENT_SECRET
 fi
 
+mail_provider="${MAIL_PROVIDER:-logging}"
+if [[ "$mail_provider" == "smtp" ]]; then
+  require MAIL_HOST
+  require MAIL_FROM
+  if [[ -z "${MAIL_USERNAME:-}" && -z "${MAIL_USER:-}" ]]; then
+    missing+=("MAIL_USERNAME or MAIL_USER")
+  fi
+  require MAIL_PASSWORD
+fi
+
 if [[ ${#missing[@]} -gt 0 ]]; then
   echo "Missing required environment variables:" >&2
   for v in "${missing[@]}"; do
@@ -76,4 +86,4 @@ for origin in "${cors_origins[@]}"; do
   fi
 done
 
-echo "Staging/production env OK (BILLING_PROVIDER=${billing_provider}, SSO_PROVIDER=${sso_provider})."
+echo "Staging/production env OK (BILLING_PROVIDER=${billing_provider}, SSO_PROVIDER=${sso_provider}, MAIL_PROVIDER=${mail_provider})."

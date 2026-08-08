@@ -34,11 +34,14 @@ echo "==> 1/5 validate-staging-env.sh"
 echo "==> 2/5 healthcheck (edge)"
 "${ROOT_DIR}/scripts/healthcheck.sh" "${EDGE_URL}"
 
-echo "==> 3/5 post-deploy-smoke (edge)"
+echo "==> 3/6 post-deploy-smoke (edge)"
 "${ROOT_DIR}/scripts/post-deploy-smoke.sh" "${EDGE_URL}"
 
+echo "==> 4/6 api-smoke (authenticated journey)"
+"${ROOT_DIR}/scripts/api-smoke.sh" "${EDGE_URL}"
+
 if [[ -n "${METRICS_SCRAPE_TOKEN:-}" ]]; then
-  echo "==> 4/5 internal Prometheus metrics (${API_URL})"
+  echo "==> 5/6 internal Prometheus metrics (${API_URL})"
   status="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' \
     -H "Authorization: Bearer ${METRICS_SCRAPE_TOKEN}" \
     "${API_URL%/}/actuator/prometheus")"
@@ -54,10 +57,10 @@ if [[ -n "${METRICS_SCRAPE_TOKEN:-}" ]]; then
   fi
   echo "Internal metrics OK"
 else
-  echo "==> 4/5 skipped — set METRICS_SCRAPE_TOKEN to verify internal Prometheus scrape"
+  echo "==> 5/6 skipped — set METRICS_SCRAPE_TOKEN to verify internal Prometheus scrape"
 fi
 
-echo "==> 5/5 manual dogfood (operator)"
+echo "==> 6/6 manual dogfood (operator)"
 echo "  - Register or login; create org project; requirements + tasks + documents"
 echo "  - AI chat: multi-thread + streaming (retry reconnect if mid-stream drop)"
 echo "  - RAG: upload/index document and search project context"
@@ -70,6 +73,12 @@ if [[ "$sso_provider" == "oidc" ]]; then
   echo "  - OIDC: SSO login start + callback on ${SSO_APP_BASE_URL:-<app-host>}/auth/sso/callback"
 else
   echo "  - SSO: mock provider (set SSO_PROVIDER=oidc for real IdP dogfood)"
+fi
+mail_provider="${MAIL_PROVIDER:-logging}"
+if [[ "$mail_provider" == "smtp" ]]; then
+  echo "  - Mail: forgot-password email delivery via SMTP (${MAIL_HOST:-smtp})"
+else
+  echo "  - Mail: logging provider (set MAIL_PROVIDER=smtp for real email)"
 fi
 echo "  - Monitoring: optional docker-compose.monitoring.yml + Grafana dashboard"
 echo ""

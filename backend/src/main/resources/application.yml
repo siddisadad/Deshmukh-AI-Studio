@@ -1,6 +1,17 @@
 spring:
   application:
     name: ai-studio-api
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:${MAIL_USER:}}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:aistudio}
     username: ${DB_USER:aistudio}
@@ -41,6 +52,9 @@ aistudio:
     hsts-enabled: ${HSTS_ENABLED:false}
   metrics:
     scrape-token: ${METRICS_SCRAPE_TOKEN:}
+  mail:
+    provider: ${MAIL_PROVIDER:logging}
+    from: ${MAIL_FROM:noreply@localhost}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:

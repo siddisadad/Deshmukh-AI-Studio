@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.16-beta] — 2026-08-08
+
+### Added
+
+- `scripts/apply-s3-archive-lifecycle.sh` — S3 Glacier / Deep Archive lifecycle for export prefixes
+- `scripts/enable-s3-cross-region-replication.sh` — prefix-scoped CRR to DR bucket
+- `monitoring/s3-lifecycle-archive-example.json` + `s3-replication-role-policy-example.json`
+- `docs/21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md` — tiering, restore, and DR playbook
+
 ## [0.2.15-beta] — 2026-08-08
 
 ### Added

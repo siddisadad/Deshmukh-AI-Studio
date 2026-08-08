@@ -102,7 +102,7 @@ Store secrets in `/opt/aistudio/.env.archive` (not committed). Rotate the servic
 ### Bucket policy
 
 - Restrict to archive IAM user/role (write on prefix only).
-- Enable versioning or lifecycle transition to Glacier for compliance retention.
+- Enable versioning or lifecycle transition to Glacier for compliance retention — see [21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md).
 - Do not expose the bucket publicly.
 
 Pair with Loki export cron ([17-LOG-ARCHIVE-GUIDE.md](17-LOG-ARCHIVE-GUIDE.md)) for full observability + conversation retention.

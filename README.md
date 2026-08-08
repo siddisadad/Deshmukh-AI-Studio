@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.6-beta
+export IMAGE_TAG=v0.2.7-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -137,7 +137,7 @@ uvicorn main:app --reload --port 8000
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.6-beta` adds Loki log retention; `v0.2.5-beta` added horizontal job worker scaling.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.7-beta` adds private conversation threads; `v0.2.6-beta` added Loki log retention.
 
 ## Docs
 

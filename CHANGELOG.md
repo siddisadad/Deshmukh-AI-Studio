@@ -6,9 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.7-beta] — 2026-08-08
+
 ### Added
 
 - Private conversation threads (`visibility: PRIVATE`) — visible only to creator within a project
+- Chat UI: "Private thread" checkbox and lock icon on private threads
 
 ## [0.2.6-beta] — 2026-08-08
 

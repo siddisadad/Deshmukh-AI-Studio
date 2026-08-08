@@ -1,0 +1,54 @@
+groups:
+  - name: aistudio-billing
+    rules:
+      - alert: BillingAiOverageRateHigh
+        expr: |
+          sum(rate(aistudio_billing_ai_actions_total{job="aistudio-api",type="overage"}[5m])) > 0.25
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated AI overage action rate
+          description: Platform overage AI actions exceed 0.25/s for 10 minutes — investigate usage spikes or quota misconfiguration.
+
+      - alert: BillingAiOverageMtdHigh
+        expr: aistudio_billing_ai_overage_period{job="aistudio-api"} > 500
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: High AI overage MTD
+          description: More than 500 overage AI actions month-to-date across all orgs.
+
+      - alert: BillingAiOverageForecastHigh
+        expr: aistudio_billing_ai_overage_forecast_period{job="aistudio-api"} > 2000
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI overage month-end forecast high
+          description: Linear forecast projects more than 2000 overage actions this month.
+
+      - alert: BillingEstimatedOverageCentsForecastHigh
+        expr: aistudio_billing_estimated_overage_cents_forecast_period{job="aistudio-api"} > 10000
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Estimated overage cost forecast exceeds $100
+          description: Linear forecast of platform overage cost exceeds 10000 cents ($100) at month-end.
+
+      - alert: BillingAiOverageAnomalySpike
+        expr: |
+          (
+            aistudio_billing_ai_overage_today{job="aistudio-api"}
+            >
+            3 * avg_over_time(aistudio_billing_ai_overage_today{job="aistudio-api"}[7d])
+          )
+          and avg_over_time(aistudio_billing_ai_overage_today{job="aistudio-api"}[7d]) > 10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI overage today anomalous vs 7-day average
+          description: Today's overage actions are more than 3× the 7-day average daily overage gauge.

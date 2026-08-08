@@ -149,4 +149,20 @@ public class AiUsageJdbcRepository {
         );
         return total == null ? 0 : total;
     }
+
+    public int sumEstimatedOverageCentsBetweenAllOrgs(LocalDate from, LocalDate to) {
+        Integer total = jdbcTemplate.queryForObject(
+                """
+                        SELECT COALESCE(SUM(u.overage_count * p.price_cents_per_ai_action_overage), 0)
+                        FROM ai_usage_daily u
+                        INNER JOIN organization_subscriptions os ON os.organization_id = u.organization_id
+                        INNER JOIN plans p ON p.code = os.plan_code
+                        WHERE u.usage_date >= ? AND u.usage_date <= ?
+                        """,
+                Integer.class,
+                java.sql.Date.valueOf(from),
+                java.sql.Date.valueOf(to)
+        );
+        return total == null ? 0 : total;
+    }
 }

@@ -22,6 +22,7 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/billing-alerts.yml:/etc/prometheus/billing-alerts.yml:ro
       - ./monitoring/.prometheus-token:/etc/prometheus/token:ro
     environment:
       PROMETHEUS_CLUSTER_NAME: ${PROMETHEUS_CLUSTER_NAME:-local}

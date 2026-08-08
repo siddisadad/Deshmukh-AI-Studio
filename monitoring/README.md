@@ -97,6 +97,8 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 
 **Logs (Loki ruler):** `monitoring/loki-alerts.yml` defines `ApiErrorLogsHigh`, `ApiWarnLogsHigh`, and `ApiLogsMissing` (prod JSON logs with `level` field).
 
+**Billing (Prometheus):** `monitoring/billing-alerts.yml` defines overage rate, MTD, forecast, and anomaly spike alerts — see [docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md](../docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md).
+
 Both forward to Alertmanager (`monitoring/alertmanager.generated.yml` — generate with `./scripts/write-alertmanager-config.sh`).
 
 - Alertmanager UI: http://localhost:9093 (do not expose publicly without auth)

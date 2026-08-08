@@ -23,6 +23,6 @@ with open(path) as f:
 assert doc.get("uid") == "aistudio-billing", "uid must be aistudio-billing"
 assert doc.get("title"), "title required"
 panels = doc.get("panels") or []
-assert len(panels) >= 1, "expected panels"
+assert len(panels) >= 8, "expected panels including forecast"
 print(f"OK: billing dashboard ({len(panels)} panels) at {path}")
 PY

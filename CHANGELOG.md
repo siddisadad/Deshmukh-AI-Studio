@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.36-beta] — 2026-08-08
+
+### Added
+
+- Billing anomaly alerts — `monitoring/billing-alerts.yml` for overage rate, MTD, forecast, and 7-day spike detection
+- Cost forecasting metrics — linear month-end forecast for overage actions and estimated cents (plan-weighted)
+- Grafana billing dashboard forecast panels
+- `docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md`
+
 ## [0.2.35-beta] — 2026-08-08
 
 ### Added

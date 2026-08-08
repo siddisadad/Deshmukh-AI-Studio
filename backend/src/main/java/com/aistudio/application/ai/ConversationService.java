@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -167,9 +168,9 @@ public class ConversationService {
                     .name("user")
                     .data(toChatDto(prepared.userMessage()), MediaType.APPLICATION_JSON));
 
-            boolean clientDisconnected = false;
+            AtomicBoolean clientDisconnected = new AtomicBoolean(false);
             AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
-                if (clientDisconnected) {
+                if (clientDisconnected.get()) {
                     return;
                 }
                 try {
@@ -177,7 +178,7 @@ public class ConversationService {
                             .name("delta")
                             .data(Map.of("text", delta), MediaType.APPLICATION_JSON));
                 } catch (IOException ex) {
-                    clientDisconnected = true;
+                    clientDisconnected.set(true);
                     log.warn("SSE client disconnected during stream for conversation {}", conversationId);
                 }
             });
@@ -193,7 +194,7 @@ public class ConversationService {
                     "provider", aiProviderPort.providerId(),
                     "model", result.model()
             );
-            if (!clientDisconnected) {
+            if (!clientDisconnected.get()) {
                 emitter.send(SseEmitter.event()
                         .name("done")
                         .data(done, MediaType.APPLICATION_JSON));

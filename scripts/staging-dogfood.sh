@@ -28,10 +28,10 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
   sso_provider="${SSO_PROVIDER:-mock}"
 fi
 
-echo "==> 1/5 validate-staging-env.sh"
+echo "==> 1/6 validate-staging-env.sh"
 "${ROOT_DIR}/scripts/validate-staging-env.sh"
 
-echo "==> 2/5 healthcheck (edge)"
+echo "==> 2/6 healthcheck (edge)"
 "${ROOT_DIR}/scripts/healthcheck.sh" "${EDGE_URL}"
 
 echo "==> 3/6 post-deploy-smoke (edge)"

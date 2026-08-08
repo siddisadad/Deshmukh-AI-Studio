@@ -445,7 +445,7 @@ export function AiChatPage() {
                     void onOpenShare(thread.id);
                   }}
                   disabled={sending}
-                  data-testid={`chat-thread-share-${thread.id}`}
+                  data-testid={`chat-share-thread-${thread.id}`}
                 >
                   <ShareOutlinedIcon fontSize="small" />
                 </IconButton>

@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.25-beta] — 2026-08-08
+
+### Added
+
+- Retention purge compliance export — `{"complianceExport":true}` returns gzip JSON archive before delete
+- Compliance metadata on exported threads (`purgeReason`, `retentionExpiresAt`, `purgedAt`)
+- `scheduled-chat-retention.sh` supports `CHAT_RETENTION_COMPLIANCE_EXPORT` + optional S3 upload
+- `docs/30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md`
+
 ## [0.2.24-beta] — 2026-08-08
 
 ### Added

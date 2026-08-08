@@ -8,6 +8,7 @@ import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SendMessageRequest;
+import com.aistudio.api.ai.dto.RetentionPurgeRequest;
 import com.aistudio.api.ai.dto.RetentionPurgeResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.ai.AssistantRegistry;
@@ -101,12 +102,25 @@ public class AssistantController {
     }
 
     @PostMapping("/api/v1/projects/{projectId}/conversations/retention-purge")
-    @Operation(summary = "Delete expired conversation threads (skips legal hold)")
-    public RetentionPurgeResponse purgeExpiredConversations(
+    @Operation(summary = "Delete expired conversation threads (skips legal hold); optional compliance export archive")
+    public ResponseEntity<?> purgeExpiredConversations(
             @PathVariable UUID projectId,
+            @RequestBody(required = false) RetentionPurgeRequest request,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return conversationService.purgeExpiredConversations(projectId, user.getId());
+        boolean complianceExport = request != null && request.complianceExportRequested();
+        ConversationService.RetentionPurgeResult result = conversationService.purgeExpiredConversations(
+                projectId, user.getId(), complianceExport);
+        if (complianceExport && result.complianceArchiveBody() != null) {
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + result.complianceArchiveFilename() + "\"")
+                    .header("X-Purged-Count", String.valueOf(result.purgedCount()))
+                    .header("X-Exported-Count", String.valueOf(result.exportedCount()))
+                    .contentType(MediaType.parseMediaType("application/gzip"))
+                    .body(result.complianceArchiveBody());
+        }
+        return ResponseEntity.ok(new RetentionPurgeResponse(result.purgedCount(), result.exportedCount()));
     }
 
     @PostMapping("/api/v1/projects/{projectId}/conversations")

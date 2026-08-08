@@ -40,7 +40,9 @@ export function AiChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   const selected = assistants.find((a) => a.role === role);
   const activeThread = threads.find((t) => t.id === activeThreadId) || null;
@@ -78,7 +80,13 @@ export function AiChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending, streamingContent]);
+  }, [messages, sending, streamingContent, reconnecting]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
 
   async function onRoleChange(_: MouseEvent<HTMLElement>, value: string | null) {
     if (!value || !projectId || sending) return;
@@ -141,10 +149,22 @@ export function AiChatPage() {
     }
   }
 
+  function onCancelStream() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    setStreamingContent('');
+    setReconnecting(false);
+    setSending(false);
+  }
+
   async function onSend(e: FormEvent) {
     e.preventDefault();
     if (!projectId || !input.trim() || sending) return;
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
     setSending(true);
+    setReconnecting(false);
     setError(null);
     setStreamingContent('');
     const content = input.trim();
@@ -162,12 +182,16 @@ export function AiChatPage() {
           setMessages((prev) => [...prev, userMessage]);
         },
         onDelta: (text) => {
+          setReconnecting(false);
           setStreamingContent((prev) => prev + text);
         },
         onDone: ({ assistantMessage, provider: p, model }) => {
           setStreamingContent('');
+          setReconnecting(false);
           setMessages((prev) => [...prev, assistantMessage]);
-          setProvider(`${p} / ${model}`);
+          if (p !== 'stream-recovery') {
+            setProvider(`${p} / ${model}`);
+          }
           setThreads((prev) => {
             const updated = prev.map((t) =>
               t.id === conversationId
@@ -187,16 +211,37 @@ export function AiChatPage() {
           });
         },
         onError: (message) => {
+          setReconnecting(false);
           setError(message);
+        },
+      }, {
+        signal: abortController.signal,
+        onReconnecting: (_attempt, reason) => {
+          setReconnecting(true);
+          if (reason === 'recovering') {
+            setStreamingContent('');
+          }
         },
       });
     } catch (err) {
+      if (isAbortError(err)) {
+        return;
+      }
       setInput(content);
       setStreamingContent('');
+      setReconnecting(false);
       setError(err instanceof ApiError ? err.message : 'Failed to send message');
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setSending(false);
+      setReconnecting(false);
     }
+  }
+
+  function isAbortError(err: unknown): boolean {
+    return err instanceof DOMException && err.name === 'AbortError';
   }
 
   if (loading) {
@@ -396,7 +441,14 @@ export function AiChatPage() {
                   </Paper>
                 </Box>
               )}
-              {sending && !streamingContent && <Typography color="text.secondary">Assistant is thinking…</Typography>}
+              {sending && !streamingContent && !reconnecting && (
+                <Typography color="text.secondary">Assistant is thinking…</Typography>
+              )}
+              {reconnecting && (
+                <Typography color="text.secondary" data-testid="chat-reconnecting">
+                  Reconnecting to stream…
+                </Typography>
+              )}
               <div ref={bottomRef} />
             </Stack>
           </Paper>
@@ -420,9 +472,20 @@ export function AiChatPage() {
               >
                 Send
               </Button>
+              {sending && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="inherit"
+                  onClick={onCancelStream}
+                  data-testid="chat-cancel-stream"
+                >
+                  Cancel
+                </Button>
+              )}
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Multi-thread · streaming SSE · {provider || 'Provider: mock (default)'}
+              Multi-thread · streaming SSE (reconnect) · {provider || 'Provider: mock (default)'}
             </Typography>
           </Box>
         </Stack>

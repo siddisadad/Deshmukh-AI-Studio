@@ -197,3 +197,14 @@ jobs:
             echo "expected validation failure for localhost CORS" >&2
             exit 1
           fi
+      - name: Validate monitoring helper scripts
+        run: |
+          bash -n scripts/staging-dogfood.sh
+          bash -n scripts/write-prometheus-token.sh
+          if ./scripts/write-prometheus-token.sh; then
+            echo "expected failure without METRICS_SCRAPE_TOKEN" >&2
+            exit 1
+          fi
+          export METRICS_SCRAPE_TOKEN=test-scrape-token-for-ci
+          ./scripts/write-prometheus-token.sh
+          test -f monitoring/.prometheus-token

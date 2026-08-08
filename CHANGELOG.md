@@ -6,8 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.0-beta] — 2026-08-08
+
 ### Added
 
+- Chat SSE reconnect: token refresh retry, stream recovery polling, cancel in-flight stream
+- Backend continues AI generation when SSE client disconnects mid-stream (assistant message still persisted)
 - Optional `docker-compose.monitoring.yml` with Prometheus + Grafana
 - Grafana dashboard, alert rules, and `monitoring/README.md`
 - `METRICS_SCRAPE_TOKEN` for internal `/actuator/prometheus` scrapes (JWT alternative)

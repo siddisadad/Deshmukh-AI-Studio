@@ -1,4 +1,4 @@
-import { http } from '../../../shared/api/httpClient';
+import { http, refreshAccessToken } from '../../../shared/api/httpClient';
 import { useAuthStore } from '../../auth/store/authStore';
 import { ApiError } from '../../../shared/api/types';
 
@@ -50,9 +50,60 @@ export interface StreamHandlers {
   onError?: (message: string) => void;
 }
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+export interface StreamOptions {
+  signal?: AbortSignal;
+  maxRetries?: number;
+  onReconnecting?: (attempt: number, reason: 'network' | 'auth' | 'recovering') => void;
+}
 
-async function parseSseStream(response: Response, handlers: StreamHandlers): Promise<void> {
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const DEFAULT_MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 800;
+const RECOVERY_POLL_INTERVAL_MS = 1000;
+const RECOVERY_POLL_MAX_MS = 30_000;
+
+function isRetriableHttpStatus(status: number): boolean {
+  return status === 401 || status === 502 || status === 503 || status === 429;
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const id = window.setTimeout(() => resolve(), ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        window.clearTimeout(id);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
+  });
+}
+
+async function readStreamError(response: Response): Promise<string> {
+  let message = `Stream failed (${response.status})`;
+  try {
+    const body = (await response.json()) as { message?: string };
+    if (body.message) message = body.message;
+  } catch {
+    // ignore
+  }
+  return message;
+}
+
+export async function parseSseStream(
+  response: Response,
+  handlers: StreamHandlers,
+  signal?: AbortSignal,
+): Promise<void> {
   if (!response.body) {
     throw new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'No response body' });
   }
@@ -61,42 +112,113 @@ async function parseSseStream(response: Response, handlers: StreamHandlers): Pro
   let buffer = '';
   let eventName = 'message';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n');
-    buffer = parts.pop() || '';
+  const abortReader = () => {
+    reader.cancel().catch(() => undefined);
+  };
+  if (signal) {
+    if (signal.aborted) {
+      abortReader();
+      throw new DOMException('Aborted', 'AbortError');
+    }
+    signal.addEventListener('abort', abortReader, { once: true });
+  }
 
-    for (const rawLine of parts) {
-      const line = rawLine.replace(/\r$/, '');
-      if (!line) {
-        eventName = 'message';
-        continue;
+  try {
+    while (true) {
+      if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
       }
-      if (line.startsWith('event:')) {
-        eventName = line.slice(6).trim();
-        continue;
-      }
-      if (!line.startsWith('data:')) continue;
-      const data = line.slice(5).trim();
-      if (!data) continue;
-      try {
-        const parsed = JSON.parse(data) as Record<string, unknown>;
-        if (eventName === 'user') {
-          handlers.onUser?.(parsed as unknown as ChatMessage);
-        } else if (eventName === 'delta') {
-          handlers.onDelta?.(String(parsed.text || ''));
-        } else if (eventName === 'done') {
-          handlers.onDone?.(parsed as unknown as { assistantMessage: ChatMessage; provider: string; model: string });
-        } else if (eventName === 'error') {
-          handlers.onError?.(String(parsed.message || 'Stream failed'));
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n');
+      buffer = parts.pop() || '';
+
+      for (const rawLine of parts) {
+        const line = rawLine.replace(/\r$/, '');
+        if (!line) {
+          eventName = 'message';
+          continue;
         }
-      } catch {
-        // ignore malformed chunks
+        if (line.startsWith('event:')) {
+          eventName = line.slice(6).trim();
+          continue;
+        }
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (!data) continue;
+        try {
+          const parsed = JSON.parse(data) as Record<string, unknown>;
+          if (eventName === 'user') {
+            handlers.onUser?.(parsed as unknown as ChatMessage);
+          } else if (eventName === 'delta') {
+            handlers.onDelta?.(String(parsed.text || ''));
+          } else if (eventName === 'done') {
+            handlers.onDone?.(
+              parsed as unknown as { assistantMessage: ChatMessage; provider: string; model: string },
+            );
+          } else if (eventName === 'error') {
+            handlers.onError?.(String(parsed.message || 'Stream failed'));
+          }
+        } catch {
+          // ignore malformed chunks
+        }
+      }
+    }
+  } finally {
+    if (signal) {
+      signal.removeEventListener('abort', abortReader);
+    }
+  }
+}
+
+async function pollConversationRecovery(
+  conversationId: string,
+  userMessageId: string,
+  handlers: StreamHandlers,
+  options?: StreamOptions,
+): Promise<boolean> {
+  const deadline = Date.now() + RECOVERY_POLL_MAX_MS;
+  while (Date.now() < deadline) {
+    if (options?.signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+    await sleep(RECOVERY_POLL_INTERVAL_MS, options?.signal);
+    const conversation = await http
+      .get<Conversation>(`/conversations/${conversationId}`)
+      .then((r) => r.data);
+    const userIdx = conversation.messages.findIndex((m) => m.id === userMessageId);
+    if (userIdx >= 0 && userIdx + 1 < conversation.messages.length) {
+      const assistant = conversation.messages[userIdx + 1];
+      if (assistant.sender === 'ASSISTANT') {
+        handlers.onDone?.({
+          assistantMessage: assistant,
+          provider: 'stream-recovery',
+          model: 'stream-recovery',
+        });
+        return true;
       }
     }
   }
+  return false;
+}
+
+async function openStreamRequest(
+  conversationId: string,
+  content: string,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const token = useAuthStore.getState().accessToken;
+  return fetch(`${baseURL}/conversations/${conversationId}/messages/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ content }),
+    signal,
+  });
 }
 
 export const chatApi = {
@@ -118,27 +240,99 @@ export const chatApi = {
     http.delete(`/conversations/${conversationId}`).then(() => undefined),
   sendMessage: (conversationId: string, content: string) =>
     http.post<ChatResponse>(`/conversations/${conversationId}/messages`, { content }).then((r) => r.data),
-  streamMessage: async (conversationId: string, content: string, handlers: StreamHandlers) => {
-    const token = useAuthStore.getState().accessToken;
-    const response = await fetch(`${baseURL}/conversations/${conversationId}/messages/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ content }),
-    });
-    if (!response.ok) {
-      let message = `Stream failed (${response.status})`;
-      try {
-        const body = (await response.json()) as { message?: string };
-        if (body.message) message = body.message;
-      } catch {
-        // ignore
+  streamMessage: async (
+    conversationId: string,
+    content: string,
+    handlers: StreamHandlers,
+    options?: StreamOptions,
+  ) => {
+    const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
+    let connectAttempt = 0;
+    let userMessageId: string | null = null;
+
+    while (true) {
+      if (options?.signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
       }
-      throw new ApiError({ status: response.status, code: 'STREAM_ERROR', message });
+
+      try {
+        let response = await openStreamRequest(conversationId, content, options?.signal);
+
+        if (!response.ok && isRetriableHttpStatus(response.status) && connectAttempt < maxRetries) {
+          if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (!newToken) {
+              throw new ApiError({
+                status: 401,
+                code: 'UNAUTHORIZED',
+                message: await readStreamError(response),
+              });
+            }
+            options?.onReconnecting?.(connectAttempt + 1, 'auth');
+          } else {
+            options?.onReconnecting?.(connectAttempt + 1, 'network');
+          }
+          connectAttempt += 1;
+          await sleep(RETRY_BASE_DELAY_MS * connectAttempt, options?.signal);
+          continue;
+        }
+
+        if (!response.ok) {
+          throw new ApiError({
+            status: response.status,
+            code: 'STREAM_ERROR',
+            message: await readStreamError(response),
+          });
+        }
+
+        connectAttempt = 0;
+        userMessageId = null;
+
+        await parseSseStream(
+          response,
+          {
+            onUser: (message) => {
+              userMessageId = message.id;
+              handlers.onUser?.(message);
+            },
+            onDelta: handlers.onDelta,
+            onDone: handlers.onDone,
+            onError: handlers.onError,
+          },
+          options?.signal,
+        );
+        return;
+      } catch (err) {
+        if (isAbortError(err)) {
+          throw err;
+        }
+
+        const isNetwork =
+          err instanceof TypeError ||
+          (err instanceof ApiError && (err.status === 0 || isRetriableHttpStatus(err.status)));
+
+        if (!userMessageId && isNetwork && connectAttempt < maxRetries) {
+          connectAttempt += 1;
+          options?.onReconnecting?.(connectAttempt, 'network');
+          await sleep(RETRY_BASE_DELAY_MS * connectAttempt, options?.signal);
+          continue;
+        }
+
+        if (userMessageId) {
+          options?.onReconnecting?.(0, 'recovering');
+          const recovered = await pollConversationRecovery(
+            conversationId,
+            userMessageId,
+            handlers,
+            options,
+          );
+          if (recovered) {
+            return;
+          }
+        }
+
+        throw err;
+      }
     }
-    await parseSseStream(response, handlers);
   },
 };

@@ -76,7 +76,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.1.2-beta
+export IMAGE_TAG=v0.2.0-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -123,8 +123,10 @@ uvicorn main:app --reload --port 8000
 - [x] Phase 5 beta: growth E2E, prod/staging compose dry-runs, GHCR staging deploy script
 - [x] Cloud Agent environment (validated `environment.json`, CI `environment-config`)
 - [x] Observability: JSON logs, health probes, Prometheus metrics (internal), post-deploy smoke script
+- [x] SSE chat reconnect/retry + cancel in-flight stream
+- [x] Grafana/Prometheus monitoring overlay + staging dogfood script
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.1.2-beta` on `main` (observability + staging CORS validation; GHCR `v0.1.2-beta`).
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.0-beta` consolidates SSE reconnect (#40) + monitoring/dogfood (#41) after `v0.1.2-beta`.
 
 ## Docs
 

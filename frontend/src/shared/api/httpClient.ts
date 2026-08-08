@@ -11,7 +11,7 @@ export const http = axios.create({
 
 let refreshPromise: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const { refreshToken, setSession, clearSession, user, organization } = useAuthStore.getState();
   if (!refreshToken) {
     clearSession();

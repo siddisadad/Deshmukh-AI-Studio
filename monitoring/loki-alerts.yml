@@ -1,0 +1,33 @@
+groups:
+  - name: aistudio-api-logs
+    interval: 1m
+    rules:
+      - alert: ApiErrorLogsHigh
+        expr: |
+          sum(rate({service="api"} | json | level="ERROR" [5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated ERROR logs from AI Studio API
+          description: API ERROR log rate exceeds 0.1 lines/s (prod JSON logs).
+
+      - alert: ApiWarnLogsHigh
+        expr: |
+          sum(rate({service="api"} | json | level="WARN" [5m])) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: High WARN log rate on AI Studio API
+          description: API WARN log rate exceeds 2 lines/s.
+
+      - alert: ApiLogsMissing
+        expr: |
+          absent_over_time({service="api"}[10m])
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: No API logs received
+          description: Promtail has not shipped logs for service=api in 10 minutes.

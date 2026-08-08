@@ -29,6 +29,7 @@ export interface ConversationSummary {
   messageCount: number;
   shareEnabled: boolean;
   shareExpiresAt: string | null;
+  visibility: 'PROJECT' | 'PRIVATE';
 }
 
 export interface ConversationShareResult {
@@ -253,7 +254,10 @@ export const chatApi = {
         },
       })
       .then((r) => r.data),
-  createConversation: (projectId: string, body: { assistantRole: string; title?: string }) =>
+  createConversation: (
+    projectId: string,
+    body: { assistantRole: string; title?: string; visibility?: 'PROJECT' | 'PRIVATE' },
+  ) =>
     http.post<ConversationSummary>(`/projects/${projectId}/conversations`, body).then((r) => r.data),
   getConversation: (conversationId: string) =>
     http.get<Conversation>(`/conversations/${conversationId}`).then((r) => r.data),

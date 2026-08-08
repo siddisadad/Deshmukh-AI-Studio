@@ -10,6 +10,7 @@ import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.ai.AssistantRole;
+import com.aistudio.domain.ai.ConversationVisibility;
 import com.aistudio.domain.ai.MessageSender;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.persistence.entity.ConversationEntity;
@@ -106,7 +107,10 @@ public class ConversationService {
             conversations = conversationRepository.findByProjectIdAndAssistantRoleOrderByUpdatedAtDesc(
                     projectId, parseRole(roleValue));
         }
-        return conversations.stream().map(this::toSummary).toList();
+        return conversations.stream()
+                .filter(c -> canViewConversation(c, userId))
+                .map(this::toSummary)
+                .toList();
     }
 
     @Transactional
@@ -127,6 +131,7 @@ public class ConversationService {
                 ? "New " + assistant.name() + " thread"
                 : request.title().trim();
         created.setTitle(title);
+        created.setVisibility(parseVisibility(request.visibility()));
         conversationRepository.save(created);
         return toSummary(created);
     }
@@ -156,6 +161,9 @@ public class ConversationService {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
         if (request.title() != null && !request.title().isBlank()) {
             conversation.setTitle(request.title().trim());
+        }
+        if (request.visibility() != null && !request.visibility().isBlank()) {
+            conversation.setVisibility(parseVisibility(request.visibility()));
         }
         conversationRepository.save(conversation);
         return toSummary(conversation);
@@ -374,14 +382,46 @@ public class ConversationService {
         ConversationEntity conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Conversation not found"));
         authorizationService.requireProjectAccess(conversation.getProjectId(), userId);
+        if (!canViewConversation(conversation, userId)) {
+            throw new DomainException("NOT_FOUND", "Conversation not found");
+        }
         return conversation;
     }
 
     private ConversationEntity requireConversationEdit(UUID conversationId, UUID userId) {
         ConversationEntity conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Conversation not found"));
+        if (conversation.getVisibility() == ConversationVisibility.PRIVATE) {
+            authorizationService.requireProjectAccess(conversation.getProjectId(), userId);
+            if (!isCreator(conversation, userId)) {
+                throw new DomainException("NOT_FOUND", "Conversation not found");
+            }
+            return conversation;
+        }
         authorizationService.requireProjectEdit(conversation.getProjectId(), userId);
         return conversation;
+    }
+
+    private boolean canViewConversation(ConversationEntity conversation, UUID userId) {
+        if (conversation.getVisibility() == ConversationVisibility.PROJECT) {
+            return true;
+        }
+        return isCreator(conversation, userId);
+    }
+
+    private boolean isCreator(ConversationEntity conversation, UUID userId) {
+        return conversation.getCreatedBy() != null && conversation.getCreatedBy().equals(userId);
+    }
+
+    private ConversationVisibility parseVisibility(String value) {
+        if (value == null || value.isBlank()) {
+            return ConversationVisibility.PROJECT;
+        }
+        try {
+            return ConversationVisibility.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new DomainException("VALIDATION_ERROR", "visibility must be PROJECT or PRIVATE");
+        }
     }
 
     private AssistantRole parseRole(String roleValue) {
@@ -402,7 +442,8 @@ public class ConversationService {
                 entity.getUpdatedAt(),
                 (int) messageRepository.countByConversationId(entity.getId()),
                 entity.isShareEnabled() && isShareActive(entity),
-                entity.getShareExpiresAt()
+                entity.getShareExpiresAt(),
+                entity.getVisibility().name()
         );
     }
 

@@ -121,7 +121,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Observability | JSON logs, health, smoke, Prometheus, Grafana, Alertmanager, Loki, log alerts, 30d log retention | Off-site log archive / S3 backend |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) §6), SAML |
-| Multi-thread conversations | Per-assistant threads + title/message search (`q`) | Thread sharing depth (private threads) |
+| Multi-thread conversations | Per-assistant threads + search + share links | Off-site archive / thread export |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica | Autoscaling / queue depth metrics |
 

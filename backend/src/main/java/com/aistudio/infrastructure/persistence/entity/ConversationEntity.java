@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.persistence.entity;
 
 import com.aistudio.domain.ai.AssistantRole;
+import com.aistudio.domain.ai.ConversationVisibility;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,6 +36,10 @@ public class ConversationEntity {
 
     @Column(name = "created_by")
     private UUID createdBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ConversationVisibility visibility = ConversationVisibility.PROJECT;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

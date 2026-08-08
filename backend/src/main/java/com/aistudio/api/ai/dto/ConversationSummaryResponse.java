@@ -12,6 +12,7 @@ public record ConversationSummaryResponse(
         Instant updatedAt,
         int messageCount,
         boolean shareEnabled,
-        Instant shareExpiresAt
+        Instant shareExpiresAt,
+        String visibility
 ) {
 }

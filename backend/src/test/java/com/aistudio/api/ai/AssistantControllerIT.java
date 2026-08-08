@@ -199,10 +199,80 @@ class AssistantControllerIT {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void privateThreadsVisibleOnlyToCreator() throws Exception {
+        JsonNode owner = register("owner" + System.currentTimeMillis() + "@example.com");
+        String ownerToken = owner.get("accessToken").asText();
+        UUID orgId = UUID.fromString(owner.get("organization").get("id").asText());
+
+        JsonNode member = register("member" + System.currentTimeMillis() + "@example.com");
+        String memberToken = member.get("accessToken").asText();
+        String memberEmail = member.get("user").get("email").asText();
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","role":"MEMBER"}
+                                """.formatted(memberEmail)))
+                .andExpect(status().isCreated());
+
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Private Proj","projectKey":"PR","description":"private"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID privateThread = createThread(ownerToken, projectId, "DEVELOPER", "Secret notes", "PRIVATE");
+        UUID projectThread = createThread(ownerToken, projectId, "DEVELOPER", "Team thread", "PROJECT");
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
+                        .param("assistantRole", "DEVELOPER")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
+                        .param("assistantRole", "DEVELOPER")
+                        .header("Authorization", "Bearer " + memberToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(projectThread.toString()));
+
+        mockMvc.perform(get("/api/v1/conversations/" + privateThread)
+                        .header("Authorization", "Bearer " + memberToken))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/conversations/" + privateThread)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Secret notes"));
+    }
+
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {
-        String payload = title == null
-                ? "{\"assistantRole\":\"%s\"}".formatted(role)
-                : "{\"assistantRole\":\"%s\",\"title\":\"%s\"}".formatted(role, title);
+        return createThread(token, projectId, role, title, null);
+    }
+
+    private UUID createThread(
+            String token,
+            UUID projectId,
+            String role,
+            String title,
+            String visibility
+    ) throws Exception {
+        String payload;
+        if (title == null) {
+            payload = visibility == null
+                    ? "{\"assistantRole\":\"%s\"}".formatted(role)
+                    : "{\"assistantRole\":\"%s\",\"visibility\":\"%s\"}".formatted(role, visibility);
+        } else {
+            payload = visibility == null
+                    ? "{\"assistantRole\":\"%s\",\"title\":\"%s\"}".formatted(role, title)
+                    : "{\"assistantRole\":\"%s\",\"title\":\"%s\",\"visibility\":\"%s\"}".formatted(role, title, visibility);
+        }
         MvcResult result = mockMvc.perform(post("/api/v1/projects/" + projectId + "/conversations")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

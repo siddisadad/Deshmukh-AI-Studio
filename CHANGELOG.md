@@ -4,6 +4,13 @@ All notable changes to the **Production MVP** (Spring Boot + React) track.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning targets [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Chat SSE reconnect: token refresh retry, stream recovery polling, cancel in-flight stream
+- Backend continues AI generation when SSE client disconnects mid-stream (assistant message still persisted)
+
 ## [0.1.2-beta] — 2026-08-08
 
 ### Added

@@ -117,7 +117,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Item | Status on `main` | Next depth |
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
-| Streaming AI responses | SSE chat | Token UX polish, reconnect |
+| Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
 | Observability | JSON logs, health, post-deploy smoke, Prometheus (internal) | Dashboards, alerting |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides, SAML |

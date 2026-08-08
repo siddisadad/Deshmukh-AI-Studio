@@ -121,9 +121,9 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Observability | JSON logs, Prometheus, Grafana, Loki alerts, retention, queue metrics | Long-term Glacier lifecycle / cross-region |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)) | Full SAML SP binding |
-| Multi-thread conversations | Per-assistant threads + search + share + single/bulk export | Scheduled off-site sync |
+| Multi-thread conversations | Per-assistant threads + search + share + single/bulk export + scheduled off-site sync ([19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md)) | Retention policies / legal hold |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
-| Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue depth metrics | Worker autoscaling playbooks |
+| Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue metrics + autoscaling playbook ([18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md)) | K8s HPA / cloud-native autoscaling |
 
 ---
 

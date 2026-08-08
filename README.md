@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.7-beta
+export IMAGE_TAG=v0.2.8-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -133,11 +133,12 @@ uvicorn main:app --reload --port 8000
 - [x] Read-only conversation share links (public read-only URL)
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
 - [x] Loki log retention (compactor, default 30d)
-- [x] Private conversation threads (creator-only visibility)
+- [x] Conversation thread export (JSON / Markdown download)
+- [x] OIDC IdP setup guides (Okta, Entra ID, Google, Auth0)
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.7-beta` adds private conversation threads; `v0.2.6-beta` added Loki log retention.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.8-beta` adds thread export + OIDC IdP guides; `v0.2.7-beta` added private conversation threads.
 
 ## Docs
 

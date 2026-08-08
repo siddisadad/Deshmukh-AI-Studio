@@ -22,6 +22,7 @@ export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
 ./scripts/write-grafana-loki-regions.sh
 ./scripts/write-grafana-prometheus-regions.sh
 ./scripts/write-grafana-federated-dashboard.sh
+./scripts/write-grafana-billing-dashboard.sh
 ./scripts/sync-loki-ruler-regions.sh   # remote Loki rulers
 ```
 

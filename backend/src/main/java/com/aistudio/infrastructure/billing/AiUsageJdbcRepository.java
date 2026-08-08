@@ -117,4 +117,36 @@ public class AiUsageJdbcRepository {
         );
         return total == null ? 0 : total;
     }
+
+    public int sumActionsOnDate(LocalDate date) {
+        Integer total = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(SUM(action_count), 0) FROM ai_usage_daily WHERE usage_date = ?",
+                Integer.class,
+                java.sql.Date.valueOf(date)
+        );
+        return total == null ? 0 : total;
+    }
+
+    public int sumOverageOnDate(LocalDate date) {
+        Integer total = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(SUM(overage_count), 0) FROM ai_usage_daily WHERE usage_date = ?",
+                Integer.class,
+                java.sql.Date.valueOf(date)
+        );
+        return total == null ? 0 : total;
+    }
+
+    public int sumOverageBetweenAllOrgs(LocalDate from, LocalDate to) {
+        Integer total = jdbcTemplate.queryForObject(
+                """
+                        SELECT COALESCE(SUM(overage_count), 0)
+                        FROM ai_usage_daily
+                        WHERE usage_date >= ? AND usage_date <= ?
+                        """,
+                Integer.class,
+                java.sql.Date.valueOf(from),
+                java.sql.Date.valueOf(to)
+        );
+        return total == null ? 0 : total;
+    }
 }

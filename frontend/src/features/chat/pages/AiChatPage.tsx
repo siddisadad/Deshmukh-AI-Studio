@@ -34,6 +34,7 @@ import {
   type ChatMessage,
   type ConversationSummary,
   type ConversationShareResult,
+  type StreamUsage,
 } from '../api/chatApi';
 
 export function AiChatPage() {
@@ -47,6 +48,7 @@ export function AiChatPage() {
   const [streamingContent, setStreamingContent] = useState('');
   const [input, setInput] = useState('');
   const [provider, setProvider] = useState<string | null>(null);
+  const [lastStreamUsage, setLastStreamUsage] = useState<StreamUsage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -131,6 +133,7 @@ export function AiChatPage() {
     setRole(value);
     setError(null);
     setStreamingContent('');
+    setLastStreamUsage(null);
     try {
       await loadThreads(value, undefined, threadSearch.trim() || undefined);
     } catch (err) {
@@ -142,6 +145,7 @@ export function AiChatPage() {
     if (sending || threadId === activeThreadId) return;
     setError(null);
     setStreamingContent('');
+    setLastStreamUsage(null);
     setActiveThreadId(threadId);
     try {
       const conversation = await chatApi.getConversation(threadId);
@@ -163,6 +167,7 @@ export function AiChatPage() {
       setActiveThreadId(created.id);
       setMessages([]);
       setStreamingContent('');
+      setLastStreamUsage(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to create thread');
     }
@@ -271,6 +276,7 @@ export function AiChatPage() {
     streamAbortRef.current?.abort();
     streamAbortRef.current = null;
     setStreamingContent('');
+    setLastStreamUsage(null);
     setReconnecting(false);
     setSending(false);
   }
@@ -285,6 +291,7 @@ export function AiChatPage() {
     setReconnecting(false);
     setError(null);
     setStreamingContent('');
+    setLastStreamUsage(null);
     const content = input.trim();
     setInput('');
     try {
@@ -306,12 +313,17 @@ export function AiChatPage() {
           setReconnecting(false);
           setStreamingContent((prev) => prev + text);
         },
-        onDone: ({ assistantMessage, provider: p, model }) => {
+        onDone: ({ assistantMessage, provider: p, model, usage }) => {
           setStreamingContent('');
           setReconnecting(false);
           setMessages((prev) => [...prev, assistantMessage]);
+          if (usage) {
+            setLastStreamUsage(usage);
+          }
           if (p !== 'stream-recovery') {
-            setProvider(`${p} / ${model}`);
+            const usageHint =
+              usage?.outputTokens != null ? ` · ${usage.outputTokens} out tokens` : '';
+            setProvider(`${p} / ${model}${usageHint}`);
           }
           setThreads((prev) => {
             const updated = prev.map((t) =>
@@ -595,7 +607,7 @@ export function AiChatPage() {
               {streamingContent && (
                 <Box sx={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
                   <Typography variant="caption" color="text.secondary">
-                    {selected?.name || 'Assistant'} · streaming
+                    {selected?.name || 'Assistant'} · streaming · {streamingContent.length} chars
                   </Typography>
                   <Paper
                     variant="outlined"
@@ -670,7 +682,11 @@ export function AiChatPage() {
               )}
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Multi-thread · streaming SSE (reconnect) · {provider || 'Provider: mock (default)'}
+              Multi-thread · streaming SSE (reconnect + RAF batching) ·{' '}
+              {provider || 'Provider: mock (default)'}
+              {lastStreamUsage?.inputTokens != null
+                ? ` · last: ${lastStreamUsage.inputTokens} in / ${lastStreamUsage.outputTokens ?? '?'} out tokens`
+                : ''}
             </Typography>
           </Box>
         </Stack>

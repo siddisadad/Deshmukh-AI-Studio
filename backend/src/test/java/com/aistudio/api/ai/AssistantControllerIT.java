@@ -148,6 +148,8 @@ class AssistantControllerIT {
         Assertions.assertTrue(body.contains("event:user"), body);
         Assertions.assertTrue(body.contains("event:delta"), body);
         Assertions.assertTrue(body.contains("event:done"), body);
+        Assertions.assertTrue(body.contains("streamChars"), body);
+        Assertions.assertTrue(body.contains("outputTokens"), body);
 
         mockMvc.perform(get("/api/v1/conversations/" + conversationId)
                         .header("Authorization", "Bearer " + token))

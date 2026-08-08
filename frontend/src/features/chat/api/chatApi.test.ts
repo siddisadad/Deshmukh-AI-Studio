@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../shared/api/types';
-import { chatApi, parseSseStream } from './chatApi';
+import { chatApi, createDeltaBatcher, parseSseStream } from './chatApi';
 
 vi.mock('../../../shared/api/httpClient', () => ({
   http: {
@@ -65,7 +65,12 @@ describe('parseSseStream', () => {
       'data: {"text":"lo"}',
       '',
       'event: done',
-      `data: ${JSON.stringify({ assistantMessage: assistant, provider: 'mock', model: 'mock-v1' })}`,
+      `data: ${JSON.stringify({
+        assistantMessage: assistant,
+        provider: 'mock',
+        model: 'mock-v1',
+        usage: { inputTokens: 12, outputTokens: 8, streamChars: 5, deltaCount: 2 },
+      })}`,
       '',
     ].join('\n');
 
@@ -83,7 +88,34 @@ describe('parseSseStream', () => {
     );
 
     expect(deltas).toEqual(['hel', 'lo']);
-    expect(done).toEqual({ assistantMessage: assistant, provider: 'mock', model: 'mock-v1' });
+    expect(done).toEqual({
+      assistantMessage: assistant,
+      provider: 'mock',
+      model: 'mock-v1',
+      usage: { inputTokens: 12, outputTokens: 8, streamChars: 5, deltaCount: 2 },
+    });
+  });
+});
+
+describe('createDeltaBatcher', () => {
+  it('flushes accumulated deltas on the next animation frame', async () => {
+    const rafCallbacks: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    });
+
+    const flushed: string[] = [];
+    const batcher = createDeltaBatcher((text) => flushed.push(text));
+    batcher('a');
+    batcher('b');
+    batcher('c');
+
+    expect(flushed).toEqual([]);
+    rafCallbacks.forEach((cb) => cb(0));
+    expect(flushed).toEqual(['abc']);
+
+    vi.unstubAllGlobals();
   });
 });
 

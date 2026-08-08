@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.18-beta] — 2026-08-08
+
+### Added
+
+- SSE `done` event **usage** metadata: `inputTokens`, `outputTokens`, `streamChars`, `deltaCount`
+- Chat UI: live char count during stream, RAF delta batching, post-stream token hints in footer
+- Mock AI provider token estimates for metering UX
+- `docs/23-STREAMING-TOKEN-UX-GUIDE.md` — SSE usage fields and smoke test
+
 ## [0.2.17-beta] — 2026-08-08
 
 ### Added

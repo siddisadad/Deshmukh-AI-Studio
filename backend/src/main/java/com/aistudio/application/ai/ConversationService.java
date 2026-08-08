@@ -304,10 +304,13 @@ public class ConversationService {
                     .data(toChatDto(prepared.userMessage()), MediaType.APPLICATION_JSON));
 
             AtomicBoolean clientDisconnected = new AtomicBoolean(false);
+            int[] streamStats = new int[2]; // [chars, deltaCount]
             AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
                 if (clientDisconnected.get()) {
                     return;
                 }
+                streamStats[0] += delta.length();
+                streamStats[1] += 1;
                 try {
                     emitter.send(SseEmitter.event()
                             .name("delta")
@@ -324,11 +327,11 @@ public class ConversationService {
                 throw new IllegalStateException("Failed to persist assistant message");
             }
 
-            Map<String, Object> done = Map.of(
-                    "assistantMessage", toChatDto(assistantMessage),
-                    "provider", aiProviderPort.providerId(),
-                    "model", result.model()
-            );
+            Map<String, Object> done = new LinkedHashMap<>();
+            done.put("assistantMessage", toChatDto(assistantMessage));
+            done.put("provider", aiProviderPort.providerId());
+            done.put("model", result.model());
+            done.put("usage", streamUsageMap(result, streamStats[0], streamStats[1]));
             if (!clientDisconnected.get()) {
                 emitter.send(SseEmitter.event()
                         .name("done")
@@ -412,6 +415,23 @@ public class ConversationService {
                 conversationRepository.save(conversation);
             }
         }
+    }
+
+    private Map<String, Object> streamUsageMap(
+            AiProviderPort.AiGenerationResult result,
+            int streamChars,
+            int deltaCount
+    ) {
+        Map<String, Object> usage = new LinkedHashMap<>();
+        if (result.inputTokens() != null) {
+            usage.put("inputTokens", result.inputTokens());
+        }
+        if (result.outputTokens() != null) {
+            usage.put("outputTokens", result.outputTokens());
+        }
+        usage.put("streamChars", streamChars);
+        usage.put("deltaCount", deltaCount);
+        return usage;
     }
 
     private MessageEntity persistAssistant(

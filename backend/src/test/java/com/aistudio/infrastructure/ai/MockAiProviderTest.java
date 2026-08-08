@@ -60,4 +60,18 @@ class MockAiProviderTest {
         assertThat(result.text()).contains("Project Documentation");
         assertThat(result.text()).doesNotContain("Open requirements summary");
     }
+
+    @Test
+    void estimatesTokenUsageForMetering() {
+        var result = provider.generate(new AiProviderPort.AiGenerationRequest(
+                "Short system",
+                List.of(new AiProviderPort.AiMessage("user", "Hello world")),
+                0.2,
+                500,
+                Map.of()
+        ));
+
+        assertThat(result.inputTokens()).isPositive();
+        assertThat(result.outputTokens()).isPositive();
+    }
 }

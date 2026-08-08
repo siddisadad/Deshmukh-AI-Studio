@@ -215,7 +215,10 @@ jobs:
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-alerts.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config-s3.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/grafana/provisioning/datasources/loki-regions.yml'))"
           bash -n scripts/export-loki-logs.sh
+          bash -n scripts/query-loki-multi-region.sh
+          bash -n scripts/write-grafana-loki-regions.sh
           bash -n scripts/worker-scale-hint.sh
           bash -n scripts/staging-dogfood.sh
           bash -n scripts/staging-provider-probes.sh
@@ -228,4 +231,5 @@ jobs:
           fi
           export METRICS_SCRAPE_TOKEN=test-scrape-token-for-ci
           ./scripts/write-prometheus-token.sh
-          test -f monitoring/.prometheus-token
+          ./scripts/write-grafana-loki-regions.sh
+          test -f monitoring/grafana/provisioning/datasources/loki-regions.yml

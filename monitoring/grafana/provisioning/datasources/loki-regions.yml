@@ -1,0 +1,3 @@
+# Extra regional Loki datasources — run scripts/write-grafana-loki-regions.sh when LOKI_QUERY_REGIONS is set.
+apiVersion: 1
+datasources: []

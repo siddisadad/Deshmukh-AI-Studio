@@ -178,4 +178,35 @@ else
   echo "==> Mail provider ${mail_provider} (skip SMTP connect)"
 fi
 
+if [[ -n "${LOKI_QUERY_REGIONS:-}" ]]; then
+  echo "==> Loki multi-region readiness"
+  IFS=',' read -ra loki_entries <<<"${LOKI_QUERY_REGIONS}"
+  loki_idx=0
+  for entry in "${loki_entries[@]}"; do
+    entry="${entry#"${entry%%[![:space:]]*}"}"
+    entry="${entry%"${entry##*[![:space:]]}"}"
+    if [[ -z "$entry" ]]; then
+      continue
+    fi
+    if [[ "$entry" == *"="* ]]; then
+      loki_region="${entry%%=*}"
+      loki_url="${entry#*=}"
+      loki_region="${loki_region#"${loki_region%%[![:space:]]*}"}"
+      loki_region="${loki_region%"${loki_region##*[![:space:]]}"}"
+      loki_url="${loki_url#"${loki_url%%[![:space:]]*}"}"
+      loki_url="${loki_url%"${loki_url##*[![:space:]]}"}"
+    else
+      loki_idx=$((loki_idx + 1))
+      loki_region="region-${loki_idx}"
+      loki_url="$entry"
+      loki_url="${loki_url#"${loki_url%%[![:space:]]*}"}"
+      loki_url="${loki_url%"${loki_url##*[![:space:]]}"}"
+    fi
+    loki_url="${loki_url%/}"
+    probe_http_ok "Loki ${loki_region} ready" "${loki_url}/ready"
+  done
+else
+  echo "==> Loki multi-region (skip — LOKI_QUERY_REGIONS not set)"
+fi
+
 echo "OK: staging provider probes passed"

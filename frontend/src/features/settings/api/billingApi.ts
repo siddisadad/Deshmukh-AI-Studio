@@ -28,10 +28,34 @@ export interface CheckoutSession {
   provider: string;
 }
 
+export interface UsageDay {
+  date: string;
+  actionCount: number;
+}
+
+export interface Invoice {
+  id: string;
+  number: string | null;
+  status: string;
+  amountDueCents: number;
+  currency: string;
+  createdAt: string | null;
+  hostedInvoiceUrl: string | null;
+  invoicePdfUrl: string | null;
+}
+
 export const billingApi = {
   listPlans: () => http.get<Plan[]>('/billing/plans').then((r) => r.data),
   overview: (orgId: string) =>
     http.get<BillingOverview>(`/organizations/${orgId}/billing`).then((r) => r.data),
+  usageHistory: (orgId: string, days = 30) =>
+    http
+      .get<UsageDay[]>(`/organizations/${orgId}/billing/usage`, { params: { days } })
+      .then((r) => r.data),
+  listInvoices: (orgId: string, limit = 12) =>
+    http
+      .get<Invoice[]>(`/organizations/${orgId}/billing/invoices`, { params: { limit } })
+      .then((r) => r.data),
   changePlan: (orgId: string, planCode: string) =>
     http
       .post<BillingOverview>(`/organizations/${orgId}/billing/change-plan`, { planCode })

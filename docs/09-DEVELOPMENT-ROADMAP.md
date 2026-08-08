@@ -119,7 +119,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
 | Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
 | Observability | JSON logs, Prometheus, Grafana, Loki alerts, retention, queue metrics, export archives | Glacier lifecycle + cross-region ([21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md)) | Real-time multi-region Loki query |
-| Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
+| Billing / plans | Stripe checkout + webhook + usage history + invoice list ([22-BILLING-USAGE-INVOICES-GUIDE.md](22-BILLING-USAGE-INVOICES-GUIDE.md)) | Usage-based pricing / seat metering |
 | SSO (OIDC/SAML) | OIDC adapter + IdP guides + SAML stub + SP binding ([20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md)) | Signed AuthnRequest / encrypted assertions |
 | Multi-thread conversations | Per-assistant threads + search + share + single/bulk export + scheduled off-site sync ([19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md)) | Retention policies / legal hold |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |

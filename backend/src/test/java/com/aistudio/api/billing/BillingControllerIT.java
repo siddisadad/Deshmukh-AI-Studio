@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aistudio.application.billing.BillingService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -25,6 +26,7 @@ class BillingControllerIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired BillingService billingService;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
@@ -97,6 +99,29 @@ class BillingControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.provider").value("mock"))
                 .andExpect(jsonPath("$.checkoutUrl").exists());
+    }
+
+    @Test
+    void usageHistoryAndInvoices() throws Exception {
+        String email = "usage" + System.currentTimeMillis() + "@example.com";
+        JsonNode user = register(email, "Usage User");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        billingService.requireAndConsumeAiAction(orgId);
+        billingService.requireAndConsumeAiAction(orgId);
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/billing/usage")
+                        .param("days", "7")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(7))
+                .andExpect(jsonPath("$[6].actionCount").value(2));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/billing/invoices")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
     private JsonNode register(String email, String name) throws Exception {

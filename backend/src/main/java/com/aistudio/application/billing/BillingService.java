@@ -2,7 +2,9 @@ package com.aistudio.application.billing;
 
 import com.aistudio.api.billing.dto.BillingOverviewResponse;
 import com.aistudio.api.billing.dto.CheckoutResponse;
+import com.aistudio.api.billing.dto.InvoiceResponse;
 import com.aistudio.api.billing.dto.PlanResponse;
+import com.aistudio.api.billing.dto.UsageDayResponse;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.billing.PlanCode;
 import com.aistudio.domain.billing.SubscriptionStatus;
@@ -27,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -140,6 +143,39 @@ public class BillingService {
         sub.setCurrentPeriodEnd(Instant.now().plus(30, ChronoUnit.DAYS));
         subscriptionRepository.save(sub);
         return overview(organizationId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UsageDayResponse> usageHistory(UUID organizationId, UUID userId, int days) {
+        authorizationService.requireOrgMember(organizationId, userId);
+        int cappedDays = Math.min(Math.max(days, 1), 90);
+        LocalDate end = LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = end.minusDays(cappedDays - 1);
+        var counts = usageRepository.getCountsBetween(organizationId, start, end);
+        List<UsageDayResponse> history = new ArrayList<>();
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            history.add(new UsageDayResponse(date, counts.getOrDefault(date, 0)));
+        }
+        return history;
+    }
+
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> listInvoices(UUID organizationId, UUID userId, int limit) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        return billingPort.listInvoices(organizationId, limit).stream()
+                .map(invoice -> new InvoiceResponse(
+                        invoice.id(),
+                        invoice.number(),
+                        invoice.status(),
+                        invoice.amountDueCents(),
+                        invoice.currency(),
+                        invoice.createdAtEpochSeconds() == null
+                                ? null
+                                : Instant.ofEpochSecond(invoice.createdAtEpochSeconds()),
+                        invoice.hostedInvoiceUrl(),
+                        invoice.invoicePdfUrl()
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)

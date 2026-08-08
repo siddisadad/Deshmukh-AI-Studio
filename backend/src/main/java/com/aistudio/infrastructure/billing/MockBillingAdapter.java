@@ -2,6 +2,7 @@ package com.aistudio.infrastructure.billing;
 
 import com.aistudio.application.billing.BillingPort;
 import com.aistudio.domain.billing.PlanCode;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,5 +44,10 @@ public class MockBillingAdapter implements BillingPort {
     public String createCustomerPortalUrl(UUID organizationId, String returnUrl) {
         String base = returnUrl == null || returnUrl.isBlank() ? appBaseUrl + "/settings/billing" : returnUrl;
         return base + (base.contains("?") ? "&" : "?") + "mockPortal=1&org=" + organizationId;
+    }
+
+    @Override
+    public List<BillingPort.InvoiceSummary> listInvoices(UUID organizationId, int limit) {
+        return List.of();
     }
 }

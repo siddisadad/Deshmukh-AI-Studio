@@ -1,17 +1,6 @@
 spring:
   application:
     name: ai-studio-api
-  mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:${MAIL_USER:}}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${MAIL_SMTP_STARTTLS:true}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:aistudio}
     username: ${DB_USER:aistudio}
@@ -39,6 +28,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+  health:
+    mail:
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}

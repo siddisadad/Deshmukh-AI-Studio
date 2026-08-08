@@ -112,15 +112,17 @@ Realistic roadmap for a small startup (2–4 engineers). Ordered by risk reducti
 
 ## 9. Phase 6+ — Growth Backlog
 
-| Item | Dependency |
-|---|---|
-| RAG over documents/code metadata | Knowledge port + vector store |
-| Streaming AI responses | SSE/WebSocket |
-| Billing / plans | Stripe + entitlements |
-| SSO (OIDC/SAML) | Identity module extension |
-| Multi-thread conversations | Schema change |
-| Plugin architecture | Assistant/tool SPI |
-| Background AI jobs | Queue worker |
+Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening and depth.
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
+| Streaming AI responses | SSE chat | Token UX polish, reconnect |
+| Billing / plans | Mock Stripe + entitlements UI | **Stripe checkout + webhook** (env-gated) |
+| SSO (OIDC/SAML) | Mock provider + callback | **Real OIDC** (env-gated) + IdP-specific guides |
+| Multi-thread conversations | Per-assistant threads | Thread search, sharing |
+| Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
+| Background AI jobs | Reindex + doc generate queue | Dedicated worker service |
 
 ---
 

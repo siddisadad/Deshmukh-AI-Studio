@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleDomain(DomainException ex, HttpServletRequest request) {
         HttpStatus status = switch (ex.getCode()) {
             case "EMAIL_TAKEN", "PROJECT_KEY_TAKEN", "LABEL_TAKEN", "CONFLICT" -> HttpStatus.CONFLICT;
-            case "INVALID_CREDENTIALS", "INVALID_TOKEN", "TOKEN_INVALID_OR_EXPIRED" -> HttpStatus.UNAUTHORIZED;
+            case "INVALID_CREDENTIALS", "INVALID_TOKEN", "TOKEN_INVALID_OR_EXPIRED", "AUTH_ERROR" -> HttpStatus.UNAUTHORIZED;
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
             case "PLAN_LIMIT" -> HttpStatus.PAYMENT_REQUIRED;

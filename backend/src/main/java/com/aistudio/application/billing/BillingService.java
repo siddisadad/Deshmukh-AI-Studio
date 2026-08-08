@@ -9,6 +9,7 @@ import com.aistudio.domain.billing.SubscriptionStatus;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.project.ProjectStatus;
 import com.aistudio.infrastructure.billing.AiUsageJdbcRepository;
+import com.aistudio.infrastructure.config.BillingProperties;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
 import com.aistudio.infrastructure.persistence.entity.PlanEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
@@ -16,12 +17,20 @@ import com.aistudio.infrastructure.persistence.repository.OrganizationSubscripti
 import com.aistudio.infrastructure.persistence.repository.PlanRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.model.StripeObject;
+import com.stripe.model.Subscription;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +44,7 @@ public class BillingService {
     private final AiUsageJdbcRepository usageRepository;
     private final ProjectAuthorizationService authorizationService;
     private final BillingPort billingPort;
+    private final BillingProperties billingProperties;
     private final ObjectMapper objectMapper;
 
     public BillingService(
@@ -44,6 +54,7 @@ public class BillingService {
             AiUsageJdbcRepository usageRepository,
             ProjectAuthorizationService authorizationService,
             BillingPort billingPort,
+            BillingProperties billingProperties,
             ObjectMapper objectMapper
     ) {
         this.planRepository = planRepository;
@@ -52,6 +63,7 @@ public class BillingService {
         this.usageRepository = usageRepository;
         this.authorizationService = authorizationService;
         this.billingPort = billingPort;
+        this.billingProperties = billingProperties;
         this.objectMapper = objectMapper;
     }
 
@@ -171,6 +183,207 @@ public class BillingService {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
         requireAndConsumeAiAction(project.getOrganizationId());
+    }
+
+    @Transactional
+    public void handleStripeWebhook(String payload, String signatureHeader) {
+        String secret = billingProperties.stripe().webhookSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new DomainException("CONFIG_ERROR", "Stripe webhook secret is not configured");
+        }
+        Event event;
+        try {
+            event = Webhook.constructEvent(payload, signatureHeader, secret);
+        } catch (SignatureVerificationException ex) {
+            throw new DomainException("AUTH_ERROR", "Invalid Stripe webhook signature");
+        }
+        StripeObject stripeObject = event.getDataObjectDeserializer()
+                .getObject()
+                .orElseGet(() -> {
+                    try {
+                        return event.getDataObjectDeserializer().deserializeUnsafe();
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                });
+        if (stripeObject == null) {
+            return;
+        }
+        switch (event.getType()) {
+            case "checkout.session.completed" -> {
+                if (stripeObject instanceof Session session) {
+                    handleCheckoutSessionCompleted(session);
+                }
+            }
+            case "customer.subscription.updated" -> {
+                if (stripeObject instanceof Subscription subscription) {
+                    handleSubscriptionUpdated(subscription);
+                }
+            }
+            case "customer.subscription.deleted" -> {
+                if (stripeObject instanceof Subscription subscription) {
+                    handleSubscriptionDeleted(subscription);
+                }
+            }
+            default -> {
+                // ignore unhandled events
+            }
+        }
+    }
+
+    @Transactional
+    public void applyExternalSubscription(
+            UUID organizationId,
+            PlanCode planCode,
+            String customerId,
+            String subscriptionId,
+            SubscriptionStatus status,
+            Instant periodEnd
+    ) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        if (customerId != null && !customerId.isBlank()) {
+            sub.setExternalCustomerId(customerId);
+        }
+        if (subscriptionId != null && !subscriptionId.isBlank()) {
+            sub.setExternalSubscriptionId(subscriptionId);
+        }
+        sub.setPlanCode(planCode);
+        sub.setStatus(status);
+        sub.setCurrentPeriodEnd(periodEnd);
+        subscriptionRepository.save(sub);
+    }
+
+    private void handleCheckoutSessionCompleted(Session session) {
+        UUID organizationId = parseOrganizationId(session);
+        if (organizationId == null) {
+            return;
+        }
+        PlanCode planCode = parsePlanCode(session.getMetadata() == null ? null : session.getMetadata().get("planCode"));
+        if (planCode == null) {
+            return;
+        }
+        applyExternalSubscription(
+                organizationId,
+                planCode,
+                session.getCustomer(),
+                session.getSubscription(),
+                SubscriptionStatus.ACTIVE,
+                null
+        );
+    }
+
+    private void handleSubscriptionUpdated(Subscription subscription) {
+        OrganizationSubscriptionEntity sub = findSubscription(subscription);
+        if (sub == null) {
+            return;
+        }
+        PlanCode planCode = resolvePlanFromStripePrice(extractPriceId(subscription));
+        if (planCode != null) {
+            sub.setPlanCode(planCode);
+        }
+        sub.setExternalCustomerId(subscription.getCustomer());
+        sub.setExternalSubscriptionId(subscription.getId());
+        sub.setStatus(mapStripeStatus(subscription.getStatus()));
+        if (subscription.getCurrentPeriodEnd() != null) {
+            sub.setCurrentPeriodEnd(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
+        }
+        subscriptionRepository.save(sub);
+    }
+
+    private void handleSubscriptionDeleted(Subscription subscription) {
+        OrganizationSubscriptionEntity sub = findSubscription(subscription);
+        if (sub == null) {
+            return;
+        }
+        sub.setPlanCode(PlanCode.FREE);
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setExternalSubscriptionId(null);
+        sub.setCurrentPeriodEnd(null);
+        subscriptionRepository.save(sub);
+    }
+
+    private OrganizationSubscriptionEntity findSubscription(Subscription subscription) {
+        if (subscription.getId() != null) {
+            Optional<OrganizationSubscriptionEntity> bySub = subscriptionRepository
+                    .findByExternalSubscriptionId(subscription.getId());
+            if (bySub.isPresent()) {
+                return bySub.get();
+            }
+        }
+        if (subscription.getCustomer() != null) {
+            return subscriptionRepository.findByExternalCustomerId(subscription.getCustomer()).orElse(null);
+        }
+        return null;
+    }
+
+    private UUID parseOrganizationId(Session session) {
+        if (session.getClientReferenceId() != null && !session.getClientReferenceId().isBlank()) {
+            try {
+                return UUID.fromString(session.getClientReferenceId());
+            } catch (IllegalArgumentException ignored) {
+                // fall through
+            }
+        }
+        if (session.getMetadata() != null && session.getMetadata().get("organizationId") != null) {
+            try {
+                return UUID.fromString(session.getMetadata().get("organizationId"));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private PlanCode parsePlanCode(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return PlanCode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private PlanCode resolvePlanFromStripePrice(String priceId) {
+        if (priceId == null || priceId.isBlank()) {
+            return null;
+        }
+        return planRepository.findByStripePriceId(priceId)
+                .map(PlanEntity::getCode)
+                .orElseGet(() -> {
+                    BillingProperties.Stripe stripe = billingProperties.stripe();
+                    if (priceId.equals(stripe.proPriceId())) {
+                        return PlanCode.PRO;
+                    }
+                    if (priceId.equals(stripe.teamPriceId())) {
+                        return PlanCode.TEAM;
+                    }
+                    return null;
+                });
+    }
+
+    private String extractPriceId(Subscription subscription) {
+        if (subscription.getItems() == null || subscription.getItems().getData().isEmpty()) {
+            return null;
+        }
+        return subscription.getItems().getData().getFirst().getPrice().getId();
+    }
+
+    private SubscriptionStatus mapStripeStatus(String stripeStatus) {
+        if (stripeStatus == null) {
+            return SubscriptionStatus.ACTIVE;
+        }
+        switch (stripeStatus) {
+            case "trialing":
+                return SubscriptionStatus.TRIALING;
+            case "past_due":
+                return SubscriptionStatus.PAST_DUE;
+            case "canceled", "unpaid":
+                return SubscriptionStatus.CANCELED;
+            default:
+                return SubscriptionStatus.ACTIVE;
+        }
     }
 
     private OrganizationSubscriptionEntity requireSubscription(UUID organizationId) {

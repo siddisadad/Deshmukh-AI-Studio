@@ -38,4 +38,7 @@ public class PlanEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
     private String features = "[]";
+
+    @Column(name = "stripe_price_id", length = 120)
+    private String stripePriceId;
 }

@@ -253,6 +253,41 @@ docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```
 
+### Stripe billing (production)
+
+Set `BILLING_PROVIDER=stripe` and Stripe secrets in `.env` (never commit):
+
+| Variable | Purpose |
+|---|---|
+| `STRIPE_API_KEY` | Secret key (`sk_live_…` or `sk_test_…`) |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret from Stripe Dashboard webhook endpoint |
+| `STRIPE_PRO_PRICE_ID` | Price ID for Pro plan |
+| `STRIPE_TEAM_PRICE_ID` | Price ID for Team plan |
+
+Webhook URL (public HTTPS): `https://<api-host>/api/v1/billing/stripe/webhook`
+
+Subscribe to `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+
+Optional: set `plans.stripe_price_id` in the database (migration `V13`) instead of env price IDs.
+
+Default `BILLING_PROVIDER=mock` keeps mock checkout for local dev and CI.
+
+### OIDC SSO (production)
+
+Set `SSO_PROVIDER=oidc` and configure the IdP (Okta, Google Workspace, Azure AD, etc.):
+
+| Variable | Purpose |
+|---|---|
+| `OIDC_ISSUER_URI` | Issuer URL (discovery at `/.well-known/openid-configuration`) |
+| `OIDC_CLIENT_ID` | OAuth client ID |
+| `OIDC_CLIENT_SECRET` | OAuth client secret |
+| `OIDC_DISPLAY_NAME` | Button label in login UI (optional) |
+| `OIDC_SCOPES` | Defaults to `openid email profile` |
+
+Register redirect URI: `https://<app-host>/auth/sso/callback`
+
+Default `SSO_PROVIDER=mock` for local dev and CI E2E.
+
 ### Cloud Agent environment builds
 
 Repository config lives in `.cursor/environment.json` (install, start, dev-server terminals). After merging to `main`:

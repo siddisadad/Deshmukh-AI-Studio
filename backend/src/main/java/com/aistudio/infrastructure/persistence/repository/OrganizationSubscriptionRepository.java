@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OrganizationSubscriptionRepository extends JpaRepository<OrganizationSubscriptionEntity, UUID> {
     Optional<OrganizationSubscriptionEntity> findByOrganizationId(UUID organizationId);
+
+    Optional<OrganizationSubscriptionEntity> findByExternalCustomerId(String externalCustomerId);
+
+    Optional<OrganizationSubscriptionEntity> findByExternalSubscriptionId(String externalSubscriptionId);
 }

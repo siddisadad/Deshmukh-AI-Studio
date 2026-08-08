@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Read-only conversation share links (`POST/DELETE /conversations/{id}/share`, public `GET /shared/conversations/{token}`)
+
 ## [0.2.3-beta] — 2026-08-08
 
 ### Added

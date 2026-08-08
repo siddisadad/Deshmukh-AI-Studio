@@ -10,6 +10,8 @@ public record ConversationSummaryResponse(
         String title,
         Instant createdAt,
         Instant updatedAt,
-        int messageCount
+        int messageCount,
+        boolean shareEnabled,
+        Instant shareExpiresAt
 ) {
 }

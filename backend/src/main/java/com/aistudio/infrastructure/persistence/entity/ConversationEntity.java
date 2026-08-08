@@ -42,6 +42,18 @@ public class ConversationEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "share_enabled", nullable = false)
+    private boolean shareEnabled = false;
+
+    @Column(name = "share_token_hash", length = 128)
+    private String shareTokenHash;
+
+    @Column(name = "share_expires_at")
+    private Instant shareExpiresAt;
+
+    @Column(name = "share_created_at")
+    private Instant shareCreatedAt;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

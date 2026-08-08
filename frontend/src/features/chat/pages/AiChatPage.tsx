@@ -3,6 +3,10 @@ import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   List,
   ListItemButton,
@@ -14,6 +18,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
@@ -24,6 +29,7 @@ import {
   type Assistant,
   type ChatMessage,
   type ConversationSummary,
+  type ConversationShareResult,
 } from '../api/chatApi';
 
 export function AiChatPage() {
@@ -42,6 +48,11 @@ export function AiChatPage() {
   const [sending, setSending] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [threadSearch, setThreadSearch] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareResult, setShareResult] = useState<ConversationShareResult | null>(null);
+  const [shareThreadId, setShareThreadId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
   const threadsLoadedRef = useRef(false);
@@ -168,6 +179,65 @@ export function AiChatPage() {
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to delete thread');
+    }
+  }
+
+  async function onOpenShare(threadId: string) {
+    if (sending) return;
+    setShareThreadId(threadId);
+    setShareOpen(true);
+    setShareError(null);
+    setShareResult(null);
+    setShareLoading(true);
+    try {
+      const result = await chatApi.enableShare(threadId);
+      setShareResult(result);
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? { ...t, shareEnabled: true, shareExpiresAt: result.expiresAt }
+            : t,
+        ),
+      );
+    } catch (err) {
+      setShareError(err instanceof ApiError ? err.message : 'Failed to create share link');
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  function onCloseShare() {
+    setShareOpen(false);
+    setShareThreadId(null);
+    setShareResult(null);
+    setShareError(null);
+  }
+
+  async function onRevokeShare() {
+    if (!shareThreadId) return;
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      await chatApi.revokeShare(shareThreadId);
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === shareThreadId ? { ...t, shareEnabled: false, shareExpiresAt: null } : t,
+        ),
+      );
+      onCloseShare();
+    } catch (err) {
+      setShareError(err instanceof ApiError ? err.message : 'Failed to revoke share link');
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function onCopyShareLink() {
+    if (!shareResult?.shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareResult.shareUrl);
+    } catch {
+      setShareError('Could not copy link — copy it manually from the field below');
     }
   }
 
@@ -363,9 +433,22 @@ export function AiChatPage() {
                   secondary={
                     <Typography component="span" variant="caption" color="text.secondary">
                       {thread.messageCount} messages · {new Date(thread.updatedAt).toLocaleString()}
+                      {thread.shareEnabled ? ' · shared' : ''}
                     </Typography>
                   }
                 />
+                <IconButton
+                  size="small"
+                  aria-label="Share thread"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    void onOpenShare(thread.id);
+                  }}
+                  disabled={sending}
+                  data-testid={`chat-share-thread-${thread.id}`}
+                >
+                  <ShareOutlinedIcon fontSize="small" />
+                </IconButton>
                 <IconButton
                   size="small"
                   aria-label="Delete thread"
@@ -526,6 +609,47 @@ export function AiChatPage() {
           </Box>
         </Stack>
       </Box>
+
+      <Dialog open={shareOpen} onClose={onCloseShare} fullWidth maxWidth="sm">
+        <DialogTitle>Share conversation (read-only)</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {shareError && <Alert severity="error">{shareError}</Alert>}
+            {shareLoading && !shareResult && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <CircularProgress size={28} />
+              </Box>
+            )}
+            {shareResult && (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  Anyone with this link can read the thread until{' '}
+                  {new Date(shareResult.expiresAt).toLocaleString()}. They cannot send messages.
+                </Typography>
+                <TextField
+                  label="Share link"
+                  value={shareResult.shareUrl}
+                  fullWidth
+                  slotProps={{ htmlInput: { readOnly: true } }}
+                />
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onCloseShare} disabled={shareLoading}>Close</Button>
+          {shareResult && (
+            <Button onClick={() => void onCopyShareLink()} disabled={shareLoading}>
+              Copy link
+            </Button>
+          )}
+          {shareResult && (
+            <Button onClick={() => void onRevokeShare()} color="error" disabled={shareLoading}>
+              Revoke link
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

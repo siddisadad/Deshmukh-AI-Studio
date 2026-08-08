@@ -3,6 +3,7 @@ package com.aistudio.api.ai;
 import com.aistudio.api.ai.dto.AssistantsResponse;
 import com.aistudio.api.ai.dto.ChatMessageResponse;
 import com.aistudio.api.ai.dto.ConversationResponse;
+import com.aistudio.api.ai.dto.ConversationShareResponse;
 import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
 import com.aistudio.api.ai.dto.SendMessageRequest;
@@ -116,6 +117,25 @@ public class AssistantController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         conversationService.deleteConversation(conversationId, user.getId());
+    }
+
+    @PostMapping("/api/v1/conversations/{conversationId}/share")
+    @Operation(summary = "Enable read-only share link for a conversation thread")
+    public ConversationShareResponse enableShare(
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return conversationService.enableShare(conversationId, user.getId());
+    }
+
+    @DeleteMapping("/api/v1/conversations/{conversationId}/share")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Revoke read-only share link for a conversation thread")
+    public void revokeShare(
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        conversationService.revokeShare(conversationId, user.getId());
     }
 
     @PostMapping("/api/v1/conversations/{conversationId}/messages")

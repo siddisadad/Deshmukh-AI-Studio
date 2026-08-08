@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Bulk project thread archive export (`GET /projects/{id}/conversations/export`) — JSON or Markdown
+- Chat UI: "Export all" for current assistant's visible threads
+
 ## [0.2.9-beta] — 2026-08-08
 
 ### Added

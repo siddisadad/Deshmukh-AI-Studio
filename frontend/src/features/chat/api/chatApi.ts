@@ -117,6 +117,20 @@ async function readStreamError(response: Response): Promise<string> {
   return message;
 }
 
+function triggerBlobDownload(blob: Blob, disposition: string | undefined, defaultFilename: string) {
+  let filename = defaultFilename;
+  if (disposition) {
+    const match = /filename="([^"]+)"/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function parseSseStream(
   response: Response,
   handlers: StreamHandlers,
@@ -274,19 +288,26 @@ export const chatApi = {
       params: { format },
       responseType: 'blob',
     });
-    const blob = response.data as Blob;
-    const disposition = response.headers['content-disposition'] as string | undefined;
-    let filename = `conversation-${conversationId}.${format === 'json' ? 'json' : 'md'}`;
-    if (disposition) {
-      const match = /filename="([^"]+)"/.exec(disposition);
-      if (match) filename = match[1];
-    }
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    triggerBlobDownload(
+      response.data as Blob,
+      response.headers['content-disposition'] as string | undefined,
+      `conversation-${conversationId}.${format === 'json' ? 'json' : 'md'}`,
+    );
+  },
+  downloadProjectExport: async (
+    projectId: string,
+    format: 'json' | 'markdown' = 'markdown',
+    assistantRole?: string,
+  ) => {
+    const response = await http.get(`/projects/${projectId}/conversations/export`, {
+      params: { format, assistantRole: assistantRole || undefined },
+      responseType: 'blob',
+    });
+    triggerBlobDownload(
+      response.data as Blob,
+      response.headers['content-disposition'] as string | undefined,
+      `project-${projectId}-threads.${format === 'json' ? 'json' : 'md'}`,
+    );
   },
   getSharedConversation: (token: string) =>
     axios

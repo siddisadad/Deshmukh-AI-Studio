@@ -301,6 +301,59 @@ class AssistantControllerIT {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void exportProjectConversationsArchive() throws Exception {
+        JsonNode auth = register("bulkexport" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bulk Export Proj","projectKey":"BE","description":"bulk"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID thread1 = createThread(token, projectId, "DEVELOPER", "First thread");
+        UUID thread2 = createThread(token, projectId, "DEVELOPER", "Second thread");
+
+        mockMvc.perform(post("/api/v1/conversations/" + thread1 + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Bulk message one"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/conversations/" + thread2 + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Bulk message two"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/export")
+                        .param("format", "json")
+                        .param("assistantRole", "DEVELOPER")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("BE-threads")))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().string(containsString("\"conversationCount\" : 2")))
+                .andExpect(content().string(containsString("Bulk message one")))
+                .andExpect(content().string(containsString("Bulk message two")));
+
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations/export")
+                        .param("format", "markdown")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("# Project archive: Bulk Export Proj")))
+                .andExpect(content().string(containsString("# First thread")))
+                .andExpect(content().string(containsString("# Second thread")));
+    }
+
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {
         return createThread(token, projectId, role, title, null);
     }

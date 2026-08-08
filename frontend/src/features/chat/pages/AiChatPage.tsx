@@ -339,7 +339,7 @@ export function AiChatPage() {
             onChange={(ev) => setThreadSearch(ev.target.value)}
             disabled={sending}
             slotProps={{
-              htmlInput: { 'aria-label': 'Search threads', 'data-testid': 'chat-thread-search' },
+              htmlInput: { 'aria-label': 'Search threads', 'data-testid': 'chat-threads-search' },
             }}
             sx={{ mb: 1 }}
             fullWidth

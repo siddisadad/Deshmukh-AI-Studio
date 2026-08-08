@@ -15,7 +15,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -27,66 +26,97 @@ public class BackgroundJobWorker {
     private static final Logger log = LoggerFactory.getLogger(BackgroundJobWorker.class);
 
     private final BackgroundJobRepository jobRepository;
+    private final BackgroundJobClaimer claimer;
+    private final WorkerIdentity workerIdentity;
     private final KnowledgeIndexService knowledgeIndexService;
     private final DocumentService documentService;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
+    private final int batchSize;
+    private final int staleLockSeconds;
+    private final int maxAttempts;
 
     public BackgroundJobWorker(
             BackgroundJobRepository jobRepository,
+            BackgroundJobClaimer claimer,
+            WorkerIdentity workerIdentity,
             KnowledgeIndexService knowledgeIndexService,
             DocumentService documentService,
             TransactionTemplate transactionTemplate,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @org.springframework.beans.factory.annotation.Value("${aistudio.jobs.batch-size:5}") int batchSize,
+            @org.springframework.beans.factory.annotation.Value("${aistudio.jobs.stale-lock-seconds:900}") int staleLockSeconds,
+            @org.springframework.beans.factory.annotation.Value("${aistudio.jobs.max-attempts:3}") int maxAttempts
     ) {
         this.jobRepository = jobRepository;
+        this.claimer = claimer;
+        this.workerIdentity = workerIdentity;
         this.knowledgeIndexService = knowledgeIndexService;
         this.documentService = documentService;
         this.transactionTemplate = transactionTemplate;
         this.objectMapper = objectMapper;
+        this.batchSize = batchSize;
+        this.staleLockSeconds = staleLockSeconds;
+        this.maxAttempts = maxAttempts;
     }
 
     @Scheduled(fixedDelayString = "${aistudio.jobs.poll-interval-ms:2000}")
     public void poll() {
-        List<BackgroundJobEntity> pending = jobRepository.findPending(PageRequest.of(0, 5));
-        for (BackgroundJobEntity job : pending) {
-            processOne(job.getId());
+        List<UUID> claimed = transactionTemplate.execute(status ->
+                claimer.claimNext(batchSize, workerIdentity.id()));
+        if (claimed == null || claimed.isEmpty()) {
+            return;
+        }
+        for (UUID jobId : claimed) {
+            processClaimed(jobId);
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${aistudio.jobs.stale-reclaim-interval-ms:60000}")
+    public void recoverStaleLocks() {
+        Integer reclaimed = transactionTemplate.execute(status ->
+                claimer.reclaimStaleLocks(staleLockSeconds, maxAttempts));
+        if (reclaimed != null && reclaimed > 0) {
+            log.info("Reclaimed or failed {} stale background job lock(s)", reclaimed);
         }
     }
 
     public void processOne(UUID jobId) {
-        BackgroundJobEntity claimed = transactionTemplate.execute(status -> {
-            BackgroundJobEntity job = jobRepository.findById(jobId).orElse(null);
-            if (job == null || job.getStatus() != JobStatus.PENDING) {
-                return null;
-            }
-            job.setStatus(JobStatus.RUNNING);
-            job.setAttempts(job.getAttempts() + 1);
-            job.setStartedAt(Instant.now());
-            job.setErrorMessage(null);
-            return jobRepository.save(job);
-        });
-        if (claimed == null) {
+        boolean claimed = Boolean.TRUE.equals(transactionTemplate.execute(status ->
+                claimer.tryClaim(jobId, workerIdentity.id())));
+        if (!claimed) {
+            return;
+        }
+        processClaimed(jobId);
+    }
+
+    private void processClaimed(UUID jobId) {
+        BackgroundJobEntity job = jobRepository.findById(jobId).orElse(null);
+        if (job == null || job.getStatus() != JobStatus.RUNNING) {
             return;
         }
 
         try {
-            String resultJson = execute(claimed);
+            String resultJson = execute(job);
             transactionTemplate.executeWithoutResult(status -> {
-                BackgroundJobEntity job = jobRepository.findById(jobId).orElseThrow();
-                job.setStatus(JobStatus.SUCCEEDED);
-                job.setResult(resultJson);
-                job.setFinishedAt(Instant.now());
-                jobRepository.save(job);
+                BackgroundJobEntity current = jobRepository.findById(jobId).orElseThrow();
+                current.setStatus(JobStatus.SUCCEEDED);
+                current.setResult(resultJson);
+                current.setFinishedAt(Instant.now());
+                current.setLockedBy(null);
+                current.setLockedAt(null);
+                jobRepository.save(current);
             });
         } catch (Exception ex) {
             log.warn("Background job {} failed: {}", jobId, ex.getMessage());
             transactionTemplate.executeWithoutResult(status -> {
-                BackgroundJobEntity job = jobRepository.findById(jobId).orElseThrow();
-                job.setStatus(JobStatus.FAILED);
-                job.setErrorMessage(ex.getMessage() == null ? "Job failed" : truncate(ex.getMessage(), 2000));
-                job.setFinishedAt(Instant.now());
-                jobRepository.save(job);
+                BackgroundJobEntity current = jobRepository.findById(jobId).orElseThrow();
+                current.setStatus(JobStatus.FAILED);
+                current.setErrorMessage(ex.getMessage() == null ? "Job failed" : truncate(ex.getMessage(), 2000));
+                current.setFinishedAt(Instant.now());
+                current.setLockedBy(null);
+                current.setLockedAt(null);
+                jobRepository.save(current);
             });
         }
     }

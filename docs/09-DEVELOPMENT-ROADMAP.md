@@ -123,7 +123,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) §6), SAML |
 | Multi-thread conversations | Per-assistant threads + title/message search (`q`) | Thread sharing depth (private threads) |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
-| Background AI jobs | Reindex + doc generate queue + dedicated worker container | Horizontal worker scaling |
+| Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica | Autoscaling / queue depth metrics |
 
 ---
 

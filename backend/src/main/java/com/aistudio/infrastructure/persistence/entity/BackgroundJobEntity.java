@@ -60,6 +60,12 @@ public class BackgroundJobEntity {
     @Column(name = "finished_at")
     private Instant finishedAt;
 
+    @Column(name = "locked_by", length = 128)
+    private String lockedBy;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

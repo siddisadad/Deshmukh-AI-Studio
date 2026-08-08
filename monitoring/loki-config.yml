@@ -26,6 +26,11 @@ schema_config:
 
 ruler:
   alertmanager_url: http://alertmanager:9093
+  enable_alertmanager_v2: true
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
 
 limits_config:
   allow_structured_metadata: false

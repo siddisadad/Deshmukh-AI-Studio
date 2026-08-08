@@ -59,7 +59,11 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 
 ## Alerts
 
-`monitoring/alerts.yml` defines `ApiDown`, `ApiHighErrorRate`, and `ApiHighLatencyP95`. Prometheus forwards firing alerts to Alertmanager (`monitoring/alertmanager.yml`).
+**Metrics (Prometheus):** `monitoring/alerts.yml` defines `ApiDown`, `ApiHighErrorRate`, and `ApiHighLatencyP95`.
+
+**Logs (Loki ruler):** `monitoring/loki-alerts.yml` defines `ApiErrorLogsHigh`, `ApiWarnLogsHigh`, and `ApiLogsMissing` (prod JSON logs with `level` field).
+
+Both forward to Alertmanager (`monitoring/alertmanager.yml`).
 
 - Alertmanager UI: http://localhost:9093 (do not expose publicly without auth)
 - Default receiver logs alerts in the UI only; add `webhook_configs` or `email_configs` in `alertmanager.yml` for paging in production

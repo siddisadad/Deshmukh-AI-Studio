@@ -65,8 +65,16 @@ if ! printf '%s' "${providers_json}" | grep -q '"id"'; then
 fi
 echo "OK: SSO providers list"
 
-echo "==> Billing plans"
-plans_json="$(curl -fsS --max-time 15 "${API_BASE}/billing/plans")"
+echo "==> Billing plans (authenticated)"
+probe_suffix="$(date +%s)-${RANDOM}"
+probe_email="provider-probe-${probe_suffix}@example.com"
+probe_password="Str0ngPass!ProviderProbe"
+register_json="$(curl -fsS --max-time 20 -X POST "${API_BASE}/auth/register" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"${probe_email}\",\"password\":\"${probe_password}\",\"displayName\":\"Provider Probe\"}")"
+probe_token="$(json_get "${register_json}" "['accessToken']")"
+plans_json="$(curl -fsS --max-time 15 "${API_BASE}/billing/plans" \
+  -H "Authorization: Bearer ${probe_token}")"
 if ! printf '%s' "${plans_json}" | grep -q 'FREE'; then
   echo "FAIL: /billing/plans missing FREE plan: ${plans_json}" >&2
   exit 1

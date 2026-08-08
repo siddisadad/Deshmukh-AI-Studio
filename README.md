@@ -133,6 +133,7 @@ uvicorn main:app --reload --port 8000
 - [x] Read-only conversation share links (public read-only URL)
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
 - [x] Background job queue depth Prometheus metrics + Grafana panel
+- [x] Job worker autoscaling playbook + `worker-scale-hint.sh`
 - [x] Loki off-site export script + optional S3 object-store backend
 - [x] Conversation thread export (JSON / Markdown download)
 - [x] Bulk project thread archive export (JSON / Markdown)

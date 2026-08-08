@@ -232,6 +232,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 
 Or `WORKER_REPLICAS=3 ./scripts/staging-ghcr-deploy.sh`. Set `AISTUDIO_JOBS_WORKER_ID` per replica when using fixed hostnames (optional; defaults to random `worker-…` id). Stale `RUNNING` locks are reclaimed after `JOB_STALE_LOCK_SECONDS` (default 900).
 
+**Autoscaling playbook:** queue depth metrics, alerts, and scale hints — [18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md) (`scripts/worker-scale-hint.sh`).
+
 Local dev (`docker compose up`) keeps in-process polling enabled on the API for simplicity.
 
 ### Zero-downtime (MVP lite)

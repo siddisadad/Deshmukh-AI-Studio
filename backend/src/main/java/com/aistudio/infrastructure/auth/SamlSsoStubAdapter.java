@@ -9,42 +9,26 @@ import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 /**
- * SAML SSO port stub for dev/CI. Uses redirect-style callback parameters (like OIDC mock)
- * until full SP-initiated SAML POST binding is implemented.
- *
- * Set {@code SAML_STUB_MODE=false} only when wiring real IdP metadata — startup will fail
- * until full SAML is shipped; use {@code SSO_PROVIDER=oidc} for production IdPs today.
+ * SAML SSO stub for dev/CI. Uses redirect-style callback parameters (like OIDC mock).
  */
 @Component
-@ConditionalOnProperty(name = "aistudio.sso.provider", havingValue = "saml")
-public class SamlSsoAdapter implements SsoPort {
+@ConditionalOnExpression("'${aistudio.sso.provider:mock}' == 'saml' && '${aistudio.sso.saml.stub-mode:true}' == 'true'")
+public class SamlSsoStubAdapter implements SsoPort {
 
     private final SsoProperties ssoProperties;
     private final String appBaseUrl;
     private final Map<String, InstantState> pendingStates = new ConcurrentHashMap<>();
 
-    public SamlSsoAdapter(SsoProperties ssoProperties) {
+    public SamlSsoStubAdapter(SsoProperties ssoProperties) {
         this.ssoProperties = ssoProperties;
         String base = ssoProperties.appBaseUrl();
         this.appBaseUrl = base == null || base.isBlank()
                 ? "http://localhost:5173"
                 : (base.endsWith("/") ? base.substring(0, base.length() - 1) : base);
-        if (!ssoProperties.saml().stubMode()) {
-            if (!ssoProperties.saml().configured()) {
-                throw new IllegalStateException(
-                        "aistudio.sso.provider=saml with SAML_STUB_MODE=false requires "
-                                + "SAML_METADATA_URL and SAML_ENTITY_ID"
-                );
-            }
-            throw new IllegalStateException(
-                    "Full SAML SSO is not yet implemented. Set SAML_STUB_MODE=true for the dev stub "
-                            + "or use SSO_PROVIDER=oidc (see docs/15-OIDC-IDP-GUIDE.md)"
-            );
-        }
     }
 
     @Override

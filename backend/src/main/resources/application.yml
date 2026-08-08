@@ -105,6 +105,7 @@ aistudio:
     saml:
       metadata-url: ${SAML_METADATA_URL:}
       entity-id: ${SAML_ENTITY_ID:}
+      acs-url: ${SAML_ACS_URL:}
       display-name: ${SAML_DISPLAY_NAME:Continue with SAML}
       stub-mode: ${SAML_STUB_MODE:true}
 

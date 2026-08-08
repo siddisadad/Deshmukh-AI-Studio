@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.15-beta] — 2026-08-08
+
+### Added
+
+- Full SAML SP-initiated binding (`SAML_STUB_MODE=false`): HTTP-Redirect AuthnRequest, HTTP-POST ACS (`/auth/sso/saml/acs`), SP metadata endpoint
+- `docs/20-SAML-SP-BINDING-GUIDE.md` — IdP wiring, env vars, and flow diagram
+- `java-saml` integration for assertion validation and metadata-driven IdP settings
+
 ## [0.2.14-beta] — 2026-08-08
 
 ### Added

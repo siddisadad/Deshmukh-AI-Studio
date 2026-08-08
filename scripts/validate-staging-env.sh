@@ -54,6 +54,7 @@ if [[ "$sso_provider" == "saml" ]]; then
   if [[ "$saml_stub" == "false" ]]; then
     require SAML_METADATA_URL
     require SAML_ENTITY_ID
+    require SAML_ACS_URL
   fi
 fi
 

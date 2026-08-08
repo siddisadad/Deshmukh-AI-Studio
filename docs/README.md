@@ -43,12 +43,11 @@ Read in order; each document builds on the previous.
 | 36 | [36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md](36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md) | AI provider health probes and circuit breaking |
 | 37 | [37-BILLING-USAGE-DASHBOARDS-GUIDE.md](37-BILLING-USAGE-DASHBOARDS-GUIDE.md) | Usage-based billing Grafana dashboards |
 | 38 | [38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md](38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md) | Staging sign-off report archival in S3 |
-
 | 39 | [39-ALERTMANAGER-ONCALL-GUIDE.md](39-ALERTMANAGER-ONCALL-GUIDE.md) | Alertmanager on-call routing and cross-cluster alerts |
-
 | 40 | [40-ADAPTIVE-AI-ROUTING-GUIDE.md](40-ADAPTIVE-AI-ROUTING-GUIDE.md) | Adaptive latency-based AI provider routing |
+| 41 | [41-BILLING-ANOMALY-FORECAST-GUIDE.md](41-BILLING-ANOMALY-FORECAST-GUIDE.md) | Billing anomaly alerts and cost forecasting |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.35-beta** adds adaptive AI routing — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.36-beta** adds billing anomaly alerts — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -51,11 +51,11 @@ Validate before deploy:
 
 ### 2.3 Deploy from GHCR
 
-Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (tags: `main`, `v0.2.9-beta`, `sha-…`).
+Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (tags: `main`, `v0.2.10-beta`, `sha-…`).
 
 ```bash
 docker login ghcr.io   # if packages are private
-export IMAGE_TAG=v0.2.9-beta
+export IMAGE_TAG=v0.2.10-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -303,7 +303,7 @@ Record for each staging release:
 | Field | Example |
 |---|---|
 | Date | 2026-08-08 |
-| `IMAGE_TAG` | `v0.2.9-beta` |
+| `IMAGE_TAG` | `v0.2.10-beta` |
 | Host | `https://staging.yourdomain.com` |
 | Providers | stripe / oidc / smtp / mock |
 | Automated | `staging-dogfood.sh` exit 0 |

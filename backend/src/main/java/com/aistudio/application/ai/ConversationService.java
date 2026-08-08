@@ -5,8 +5,12 @@ import com.aistudio.api.ai.dto.ConversationResponse;
 import com.aistudio.api.ai.dto.ConversationShareResponse;
 import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
+import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SharedConversationResponse;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.ai.AssistantRole;
@@ -26,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -42,6 +47,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class ConversationService {
 
     private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
+    private static final Set<String> EXPORT_FORMATS = Set.of("json", "markdown");
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
@@ -52,6 +58,7 @@ public class ConversationService {
     private final AiProviderPort aiProviderPort;
     private final BillingService billingService;
     private final TransactionTemplate transactionTemplate;
+    private final ObjectMapper exportObjectMapper;
     private final int maxMessages;
     private final long shareTtlSeconds;
     private final String appBaseUrl;
@@ -66,6 +73,7 @@ public class ConversationService {
             AiProviderPort aiProviderPort,
             BillingService billingService,
             TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
             @Value("${aistudio.ai.context.max-messages:20}") int maxMessages,
             @Value("${aistudio.ai.conversation.share-ttl-seconds:604800}") long shareTtlSeconds,
             @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl
@@ -79,6 +87,9 @@ public class ConversationService {
         this.aiProviderPort = aiProviderPort;
         this.billingService = billingService;
         this.transactionTemplate = transactionTemplate;
+        this.exportObjectMapper = objectMapper.copy()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.maxMessages = maxMessages;
         this.shareTtlSeconds = shareTtlSeconds;
         this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
@@ -193,6 +204,17 @@ public class ConversationService {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
         clearShare(conversation);
         conversationRepository.save(conversation);
+    }
+
+    @Transactional(readOnly = true)
+    public ExportedConversation exportConversation(UUID conversationId, UUID userId, String format) {
+        ConversationEntity conversation = requireConversationAccess(conversationId, userId);
+        List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+        String normalizedFormat = normalizeExportFormat(format);
+        if ("json".equals(normalizedFormat)) {
+            return exportAsJson(conversation, messages);
+        }
+        return exportAsMarkdown(conversation, messages);
     }
 
     @Transactional(readOnly = true)
@@ -488,6 +510,69 @@ public class ConversationService {
                 entity.getContent(),
                 entity.getCreatedAt()
         );
+    }
+
+    private String normalizeExportFormat(String format) {
+        String normalized = format == null || format.isBlank() ? "markdown" : format.trim().toLowerCase();
+        if (!EXPORT_FORMATS.contains(normalized)) {
+            throw new DomainException("VALIDATION_ERROR", "format must be json or markdown");
+        }
+        return normalized;
+    }
+
+    private ExportedConversation exportAsJson(ConversationEntity conversation, List<MessageEntity> messages) {
+        Map<String, Object> payload = Map.of(
+                "id", conversation.getId(),
+                "projectId", conversation.getProjectId(),
+                "assistantRole", conversation.getAssistantRole().name(),
+                "title", conversation.getTitle(),
+                "visibility", conversation.getVisibility().name(),
+                "exportedAt", Instant.now(),
+                "messages", messages.stream()
+                        .map(m -> Map.of(
+                                "id", m.getId(),
+                                "sender", m.getSender().name(),
+                                "content", m.getContent(),
+                                "createdAt", m.getCreatedAt()))
+                        .toList());
+        try {
+            byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(payload);
+            return new ExportedConversation(
+                    body,
+                    MediaType.APPLICATION_JSON_VALUE,
+                    safeExportFilename(conversation, "json"));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to serialize conversation export", ex);
+        }
+    }
+
+    private ExportedConversation exportAsMarkdown(ConversationEntity conversation, List<MessageEntity> messages) {
+        StringBuilder markdown = new StringBuilder();
+        markdown.append("# ").append(conversation.getTitle() == null ? "Conversation" : conversation.getTitle())
+                .append("\n\n");
+        markdown.append("- **Assistant:** ").append(conversation.getAssistantRole().name()).append("\n");
+        markdown.append("- **Visibility:** ").append(conversation.getVisibility().name()).append("\n");
+        markdown.append("- **Exported:** ").append(Instant.now()).append("\n\n");
+        markdown.append("---\n\n");
+        for (MessageEntity message : messages) {
+            String label = message.getSender() == MessageSender.USER ? "User" : "Assistant";
+            markdown.append("### ").append(label).append(" — ").append(message.getCreatedAt()).append("\n\n");
+            markdown.append(message.getContent()).append("\n\n");
+        }
+        byte[] body = markdown.toString().getBytes(StandardCharsets.UTF_8);
+        return new ExportedConversation(body, "text/markdown; charset=UTF-8", safeExportFilename(conversation, "md"));
+    }
+
+    private String safeExportFilename(ConversationEntity conversation, String extension) {
+        String base = conversation.getTitle() == null ? "conversation" : conversation.getTitle().trim();
+        base = base.replaceAll("[^a-zA-Z0-9._-]+", "-").replaceAll("-+", "-");
+        if (base.isBlank() || base.equals("-")) {
+            base = "conversation";
+        }
+        if (base.length() > 60) {
+            base = base.substring(0, 60);
+        }
+        return base + "-" + conversation.getId().toString().substring(0, 8) + "." + extension;
     }
 
     private record PreparedChat(

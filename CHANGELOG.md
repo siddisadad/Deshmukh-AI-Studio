@@ -8,6 +8,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ### Added
 
+- Conversation thread export (`GET /conversations/{id}/export`) — JSON or Markdown download
+- Chat UI: export button on each thread in the sidebar
 - `docs/15-OIDC-IDP-GUIDE.md` — step-by-step OIDC setup for Okta, Entra ID, Google, Auth0
 
 ## [0.2.7-beta] — 2026-08-08

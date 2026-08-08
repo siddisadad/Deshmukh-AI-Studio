@@ -3,9 +3,12 @@ package com.aistudio.api.ai;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -250,6 +253,52 @@ class AssistantControllerIT {
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Secret notes"));
+    }
+
+    @Test
+    void exportConversationAsMarkdownAndJson() throws Exception {
+        JsonNode auth = register("export" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Export Proj","projectKey":"EX","description":"export"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID threadId = createThread(token, projectId, "DEVELOPER", "API design");
+
+        mockMvc.perform(post("/api/v1/conversations/" + threadId + "/messages")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"Hello export"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
+                        .param("format", "markdown")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".md")))
+                .andExpect(content().string(containsString("# API design")))
+                .andExpect(content().string(containsString("Hello export")));
+
+        mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
+                        .param("format", "json")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().string(containsString("\"assistantRole\" : \"DEVELOPER\"")))
+                .andExpect(content().string(containsString("Hello export")));
+
+        mockMvc.perform(get("/api/v1/conversations/" + threadId + "/export")
+                        .param("format", "pdf")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
     }
 
     private UUID createThread(String token, UUID projectId, String role, String title) throws Exception {

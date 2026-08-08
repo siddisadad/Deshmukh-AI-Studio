@@ -6,6 +6,7 @@ import com.aistudio.api.ai.dto.ConversationResponse;
 import com.aistudio.api.ai.dto.ConversationShareResponse;
 import com.aistudio.api.ai.dto.ConversationSummaryResponse;
 import com.aistudio.api.ai.dto.CreateConversationRequest;
+import com.aistudio.api.ai.dto.ExportedConversation;
 import com.aistudio.api.ai.dto.SendMessageRequest;
 import com.aistudio.api.ai.dto.UpdateConversationRequest;
 import com.aistudio.application.ai.AssistantRegistry;
@@ -19,8 +20,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -136,6 +139,22 @@ public class AssistantController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         conversationService.revokeShare(conversationId, user.getId());
+    }
+
+    @GetMapping("/api/v1/conversations/{conversationId}/export")
+    @Operation(summary = "Export conversation thread as JSON or Markdown file")
+    public ResponseEntity<byte[]> exportConversation(
+            @PathVariable UUID conversationId,
+            @RequestParam(defaultValue = "markdown") String format,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        ExportedConversation exported = conversationService.exportConversation(
+                conversationId, user.getId(), format);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + exported.filename() + "\"")
+                .contentType(MediaType.parseMediaType(exported.contentType()))
+                .body(exported.body());
     }
 
     @PostMapping("/api/v1/conversations/{conversationId}/messages")

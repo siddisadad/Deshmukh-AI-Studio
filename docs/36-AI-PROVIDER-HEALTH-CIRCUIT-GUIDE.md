@@ -46,6 +46,8 @@ Response (per configured provider):
 | `circuitState` | `closed`, `open`, or `half_open` |
 | `failureCount` | Consecutive failures in current window |
 | `circuitOpenUntil` | When open circuit resets (if open) |
+| `averageLatencyMs` | Rolling mean latency when adaptive routing has samples (v0.2.35+) |
+| `latencySampleCount` | Samples in the latency window |
 | `probeStatus` | `up` / `down` when `probe=true` |
 | `probedAt` | Timestamp of last probe |
 

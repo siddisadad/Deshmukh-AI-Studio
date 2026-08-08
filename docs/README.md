@@ -46,7 +46,9 @@ Read in order; each document builds on the previous.
 
 | 39 | [39-ALERTMANAGER-ONCALL-GUIDE.md](39-ALERTMANAGER-ONCALL-GUIDE.md) | Alertmanager on-call routing and cross-cluster alerts |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.34-beta** adds Alertmanager on-call routing — see [CHANGELOG.md](../CHANGELOG.md).
+| 40 | [40-ADAPTIVE-AI-ROUTING-GUIDE.md](40-ADAPTIVE-AI-ROUTING-GUIDE.md) | Adaptive latency-based AI provider routing |
+
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.35-beta** adds adaptive AI routing — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

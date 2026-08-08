@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.11-beta
+export IMAGE_TAG=v0.2.12-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -133,13 +133,13 @@ uvicorn main:app --reload --port 8000
 - [x] Read-only conversation share links (public read-only URL)
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
 - [x] Background job queue depth Prometheus metrics + Grafana panel
-- [x] Loki log retention (compactor, default 30d)
+- [x] Loki off-site export script + optional S3 object-store backend
 - [x] Conversation thread export (JSON / Markdown download)
 - [x] Bulk project thread archive export (JSON / Markdown)
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.11-beta` adds job queue depth metrics; `v0.2.10-beta` added bulk thread archive export.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.12-beta` adds Loki S3 archive; `v0.2.11-beta` added job queue depth metrics.
 
 ## Docs
 

@@ -269,6 +269,25 @@ export const chatApi = {
     http.post<ConversationShareResult>(`/conversations/${conversationId}/share`).then((r) => r.data),
   revokeShare: (conversationId: string) =>
     http.delete(`/conversations/${conversationId}/share`).then(() => undefined),
+  downloadExport: async (conversationId: string, format: 'json' | 'markdown' = 'markdown') => {
+    const response = await http.get(`/conversations/${conversationId}/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    const blob = response.data as Blob;
+    const disposition = response.headers['content-disposition'] as string | undefined;
+    let filename = `conversation-${conversationId}.${format === 'json' ? 'json' : 'md'}`;
+    if (disposition) {
+      const match = /filename="([^"]+)"/.exec(disposition);
+      if (match) filename = match[1];
+    }
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
   getSharedConversation: (token: string) =>
     axios
       .get<SharedConversation>(`${baseURL}/shared/conversations/${encodeURIComponent(token)}`)

@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
@@ -186,6 +187,15 @@ export function AiChatPage() {
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to delete thread');
+    }
+  }
+
+  async function onExportThread(threadId: string) {
+    if (sending) return;
+    try {
+      await chatApi.downloadExport(threadId, 'markdown');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to export thread');
     }
   }
 
@@ -462,6 +472,18 @@ export function AiChatPage() {
                     </Typography>
                   }
                 />
+                <IconButton
+                  size="small"
+                  aria-label="Export thread"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    void onExportThread(thread.id);
+                  }}
+                  disabled={sending}
+                  data-testid={`chat-export-thread-${thread.id}`}
+                >
+                  <FileDownloadOutlinedIcon fontSize="small" />
+                </IconButton>
                 <IconButton
                   size="small"
                   aria-label="Share thread"

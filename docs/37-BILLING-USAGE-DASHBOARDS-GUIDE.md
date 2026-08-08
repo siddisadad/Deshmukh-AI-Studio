@@ -16,6 +16,9 @@ Complements seat metering ([28-BILLING-SEAT-USAGE-METERING-GUIDE.md](28-BILLING-
 | `aistudio_billing_ai_actions_today` | Gauge | Sum of included actions today (all orgs, UTC) |
 | `aistudio_billing_ai_overage_today` | Gauge | Sum of overage actions today |
 | `aistudio_billing_ai_overage_period` | Gauge | Overage actions MTD (UTC calendar month) |
+| `aistudio_billing_ai_overage_forecast_period` | Gauge | Linear month-end overage action forecast |
+| `aistudio_billing_estimated_overage_cents_period` | Gauge | MTD overage cost in cents (plan rates) |
+| `aistudio_billing_estimated_overage_cents_forecast_period` | Gauge | Linear month-end overage cost forecast (cents) |
 | `aistudio_billing_seats_active` | Gauge | Total memberships (seat proxy) |
 
 Counters increment in `BillingService` on each consumed action. Gauges refresh from `ai_usage_daily` on scrape.
@@ -27,7 +30,9 @@ Counters increment in `BillingService` on each consumed action. Gauges refresh f
 **Title:** AI Studio Billing Usage  
 **UID:** `aistudio-billing`
 
-Panels: today's included/overage actions, overage MTD, active seats, action rates, cumulative counters.
+Panels: today's included/overage actions, overage MTD, forecast panels, active seats, action rates, cumulative counters.
+
+Anomaly alerts and cost forecasting: [41-BILLING-ANOMALY-FORECAST-GUIDE.md](41-BILLING-ANOMALY-FORECAST-GUIDE.md).
 
 Provisioned automatically from `monitoring/grafana/dashboards/` when monitoring compose is up.
 

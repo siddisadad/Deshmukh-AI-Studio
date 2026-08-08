@@ -80,7 +80,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.2.9-beta
+export IMAGE_TAG=v0.2.10-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -134,11 +134,11 @@ uvicorn main:app --reload --port 8000
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
 - [x] Loki log retention (compactor, default 30d)
 - [x] Conversation thread export (JSON / Markdown download)
-- [x] SAML SSO port stub (dev/CI; production uses OIDC)
+- [x] Bulk project thread archive export (JSON / Markdown)
 - [x] Dedicated background job worker container (staging GHCR deploy + dry-runs)
 - [x] Workspace validation script + CI lint gate; Loki log-based alerts
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.9-beta` adds SAML SSO stub; `v0.2.8-beta` added thread export + OIDC IdP guides.
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.2.10-beta` adds bulk thread archive export; `v0.2.9-beta` added SAML SSO stub.
 
 ## Docs
 

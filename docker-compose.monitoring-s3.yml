@@ -1,0 +1,25 @@
+# Loki S3 object-store overlay (monitoring/loki-config-s3.yml).
+# Requires LOKI_S3_BUCKET, LOKI_S3_REGION, LOKI_S3_ACCESS_KEY_ID, LOKI_S3_SECRET_ACCESS_KEY.
+#
+#   export LOKI_OBJECT_STORE=s3
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml \
+#     -f docker-compose.monitoring-s3.yml up -d
+
+services:
+  loki:
+    volumes:
+      - ./monitoring/loki-config-s3.yml:/etc/loki/local-config.yaml:ro
+      - ./monitoring/loki-alerts.yml:/loki/rules/fake/api-logs.yml:ro
+      - loki-s3-cache:/loki
+    environment:
+      LOKI_RETENTION_PERIOD: ${LOKI_RETENTION_PERIOD:-720h}
+      LOKI_S3_REGION: ${LOKI_S3_REGION:?LOKI_S3_REGION is required for S3 Loki}
+      LOKI_S3_BUCKET: ${LOKI_S3_BUCKET:?LOKI_S3_BUCKET is required for S3 Loki}
+      LOKI_S3_ACCESS_KEY_ID: ${LOKI_S3_ACCESS_KEY_ID:?LOKI_S3_ACCESS_KEY_ID is required for S3 Loki}
+      LOKI_S3_SECRET_ACCESS_KEY: ${LOKI_S3_SECRET_ACCESS_KEY:?LOKI_S3_SECRET_ACCESS_KEY is required for S3 Loki}
+      LOKI_S3_ENDPOINT: ${LOKI_S3_ENDPOINT:-}
+      LOKI_S3_INSECURE: ${LOKI_S3_INSECURE:-false}
+      LOKI_S3_FORCE_PATH_STYLE: ${LOKI_S3_FORCE_PATH_STYLE:-false}
+
+volumes:
+  loki-s3-cache:

@@ -214,6 +214,8 @@ jobs:
         run: |
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-alerts.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config-s3.yml'))"
+          bash -n scripts/export-loki-logs.sh
           bash -n scripts/staging-dogfood.sh
           bash -n scripts/write-prometheus-token.sh
           bash -n scripts/api-smoke.sh

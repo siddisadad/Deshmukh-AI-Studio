@@ -1,0 +1,60 @@
+# Loki with S3-compatible object storage (production / staging).
+# Use with docker-compose.monitoring-s3.yml overlay.
+# Local dev: keep monitoring/loki-config.yml (filesystem).
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+    cache_ttl: 24h
+  aws:
+    region: ${LOKI_S3_REGION}
+    bucketnames: ${LOKI_S3_BUCKET}
+    access_key_id: ${LOKI_S3_ACCESS_KEY_ID}
+    secret_access_key: ${LOKI_S3_SECRET_ACCESS_KEY}
+    endpoint: ${LOKI_S3_ENDPOINT:-}
+    insecure: ${LOKI_S3_INSECURE:-false}
+    s3forcepathstyle: ${LOKI_S3_FORCE_PATH_STYLE:-false}
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: s3
+
+ruler:
+  alertmanager_url: http://alertmanager:9093
+  enable_alertmanager_v2: true
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+limits_config:
+  allow_structured_metadata: false
+  retention_period: ${LOKI_RETENTION_PERIOD:-720h}
+  max_query_lookback: ${LOKI_RETENTION_PERIOD:-720h}

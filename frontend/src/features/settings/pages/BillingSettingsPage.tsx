@@ -43,6 +43,31 @@ export function BillingSettingsPage() {
     queryFn: () => billingApi.listPlans(),
   });
 
+  const usageQuery = useQuery({
+    queryKey: ['billing-usage', org?.id],
+    queryFn: () => billingApi.usageHistory(org!.id, 30),
+    enabled: !!org?.id,
+  });
+
+  const invoicesQuery = useQuery({
+    queryKey: ['billing-invoices', org?.id],
+    queryFn: () => billingApi.listInvoices(org!.id),
+    enabled: !!org?.id,
+  });
+
+  const portal = useMutation({
+    mutationFn: () => {
+      const returnUrl = `${window.location.origin}/settings/billing`;
+      return billingApi.portal(org!.id, returnUrl);
+    },
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (err) => {
+      setError(err instanceof ApiError ? err.message : 'Failed to open billing portal');
+    },
+  });
+
   const changePlan = useMutation({
     mutationFn: (planCode: string) => billingApi.changePlan(org!.id, planCode),
     onSuccess: async (overview) => {
@@ -63,6 +88,10 @@ export function BillingSettingsPage() {
     },
     onSuccess: (session) => {
       setError(null);
+      if (session.provider === 'stripe' && session.checkoutUrl.startsWith('http')) {
+        window.location.href = session.checkoutUrl;
+        return;
+      }
       setMessage(`Mock checkout ready (${session.sessionId}). Completing via change-plan…`);
       const params = new URL(session.checkoutUrl).searchParams;
       const plan = params.get('plan');
@@ -147,6 +176,55 @@ export function BillingSettingsPage() {
               value={usagePercent(overview.aiActionsUsedToday, overview.maxAiActionsPerDay)}
             />
           </Box>
+
+          {overview.billingProvider === 'stripe' && (
+            <Button
+              variant="outlined"
+              onClick={() => portal.mutate()}
+              disabled={portal.isPending}
+              data-testid="billing-portal"
+            >
+              {portal.isPending ? 'Opening portal…' : 'Manage subscription & invoices'}
+            </Button>
+          )}
+        </Stack>
+      )}
+
+      {usageQuery.data && usageQuery.data.length > 0 && (
+        <Stack spacing={1} data-testid="billing-usage-history">
+          <Typography variant="h6">AI usage (last 30 days)</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 0.5, maxWidth: 360 }}>
+            {usageQuery.data.slice(-14).map((day) => (
+              <Box key={day.date} sx={{ display: 'contents' }}>
+                <Typography variant="body2" color="text.secondary">{day.date}</Typography>
+                <Typography variant="body2" sx={{ textAlign: 'right' }}>{day.actionCount}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      )}
+
+      {invoicesQuery.data && invoicesQuery.data.length > 0 && (
+        <Stack spacing={1} data-testid="billing-invoices">
+          <Typography variant="h6">Recent invoices</Typography>
+          {invoicesQuery.data.map((invoice) => (
+            <Box key={invoice.id} sx={{ py: 1, borderTop: 1, borderColor: 'divider' }}>
+              <Typography variant="body2">
+                {invoice.number ?? invoice.id} · {invoice.status} ·{' '}
+                {(invoice.amountDueCents / 100).toFixed(2)} {invoice.currency.toUpperCase()}
+              </Typography>
+              {invoice.hostedInvoiceUrl && (
+                <Button
+                  size="small"
+                  href={invoice.hostedInvoiceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View invoice
+                </Button>
+              )}
+            </Box>
+          ))}
         </Stack>
       )}
 

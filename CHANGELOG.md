@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.17-beta] — 2026-08-08
+
+### Added
+
+- `GET /organizations/{id}/billing/usage` — daily AI action metering history (up to 90 days)
+- `GET /organizations/{id}/billing/invoices` — Stripe invoice list for org owners
+- Billing settings UI: 30-day usage table, invoice list, Stripe checkout redirect, portal button
+- `docs/22-BILLING-USAGE-INVOICES-GUIDE.md` — metering and invoice playbook
+
 ## [0.2.16-beta] — 2026-08-08
 
 ### Added

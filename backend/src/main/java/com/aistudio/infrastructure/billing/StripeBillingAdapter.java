@@ -14,6 +14,8 @@ import com.stripe.model.Customer;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.LineItem;
+import com.stripe.param.InvoiceListParams;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -101,6 +103,33 @@ public class StripeBillingAdapter implements BillingPort {
             return portal.getUrl();
         } catch (StripeException ex) {
             throw new DomainException("BILLING_ERROR", "Stripe portal failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public List<BillingPort.InvoiceSummary> listInvoices(UUID organizationId, int limit) {
+        String customerId = ensureCustomer(organizationId);
+        int cappedLimit = Math.min(Math.max(limit, 1), 24);
+        try {
+            return com.stripe.model.Invoice.list(
+                    InvoiceListParams.builder()
+                            .setCustomer(customerId)
+                            .setLimit((long) cappedLimit)
+                            .build()
+            ).getData().stream()
+                    .map(invoice -> new BillingPort.InvoiceSummary(
+                            invoice.getId(),
+                            invoice.getNumber(),
+                            invoice.getStatus(),
+                            invoice.getAmountDue() == null ? 0L : invoice.getAmountDue(),
+                            invoice.getCurrency() == null ? "usd" : invoice.getCurrency(),
+                            invoice.getCreated(),
+                            invoice.getHostedInvoiceUrl(),
+                            invoice.getInvoicePdf()
+                    ))
+                    .toList();
+        } catch (StripeException ex) {
+            throw new DomainException("BILLING_ERROR", "Stripe invoice list failed: " + ex.getMessage());
         }
     }
 

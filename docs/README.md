@@ -26,8 +26,9 @@ Read in order; each document builds on the previous.
 | 19 | [19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md) | Scheduled off-site chat thread archive sync |
 | 20 | [20-SAML-SP-BINDING-GUIDE.md](20-SAML-SP-BINDING-GUIDE.md) | SAML SP-initiated login (ACS POST + SP metadata) |
 | 21 | [21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md) | Glacier lifecycle + cross-region archive replication |
+| 22 | [22-BILLING-USAGE-INVOICES-GUIDE.md](22-BILLING-USAGE-INVOICES-GUIDE.md) | AI usage metering history + Stripe invoices |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.16-beta** adds long-term archive tiering — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.17-beta** adds billing usage metering — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -4,7 +4,9 @@ import com.aistudio.api.billing.dto.BillingOverviewResponse;
 import com.aistudio.api.billing.dto.ChangePlanRequest;
 import com.aistudio.api.billing.dto.CheckoutRequest;
 import com.aistudio.api.billing.dto.CheckoutResponse;
+import com.aistudio.api.billing.dto.InvoiceResponse;
 import com.aistudio.api.billing.dto.PlanResponse;
+import com.aistudio.api.billing.dto.UsageDayResponse;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.domain.billing.PlanCode;
 import com.aistudio.domain.common.DomainException;
@@ -75,6 +77,26 @@ public class BillingController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return billingService.changePlan(orgId, user.getId(), parsePlan(request.planCode()));
+    }
+
+    @GetMapping("/api/v1/organizations/{orgId}/billing/usage")
+    @Operation(summary = "Daily AI action usage history for metering")
+    public List<UsageDayResponse> usageHistory(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "30") int days,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return billingService.usageHistory(orgId, user.getId(), days);
+    }
+
+    @GetMapping("/api/v1/organizations/{orgId}/billing/invoices")
+    @Operation(summary = "List recent invoices (Stripe; empty for mock provider)")
+    public List<InvoiceResponse> invoices(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "12") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return billingService.listInvoices(orgId, user.getId(), limit);
     }
 
     @PostMapping("/api/v1/organizations/{orgId}/billing/portal")

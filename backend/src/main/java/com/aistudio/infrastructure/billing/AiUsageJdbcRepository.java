@@ -1,7 +1,9 @@
 package com.aistudio.infrastructure.billing;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -36,5 +38,25 @@ public class AiUsageJdbcRepository {
                 organizationId,
                 java.sql.Date.valueOf(date)
         );
+    }
+
+    public Map<LocalDate, Integer> getCountsBetween(UUID organizationId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Integer> counts = new HashMap<>();
+        jdbcTemplate.query(
+                """
+                        SELECT usage_date, action_count
+                        FROM ai_usage_daily
+                        WHERE organization_id = ? AND usage_date >= ? AND usage_date <= ?
+                        ORDER BY usage_date
+                        """,
+                (rs, rowNum) -> counts.put(
+                        rs.getDate("usage_date").toLocalDate(),
+                        rs.getInt("action_count")
+                ),
+                organizationId,
+                java.sql.Date.valueOf(from),
+                java.sql.Date.valueOf(to)
+        );
+        return counts;
     }
 }

@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.35-beta] — 2026-08-08
+
+### Added
+
+- Adaptive AI routing — `AI_ADAPTIVE_ROUTING_ENABLED` reorders provider chains by rolling average latency
+- `AiProviderLatencyTracker` — per-provider latency samples for routing and health reporting
+- `GET /assistants/provider-health` — `averageLatencyMs` and `latencySampleCount` fields
+- `docs/40-ADAPTIVE-AI-ROUTING-GUIDE.md`
+
 ## [0.2.34-beta] — 2026-08-08
 
 ### Added

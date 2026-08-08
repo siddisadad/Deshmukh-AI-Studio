@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Tries providers in order until one succeeds (generate + stream failover).
+ * Optional adaptive routing reorders the chain by recent latency before each request.
  */
 public class RoutingAiProvider implements AiProviderPort {
 
@@ -17,6 +18,8 @@ public class RoutingAiProvider implements AiProviderPort {
     private final AiProviderRegistry registry;
     private final List<String> chain;
     private final AiProviderCircuitBreaker circuitBreaker;
+    private final AiProviderLatencyTracker latencyTracker;
+    private final boolean adaptiveRoutingEnabled;
     private final ThreadLocal<String> activeProviderId = new ThreadLocal<>();
 
     public RoutingAiProvider(
@@ -24,16 +27,28 @@ public class RoutingAiProvider implements AiProviderPort {
             List<String> chain,
             AiProviderCircuitBreaker circuitBreaker
     ) {
+        this(registry, chain, circuitBreaker, null, false);
+    }
+
+    public RoutingAiProvider(
+            AiProviderRegistry registry,
+            List<String> chain,
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker,
+            boolean adaptiveRoutingEnabled
+    ) {
         this.registry = registry;
         this.chain = chain;
         this.circuitBreaker = circuitBreaker;
+        this.latencyTracker = latencyTracker;
+        this.adaptiveRoutingEnabled = adaptiveRoutingEnabled && latencyTracker != null;
     }
 
     @Override
     public AiGenerationResult generate(AiGenerationRequest request) {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
-        for (String providerId : chain) {
+        for (String providerId : orderedChain()) {
             if (circuitBreaker.shouldSkip(providerId)) {
                 log.warn("Skipping AI provider {} — circuit open", providerId);
                 continue;
@@ -43,9 +58,10 @@ public class RoutingAiProvider implements AiProviderPort {
                 log.warn("Skipping AI provider {} — not configured", providerId);
                 continue;
             }
+            long startNanos = System.nanoTime();
             try {
                 AiGenerationResult result = provider.generate(request);
-                circuitBreaker.recordSuccess(providerId);
+                recordSuccess(providerId, startNanos);
                 activeProviderId.set(provider.providerId());
                 return result;
             } catch (AiProviderException ex) {
@@ -64,7 +80,7 @@ public class RoutingAiProvider implements AiProviderPort {
     public AiGenerationResult stream(AiGenerationRequest request, Consumer<String> onDelta) {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
-        for (String providerId : chain) {
+        for (String providerId : orderedChain()) {
             if (circuitBreaker.shouldSkip(providerId)) {
                 log.warn("Skipping AI provider {} — circuit open", providerId);
                 continue;
@@ -74,9 +90,10 @@ public class RoutingAiProvider implements AiProviderPort {
                 log.warn("Skipping AI provider {} — not configured", providerId);
                 continue;
             }
+            long startNanos = System.nanoTime();
             try {
                 AiGenerationResult result = provider.stream(request, onDelta);
-                circuitBreaker.recordSuccess(providerId);
+                recordSuccess(providerId, startNanos);
                 activeProviderId.set(provider.providerId());
                 return result;
             } catch (AiProviderException ex) {
@@ -98,5 +115,24 @@ public class RoutingAiProvider implements AiProviderPort {
             return active;
         }
         return chain.isEmpty() ? "routing" : chain.getFirst();
+    }
+
+    private List<String> orderedChain() {
+        if (!adaptiveRoutingEnabled) {
+            return chain;
+        }
+        List<String> ordered = latencyTracker.orderByLatency(chain);
+        if (!ordered.equals(chain)) {
+            log.debug("Adaptive routing order: {} (chain: {})", ordered, chain);
+        }
+        return ordered;
+    }
+
+    private void recordSuccess(String providerId, long startNanos) {
+        circuitBreaker.recordSuccess(providerId);
+        if (latencyTracker != null) {
+            long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
+            latencyTracker.recordLatency(providerId, latencyMs);
+        }
     }
 }

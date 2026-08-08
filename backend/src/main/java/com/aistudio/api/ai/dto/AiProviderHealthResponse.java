@@ -11,6 +11,8 @@ public record AiProviderHealthResponse(List<ProviderHealthDto> providers) {
             String circuitState,
             int failureCount,
             Instant circuitOpenUntil,
+            Long averageLatencyMs,
+            int latencySampleCount,
             String probeStatus,
             Instant probedAt
     ) {

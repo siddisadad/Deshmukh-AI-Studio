@@ -2,6 +2,7 @@ package com.aistudio.infrastructure.config;
 
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
+import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
 import com.aistudio.infrastructure.ai.AiProviderRegistry;
 import com.aistudio.infrastructure.ai.RoutingAiProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,11 +31,20 @@ public class AiProviderConfiguration {
     }
 
     @Bean
+    AiProviderLatencyTracker aiProviderLatencyTracker(AiProperties properties) {
+        AiProperties.AdaptiveRouting config = properties.adaptiveRouting();
+        int sampleSize = config == null ? 50 : config.sampleSize();
+        return new AiProviderLatencyTracker(sampleSize);
+    }
+
+    @Bean
     AiProviderPort aiProviderPort(
             AiProperties properties,
             AiProviderRegistry registry,
-            AiProviderCircuitBreaker circuitBreaker
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker
     ) {
+        boolean adaptiveRouting = properties.adaptiveRouting() != null && properties.adaptiveRouting().enabled();
         String provider = normalize(properties.provider());
         if (provider == null || provider.isBlank()) {
             provider = "mock";
@@ -46,13 +56,13 @@ public class AiProviderConfiguration {
                         "aistudio.ai.provider=routing requires AI_PROVIDER_CHAIN (e.g. openai,anthropic,mock)"
                 );
             }
-            return new RoutingAiProvider(registry, chain, circuitBreaker);
+            return new RoutingAiProvider(registry, chain, circuitBreaker, latencyTracker, adaptiveRouting);
         }
         List<String> chain = new ArrayList<>();
         chain.add(provider);
         chain.addAll(parseList(properties.providerFallbacks()));
         if (chain.size() > 1) {
-            return new RoutingAiProvider(registry, chain, circuitBreaker);
+            return new RoutingAiProvider(registry, chain, circuitBreaker, latencyTracker, adaptiveRouting);
         }
         return registry.require(provider);
     }

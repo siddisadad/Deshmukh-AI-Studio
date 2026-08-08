@@ -1,6 +1,7 @@
 package com.aistudio.application.ai;
 
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
+import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
 import com.aistudio.infrastructure.ai.AiProviderRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -13,10 +14,16 @@ public class AiProviderHealthService {
 
     private final AiProviderRegistry registry;
     private final AiProviderCircuitBreaker circuitBreaker;
+    private final AiProviderLatencyTracker latencyTracker;
 
-    public AiProviderHealthService(AiProviderRegistry registry, AiProviderCircuitBreaker circuitBreaker) {
+    public AiProviderHealthService(
+            AiProviderRegistry registry,
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker
+    ) {
         this.registry = registry;
         this.circuitBreaker = circuitBreaker;
+        this.latencyTracker = latencyTracker;
     }
 
     public List<ProviderHealth> check(boolean runProbe) {
@@ -24,6 +31,7 @@ public class AiProviderHealthService {
         for (String providerId : registry.configuredProviderIds()) {
             AiProviderPort provider = registry.get(providerId);
             AiProviderCircuitBreaker.Snapshot circuit = circuitBreaker.snapshot(providerId);
+            AiProviderLatencyTracker.Snapshot latency = latencyTracker.snapshot(providerId);
             Boolean probeUp = null;
             Instant probedAt = null;
             if (runProbe && provider != null) {
@@ -36,6 +44,8 @@ public class AiProviderHealthService {
                     circuit.state().name().toLowerCase(Locale.ROOT),
                     circuit.failureCount(),
                     circuit.openUntil(),
+                    latency.averageLatencyMs() >= 0 ? latency.averageLatencyMs() : null,
+                    latency.sampleCount(),
                     probeUp,
                     probedAt
             ));
@@ -49,6 +59,8 @@ public class AiProviderHealthService {
             String circuitState,
             int failureCount,
             Instant circuitOpenUntil,
+            Long averageLatencyMs,
+            int latencySampleCount,
             Boolean probeStatus,
             Instant probedAt
     ) {

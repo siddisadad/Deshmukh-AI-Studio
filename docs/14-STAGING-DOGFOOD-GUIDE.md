@@ -100,6 +100,7 @@ The script runs:
 For automated sign-off with JSON/Markdown report after gates pass:
 
 ```bash
+# Optional off-site archive: STAGING_SIGNOFF_S3_URI=s3://bucket/staging-signoff-reports
 ./scripts/staging-signoff.sh https://staging.yourdomain.com
 ```
 

@@ -124,7 +124,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Multi-thread conversations | Per-assistant threads + search + share + export + archive sync ([19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md)), retention + legal hold ([25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md](25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md)), compliance export on purge ([30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md](30-COMPLIANCE-EXPORT-ON-PURGE-GUIDE.md)), thread export redaction policies ([35-THREAD-EXPORT-REDACTION-GUIDE.md](35-THREAD-EXPORT-REDACTION-GUIDE.md)) | Export watermarking / DLP integrations |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue + dedicated worker + SKIP LOCKED multi-replica + queue metrics + autoscaling playbook ([18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md)) | K8s HPA / cloud-native autoscaling |
-| Staging dogfood | Automated gates + manual checklist ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md)), provider probes ([24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md)), live-host sign-off automation ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md)) | Release sign-off report archival in S3 |
+| Staging dogfood | Automated gates + manual checklist ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md)), provider probes ([24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md)), live-host sign-off automation ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md)), sign-off report S3 archival ([38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md](38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md)) | Multi-environment sign-off matrix |
 
 ---
 

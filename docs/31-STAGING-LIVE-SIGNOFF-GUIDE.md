@@ -47,6 +47,7 @@ Manual UX checklist (§9 in dogfood guide) remains for human operators — RAG u
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `STAGING_SIGNOFF_REPORT_DIR` | `./reports/staging-signoff` | Report output directory |
+| `STAGING_SIGNOFF_S3_URI` | unset | Optional `s3://bucket/prefix` for off-site report archive ([38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md](38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md)) |
 | `STAGING_SIGNOFF_SKIP_DOGFOOD` | unset | Skip dogfood when invoked from dogfood step 7 |
 | `STAGING_SIGNOFF_REQUIRE_HTTPS` | `1` when URL is `https://` | Fail if edge is not HTTPS |
 | `STAGING_SIGNOFF_STREAM` | `1` | Run SSE chat stream probe |

@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.33-beta] — 2026-08-08
+
+### Added
+
+- Staging sign-off report archival — `STAGING_SIGNOFF_S3_URI` uploads JSON + Markdown to S3 after each run
+- `docs/38-STAGING-SIGNOFF-S3-ARCHIVE-GUIDE.md`
+
 ## [0.2.32-beta] — 2026-08-08
 
 ### Added

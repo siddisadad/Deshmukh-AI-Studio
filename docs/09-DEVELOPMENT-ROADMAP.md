@@ -118,7 +118,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
 | Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
-| Observability | JSON logs, health, smoke, Prometheus, Grafana overlay + alerts | Loki log shipping |
+| Observability | JSON logs, health, smoke, Prometheus, Grafana, Alertmanager, Loki | Log-based alerts, long-term retention |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) §6), SAML |
 | Multi-thread conversations | Per-assistant threads + title/message search (`q`) | Thread sharing |

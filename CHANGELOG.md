@@ -12,6 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - Conversation thread search: `GET /projects/{id}/conversations?q=` matches title and message content
 - Chat UI thread search field with debounced filter
 - Alertmanager service in `docker-compose.monitoring.yml` wired to Prometheus alert rules
+- Loki + Promtail log shipping for API container JSON stdout; Grafana Loki datasource
+
+### Fixed
+
+- Chat thread search `TextField` uses MUI `slotProps` (fixes frontend build on MUI v6)
+
 
 ## [0.2.0-beta] — 2026-08-08
 

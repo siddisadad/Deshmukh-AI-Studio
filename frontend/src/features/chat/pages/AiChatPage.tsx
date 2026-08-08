@@ -68,6 +68,7 @@ export function AiChatPage() {
 
   useEffect(() => {
     if (!projectId) return;
+    threadsLoadedRef.current = false;
     setLoading(true);
     setError(null);
     Promise.all([projectsApi.getProject(projectId), chatApi.listAssistants()])
@@ -97,7 +98,7 @@ export function AiChatPage() {
     }, trimmed ? 300 : 0);
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [threadSearch, role]);
+  }, [threadSearch]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -337,7 +338,9 @@ export function AiChatPage() {
             value={threadSearch}
             onChange={(ev) => setThreadSearch(ev.target.value)}
             disabled={sending}
-            inputProps={{ 'aria-label': 'Search threads', 'data-testid': 'chat-thread-search' }}
+            slotProps={{
+              htmlInput: { 'aria-label': 'Search threads', 'data-testid': 'chat-thread-search' },
+            }}
             sx={{ mb: 1 }}
             fullWidth
           />

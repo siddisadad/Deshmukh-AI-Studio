@@ -321,7 +321,7 @@ Set `SSO_PROVIDER=oidc` and configure the IdP (Okta, Google Workspace, Azure AD,
 
 Register redirect URI: `https://<app-host>/auth/sso/callback`
 
-Default `SSO_PROVIDER=mock` for local dev and CI E2E. IdP setup playbooks: [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md).
+Default `SSO_PROVIDER=mock` for local dev and CI E2E. Production IdPs: OIDC — [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md). SAML stub (dev only): [16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md).
 
 ### Cloud Agent environment builds
 

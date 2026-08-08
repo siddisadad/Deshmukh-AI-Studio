@@ -2,7 +2,7 @@
 
 Step-by-step OAuth/OIDC application setup for **AI Studio** with common identity providers. Use alongside [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) §6 for the manual sign-off checklist.
 
-**MVP scope:** OIDC only (authorization code flow). SAML is not supported — configure your IdP as an OIDC/OAuth2 application.
+**MVP scope:** OIDC only (authorization code flow). Full SAML is not supported — use the dev stub ([16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md)) or configure your IdP as OIDC/OAuth2.
 
 ---
 

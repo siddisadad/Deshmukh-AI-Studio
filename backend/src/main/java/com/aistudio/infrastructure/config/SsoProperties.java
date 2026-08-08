@@ -7,7 +7,8 @@ public record SsoProperties(
         boolean enabled,
         String provider,
         String appBaseUrl,
-        Oidc oidc
+        Oidc oidc,
+        Saml saml
 ) {
     public record Oidc(
             String issuerUri,
@@ -35,6 +36,27 @@ public record SsoProperties(
         public String resolvedDisplayName() {
             if (displayName == null || displayName.isBlank()) {
                 return "Continue with SSO";
+            }
+            return displayName.trim();
+        }
+    }
+
+    public record Saml(
+            String metadataUrl,
+            String entityId,
+            String displayName,
+            boolean stubMode
+    ) {
+        public boolean configured() {
+            return metadataUrl != null
+                    && !metadataUrl.isBlank()
+                    && entityId != null
+                    && !entityId.isBlank();
+        }
+
+        public String resolvedDisplayName() {
+            if (displayName == null || displayName.isBlank()) {
+                return "Continue with SAML";
             }
             return displayName.trim();
         }

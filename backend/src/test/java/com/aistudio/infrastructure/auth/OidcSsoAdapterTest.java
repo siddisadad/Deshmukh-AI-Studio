@@ -33,7 +33,8 @@ class OidcSsoAdapterTest {
                         "client-secret",
                         "Continue with Okta",
                         "openid email profile"
-                )
+                ),
+                new SsoProperties.Saml("", "", "", true)
         );
         OidcSsoAdapter adapter = new OidcSsoAdapter(
                 properties,

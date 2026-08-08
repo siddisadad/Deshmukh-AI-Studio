@@ -102,6 +102,11 @@ aistudio:
       client-secret: ${OIDC_CLIENT_SECRET:}
       display-name: ${OIDC_DISPLAY_NAME:Continue with SSO}
       scopes: ${OIDC_SCOPES:openid email profile}
+    saml:
+      metadata-url: ${SAML_METADATA_URL:}
+      entity-id: ${SAML_ENTITY_ID:}
+      display-name: ${SAML_DISPLAY_NAME:Continue with SAML}
+      stub-mode: ${SAML_STUB_MODE:true}
 
 springdoc:
   api-docs:

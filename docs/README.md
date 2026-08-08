@@ -20,6 +20,7 @@ Read in order; each document builds on the previous.
 | 13 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Docker/Nginx production deploy |
 | 14 | [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) | Staging deploy, Stripe/OIDC dogfood, sign-off |
 | 15 | [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md) | Okta, Azure AD, Google, Auth0 OIDC setup |
+| 16 | [16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md) | SAML SSO port stub (dev/CI; full SAML backlog) |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.8-beta** adds thread export + OIDC IdP guides — see [CHANGELOG.md](../CHANGELOG.md).
 

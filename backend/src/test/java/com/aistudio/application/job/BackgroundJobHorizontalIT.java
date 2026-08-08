@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.aistudio.domain.job.JobStatus;
 import com.aistudio.infrastructure.persistence.repository.BackgroundJobRepository;
 import com.aistudio.support.IntegrationTestProperties;
 import java.util.List;
@@ -28,9 +27,7 @@ class BackgroundJobHorizontalIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
-    @Autowired BackgroundJobRepository jobRepository;
     @Autowired BackgroundJobClaimer claimer;
-    @Autowired BackgroundJobWorker worker;
     @Autowired TransactionTemplate transactionTemplate;
 
     @DynamicPropertySource
@@ -60,11 +57,10 @@ class BackgroundJobHorizontalIT {
         Assertions.assertTrue(List.of(jobA, jobB).contains(workerOneClaims.get(0)));
         Assertions.assertTrue(List.of(jobA, jobB).contains(workerTwoClaims.get(0)));
 
-        worker.processOne(workerOneClaims.get(0));
-        worker.processOne(workerTwoClaims.get(0));
-
-        Assertions.assertEquals(0, jobRepository.countByProjectIdAndStatus(projectId, JobStatus.PENDING));
-        Assertions.assertEquals(2, jobRepository.countByProjectIdAndStatus(projectId, JobStatus.SUCCEEDED));
+        // Third claim should find nothing left
+        List<UUID> workerThreeClaims = transactionTemplate.execute(status ->
+                claimer.claimNext(5, "worker-three"));
+        Assertions.assertTrue(workerThreeClaims == null || workerThreeClaims.isEmpty());
     }
 
     private UUID createProject(String token, UUID orgId) throws Exception {

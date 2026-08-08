@@ -68,7 +68,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=v0.1.1-beta
+export IMAGE_TAG=v0.1.2-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -114,8 +114,9 @@ uvicorn main:app --reload --port 8000
 - [x] Plugin / assistant-tool SPI (built-in assistants as plugins, sample tool, org enablement)
 - [x] Phase 5 beta: growth E2E, prod/staging compose dry-runs, GHCR staging deploy script
 - [x] Cloud Agent environment (validated `environment.json`, CI `environment-config`)
+- [x] Observability: JSON logs, health probes, Prometheus metrics (internal), post-deploy smoke script
 
-**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.1.1-beta` on `main` (Stripe + OIDC production adapters, GHCR `v0.1.1-beta`).
+**Release:** [CHANGELOG.md](CHANGELOG.md) — tag `v0.1.2-beta` on `main` (observability + staging CORS validation; GHCR `v0.1.2-beta`).
 
 ## Docs
 

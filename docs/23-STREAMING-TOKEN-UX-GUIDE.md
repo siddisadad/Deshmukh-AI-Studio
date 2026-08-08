@@ -30,7 +30,7 @@
 }
 ```
 
-- **inputTokens / outputTokens** — from the AI provider when available (mock uses chars÷4 estimate; OpenAI/Anthropic use API usage).
+- **inputTokens / outputTokens** — from the AI provider when available (mock uses chars÷4 estimate; OpenAI/Anthropic native streams return API usage on `done`).
 - **streamChars** — total characters sent in `delta` events for this request.
 - **deltaCount** — number of `delta` events emitted.
 

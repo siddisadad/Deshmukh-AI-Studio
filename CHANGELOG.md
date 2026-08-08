@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.24-beta] — 2026-08-08
+
+### Added
+
+- OpenAI native SSE streaming with `stream_options.include_usage` — token counts on stream completion
+- Anthropic native SSE streaming — usage from `message_start` / `message_delta` events
+- Provider stream unit tests (embedded HTTP server fixtures)
+- `docs/29-PROVIDER-NATIVE-STREAMING-GUIDE.md`
+
 ## [0.2.23-beta] — 2026-08-08
 
 ### Added

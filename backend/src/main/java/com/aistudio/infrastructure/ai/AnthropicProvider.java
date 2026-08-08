@@ -77,6 +77,10 @@ public class AnthropicProvider implements AiProviderPort {
         try {
             ObjectNode body = buildBody(request, true);
             StringBuilder full = new StringBuilder();
+            int[] inputTokens = new int[1];
+            int[] outputTokens = new int[1];
+            inputTokens[0] = -1;
+            outputTokens[0] = -1;
             client.post()
                     .uri("/v1/messages")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -102,11 +106,21 @@ public class AnthropicProvider implements AiProviderPort {
                                 }
                                 JsonNode root = objectMapper.readTree(payload);
                                 String type = root.path("type").asText("");
-                                if ("content_block_delta".equals(type)) {
+                                if ("message_start".equals(type)) {
+                                    JsonNode usage = root.path("message").path("usage");
+                                    if (!usage.path("input_tokens").isMissingNode()) {
+                                        inputTokens[0] = usage.path("input_tokens").asInt();
+                                    }
+                                } else if ("content_block_delta".equals(type)) {
                                     String delta = root.path("delta").path("text").asText(null);
                                     if (delta != null && !delta.isEmpty()) {
                                         full.append(delta);
                                         onDelta.accept(delta);
+                                    }
+                                } else if ("message_delta".equals(type)) {
+                                    JsonNode usage = root.path("usage");
+                                    if (!usage.path("output_tokens").isMissingNode()) {
+                                        outputTokens[0] = usage.path("output_tokens").asInt();
                                     }
                                 }
                             }
@@ -116,7 +130,12 @@ public class AnthropicProvider implements AiProviderPort {
             if (full.isEmpty()) {
                 throw new AiProviderException("Anthropic stream returned empty content");
             }
-            return new AiGenerationResult(full.toString(), model, null, null);
+            return new AiGenerationResult(
+                    full.toString(),
+                    model,
+                    inputTokens[0] >= 0 ? inputTokens[0] : null,
+                    outputTokens[0] >= 0 ? outputTokens[0] : null
+            );
         } catch (AiProviderException ex) {
             throw ex;
         } catch (Exception ex) {

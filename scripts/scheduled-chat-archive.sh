@@ -29,6 +29,7 @@ else
 fi
 
 FORMAT="${CHAT_ARCHIVE_FORMAT:-json}"
+REDACTION="${CHAT_EXPORT_REDACTION_POLICY:-}"
 OUT_DIR="${CHAT_ARCHIVE_DIR:-./backups/chat}"
 PROJECT_STATUS="${CHAT_ARCHIVE_PROJECT_STATUS:-ACTIVE}"
 ASSISTANT_ROLE="${CHAT_ARCHIVE_ASSISTANT_ROLE:-}"
@@ -115,6 +116,13 @@ while IFS= read -r project_id; do
     query="?format=${FORMAT}&assistantRole=${ASSISTANT_ROLE}"
   else
     query="?format=${FORMAT}"
+  fi
+  if [[ -n "$REDACTION" ]]; then
+    if [[ "$query" == *"?"* ]]; then
+      query="${query}&redaction=${REDACTION}"
+    else
+      query="?redaction=${REDACTION}"
+    fi
   fi
   url="${API_BASE}/projects/${project_id}/conversations/export${query}"
   tmp_file="$(mktemp)"

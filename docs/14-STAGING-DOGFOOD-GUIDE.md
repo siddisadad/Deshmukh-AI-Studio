@@ -303,7 +303,7 @@ Record for each staging release:
 | Field | Example |
 |---|---|
 | Date | 2026-08-08 |
-| `IMAGE_TAG` | `v0.2.13-beta` |
+| `IMAGE_TAG` | `v0.2.14-beta` |
 | Host | `https://staging.yourdomain.com` |
 | Providers | stripe / oidc / smtp / mock |
 | Automated | `staging-dogfood.sh` exit 0 |

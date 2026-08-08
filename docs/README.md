@@ -22,8 +22,10 @@ Read in order; each document builds on the previous.
 | 15 | [15-OIDC-IDP-GUIDE.md](15-OIDC-IDP-GUIDE.md) | Okta, Azure AD, Google, Auth0 OIDC setup |
 | 16 | [16-SAML-SSO-STUB.md](16-SAML-SSO-STUB.md) | SAML SSO port stub (dev/CI; full SAML backlog) |
 | 17 | [17-LOG-ARCHIVE-GUIDE.md](17-LOG-ARCHIVE-GUIDE.md) | Loki export cron + S3 object-store backend |
+| 18 | [18-JOB-WORKER-AUTOSCALING-GUIDE.md](18-JOB-WORKER-AUTOSCALING-GUIDE.md) | Background job worker scaling playbook |
+| 19 | [19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md) | Scheduled off-site chat thread archive sync |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.13-beta** adds worker autoscaling playbooks — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.14-beta** adds scheduled chat archive sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -132,6 +132,7 @@ uvicorn main:app --reload --port 8000
 - [x] Thread search in chat; Alertmanager + Loki log shipping
 - [x] Read-only conversation share links (public read-only URL)
 - [x] Horizontal job worker replicas (SKIP LOCKED claiming)
+- [x] Background job queue depth Prometheus metrics + Grafana panel
 - [x] Loki log retention (compactor, default 30d)
 - [x] Conversation thread export (JSON / Markdown download)
 - [x] Bulk project thread archive export (JSON / Markdown)

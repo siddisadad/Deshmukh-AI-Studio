@@ -68,13 +68,14 @@ public class AssistantController {
     }
 
     @GetMapping("/api/v1/projects/{projectId}/conversations")
-    @Operation(summary = "List conversation threads for a project (optional assistantRole filter)")
+    @Operation(summary = "List conversation threads for a project (optional assistantRole and q search)")
     public List<ConversationSummaryResponse> listConversations(
             @PathVariable UUID projectId,
             @RequestParam(required = false) String assistantRole,
+            @RequestParam(required = false) String q,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return conversationService.listConversations(projectId, assistantRole, user.getId());
+        return conversationService.listConversations(projectId, assistantRole, q, user.getId());
     }
 
     @PostMapping("/api/v1/projects/{projectId}/conversations")

@@ -244,8 +244,9 @@ docker compose \
 
 - Grafana: `http://localhost:3000` (do not expose publicly without auth)
 - Prometheus: `http://localhost:9090` (internal only)
+- Loki logs: Grafana Explore → `{service="api"}` (see `monitoring/README.md`)
 - Dashboard: `monitoring/grafana/dashboard.json`
-- Alerts: `monitoring/alerts.yml` (wire Alertmanager for paging)
+- Alerts: `monitoring/alerts.yml` → Alertmanager UI on `:9093`
 
 See [monitoring/README.md](../monitoring/README.md).
 

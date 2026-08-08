@@ -94,6 +94,14 @@ class AssistantControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages.length()").value(2));
 
+        mockMvc.perform(get("/api/v1/projects/" + projectId + "/conversations")
+                        .param("assistantRole", "DEVELOPER")
+                        .param("q", "middleware")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Password reset"));
+
         mockMvc.perform(delete("/api/v1/conversations/" + thread2)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());

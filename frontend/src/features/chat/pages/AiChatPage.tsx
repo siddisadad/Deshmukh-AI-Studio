@@ -41,15 +41,20 @@ export function AiChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [threadSearch, setThreadSearch] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
+  const threadsLoadedRef = useRef(false);
 
   const selected = assistants.find((a) => a.role === role);
   const activeThread = threads.find((t) => t.id === activeThreadId) || null;
 
-  async function loadThreads(nextRole: string, preferId?: string | null) {
+  async function loadThreads(nextRole: string, preferId?: string | null, query?: string) {
     if (!projectId) return;
-    const listed = await chatApi.listConversations(projectId, nextRole);
+    const listed = await chatApi.listConversations(projectId, {
+      assistantRole: nextRole,
+      q: query?.trim() || undefined,
+    });
     setThreads(listed);
     const nextId = (preferId && listed.some((t) => t.id === preferId) ? preferId : listed[0]?.id) || null;
     setActiveThreadId(nextId);
@@ -63,6 +68,7 @@ export function AiChatPage() {
 
   useEffect(() => {
     if (!projectId) return;
+    threadsLoadedRef.current = false;
     setLoading(true);
     setError(null);
     Promise.all([projectsApi.getProject(projectId), chatApi.listAssistants()])
@@ -77,6 +83,22 @@ export function AiChatPage() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId || loading) return;
+    if (!threadsLoadedRef.current) {
+      threadsLoadedRef.current = true;
+      return;
+    }
+    const trimmed = threadSearch.trim();
+    const handle = window.setTimeout(() => {
+      void loadThreads(role, activeThreadId, trimmed || undefined).catch((err) =>
+        setError(err instanceof ApiError ? err.message : 'Failed to search threads'),
+      );
+    }, trimmed ? 300 : 0);
+    return () => window.clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadSearch]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -94,7 +116,7 @@ export function AiChatPage() {
     setError(null);
     setStreamingContent('');
     try {
-      await loadThreads(value);
+      await loadThreads(value, undefined, threadSearch.trim() || undefined);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load conversations');
     }
@@ -310,6 +332,18 @@ export function AiChatPage() {
               New
             </Button>
           </Stack>
+          <TextField
+            size="small"
+            placeholder="Search threads"
+            value={threadSearch}
+            onChange={(ev) => setThreadSearch(ev.target.value)}
+            disabled={sending}
+            slotProps={{
+              htmlInput: { 'aria-label': 'Search threads', 'data-testid': 'chat-threads-search' },
+            }}
+            sx={{ mb: 1 }}
+            fullWidth
+          />
           <List dense sx={{ overflowY: 'auto', flex: 1 }}>
             {threads.map((thread) => (
               <ListItemButton
@@ -347,7 +381,9 @@ export function AiChatPage() {
             ))}
             {threads.length === 0 && (
               <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 2 }}>
-                No threads yet for this assistant.
+                {threadSearch.trim()
+                  ? 'No threads match your search.'
+                  : 'No threads yet for this assistant.'}
               </Typography>
             )}
           </List>

@@ -224,10 +224,16 @@ async function openStreamRequest(
 export const chatApi = {
   listAssistants: () =>
     http.get<{ assistants: Assistant[] }>('/assistants').then((r) => r.data.assistants),
-  listConversations: (projectId: string, assistantRole?: string) =>
+  listConversations: (
+    projectId: string,
+    options?: { assistantRole?: string; q?: string },
+  ) =>
     http
       .get<ConversationSummary[]>(`/projects/${projectId}/conversations`, {
-        params: assistantRole ? { assistantRole } : undefined,
+        params: {
+          ...(options?.assistantRole ? { assistantRole: options.assistantRole } : {}),
+          ...(options?.q ? { q: options.q } : {}),
+        },
       })
       .then((r) => r.data),
   createConversation: (projectId: string, body: { assistantRole: string; title?: string }) =>

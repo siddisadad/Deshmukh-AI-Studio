@@ -73,10 +73,23 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationSummaryResponse> listConversations(UUID projectId, String roleValue, UUID userId) {
+    public List<ConversationSummaryResponse> listConversations(
+            UUID projectId,
+            String roleValue,
+            String query,
+            UUID userId
+    ) {
         authorizationService.requireProjectAccess(projectId, userId);
         List<ConversationEntity> conversations;
-        if (roleValue == null || roleValue.isBlank()) {
+        String trimmedQuery = query == null ? null : query.trim();
+        if (trimmedQuery != null && !trimmedQuery.isBlank()) {
+            if (roleValue == null || roleValue.isBlank()) {
+                conversations = conversationRepository.searchByProjectId(projectId, trimmedQuery);
+            } else {
+                conversations = conversationRepository.searchByProjectIdAndAssistantRole(
+                        projectId, parseRole(roleValue).name(), trimmedQuery);
+            }
+        } else if (roleValue == null || roleValue.isBlank()) {
             conversations = conversationRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
         } else {
             conversations = conversationRepository.findByProjectIdAndAssistantRoleOrderByUpdatedAtDesc(

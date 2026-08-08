@@ -310,7 +310,7 @@ Draft builds from feature branches validate install but cannot be promoted — m
 - Post-deploy: `./scripts/post-deploy-smoke.sh https://staging.example.com` (health, info, confirms prometheus is not on the public edge)
 - **Dogfood:** `./scripts/staging-dogfood.sh https://staging.example.com` (env validation + health + smoke + optional internal metrics). Full Stripe/OIDC/manual checklist: [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md)
 - **Prometheus:** `GET /actuator/prometheus` on the API (authenticated; not proxied by nginx). Scrape from the internal Docker network or VPN, not the public hostname.
-- **Monitoring overlay:** `docker-compose.monitoring.yml` + `monitoring/README.md` (Grafana dashboard, alert rules, `METRICS_SCRAPE_TOKEN`)
+- **Monitoring overlay:** `docker-compose.monitoring.yml` + `monitoring/README.md` (Grafana dashboard, Prometheus, Alertmanager, Loki logs, `METRICS_SCRAPE_TOKEN`)
 - Disk alerts for Postgres volume (host/ops)
 
 ---

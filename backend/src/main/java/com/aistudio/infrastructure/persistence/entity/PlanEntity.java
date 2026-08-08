@@ -50,4 +50,10 @@ public class PlanEntity {
 
     @Column(name = "stripe_price_id", length = 120)
     private String stripePriceId;
+
+    @Column(name = "stripe_seat_metered_price_id", length = 120)
+    private String stripeSeatMeteredPriceId;
+
+    @Column(name = "stripe_ai_overage_metered_price_id", length = 120)
+    private String stripeAiOverageMeteredPriceId;
 }

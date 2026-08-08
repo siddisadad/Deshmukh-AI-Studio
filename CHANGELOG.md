@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.27-beta] — 2026-08-08
+
+### Added
+
+- Stripe metered prices — checkout attaches seat + AI overage metered line items when configured
+- `POST /api/v1/billing/stripe/sync-metered-usage` with `BILLING_USAGE_SYNC_TOKEN`
+- Subscription item ID tracking + Stripe UsageRecord reporting for seats and AI overage
+- `scripts/sync-stripe-metered-prices.sh`, `scripts/scheduled-stripe-usage-sync.sh`
+- Flyway `V19` plan metered price columns + org subscription item IDs
+- `docs/32-STRIPE-METERED-PRICES-SYNC-GUIDE.md`
+
 ## [0.2.26-beta] — 2026-08-08
 
 ### Added

@@ -87,11 +87,16 @@ aistudio:
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}
+    usage-sync-token: ${BILLING_USAGE_SYNC_TOKEN:}
     stripe:
       api-key: ${STRIPE_API_KEY:}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
       pro-price-id: ${STRIPE_PRO_PRICE_ID:}
       team-price-id: ${STRIPE_TEAM_PRICE_ID:}
+      pro-seat-metered-price-id: ${STRIPE_PRO_SEAT_METERED_PRICE_ID:}
+      team-seat-metered-price-id: ${STRIPE_TEAM_SEAT_METERED_PRICE_ID:}
+      pro-ai-overage-metered-price-id: ${STRIPE_PRO_AI_OVERAGE_METERED_PRICE_ID:}
+      team-ai-overage-metered-price-id: ${STRIPE_TEAM_AI_OVERAGE_METERED_PRICE_ID:}
   sso:
     enabled: ${SSO_ENABLED:true}
     provider: ${SSO_PROVIDER:mock}

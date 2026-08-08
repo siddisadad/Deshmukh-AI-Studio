@@ -6,13 +6,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record BillingProperties(
         String provider,
         String appBaseUrl,
+        String usageSyncToken,
         Stripe stripe
 ) {
     public record Stripe(
             String apiKey,
             String webhookSecret,
             String proPriceId,
-            String teamPriceId
+            String teamPriceId,
+            String proSeatMeteredPriceId,
+            String teamSeatMeteredPriceId,
+            String proAiOverageMeteredPriceId,
+            String teamAiOverageMeteredPriceId
     ) {
         public boolean configured() {
             return apiKey != null && !apiKey.isBlank();

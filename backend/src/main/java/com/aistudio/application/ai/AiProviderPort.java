@@ -11,7 +11,8 @@ public interface AiProviderPort {
 
     /**
      * Streams response text deltas and returns the final generation result.
-     * Default implementation chunks a non-streaming generate() call.
+     * OpenAI and Anthropic adapters call provider-native SSE APIs with usage metadata.
+     * Mock falls back to chunked {@link #generate(AiGenerationRequest)} output.
      */
     default AiGenerationResult stream(AiGenerationRequest request, Consumer<String> onDelta) {
         AiGenerationResult result = generate(request);

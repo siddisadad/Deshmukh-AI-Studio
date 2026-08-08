@@ -33,8 +33,9 @@ Read in order; each document builds on the previous.
 | 26 | [26-SAML-SIGNING-GUIDE.md](26-SAML-SIGNING-GUIDE.md) | SAML signed AuthnRequest + encrypted assertions |
 | 27 | [27-LOKI-MULTI-REGION-QUERY-GUIDE.md](27-LOKI-MULTI-REGION-QUERY-GUIDE.md) | Real-time multi-region Loki query |
 | 28 | [28-BILLING-SEAT-USAGE-METERING-GUIDE.md](28-BILLING-SEAT-USAGE-METERING-GUIDE.md) | Seat metering + usage-based AI overage |
+| 29 | [29-PROVIDER-NATIVE-STREAMING-GUIDE.md](29-PROVIDER-NATIVE-STREAMING-GUIDE.md) | OpenAI/Anthropic native SSE streaming |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.23-beta** adds billing seat and usage metering — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.24-beta** adds provider-native streaming — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

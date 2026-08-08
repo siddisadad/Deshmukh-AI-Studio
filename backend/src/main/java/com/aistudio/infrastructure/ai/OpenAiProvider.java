@@ -76,6 +76,10 @@ public class OpenAiProvider implements AiProviderPort {
         try {
             ObjectNode body = buildBody(request, true);
             StringBuilder full = new StringBuilder();
+            int[] inputTokens = new int[1];
+            int[] outputTokens = new int[1];
+            inputTokens[0] = -1;
+            outputTokens[0] = -1;
             client.post()
                     .uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -105,6 +109,15 @@ public class OpenAiProvider implements AiProviderPort {
                                     full.append(delta);
                                     onDelta.accept(delta);
                                 }
+                                JsonNode usage = root.path("usage");
+                                if (!usage.isMissingNode() && !usage.isNull()) {
+                                    if (!usage.path("prompt_tokens").isMissingNode()) {
+                                        inputTokens[0] = usage.path("prompt_tokens").asInt();
+                                    }
+                                    if (!usage.path("completion_tokens").isMissingNode()) {
+                                        outputTokens[0] = usage.path("completion_tokens").asInt();
+                                    }
+                                }
                             }
                         }
                         return null;
@@ -112,7 +125,12 @@ public class OpenAiProvider implements AiProviderPort {
             if (full.isEmpty()) {
                 throw new AiProviderException("OpenAI stream returned empty content");
             }
-            return new AiGenerationResult(full.toString(), model, null, null);
+            return new AiGenerationResult(
+                    full.toString(),
+                    model,
+                    inputTokens[0] >= 0 ? inputTokens[0] : null,
+                    outputTokens[0] >= 0 ? outputTokens[0] : null
+            );
         } catch (AiProviderException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -129,6 +147,9 @@ public class OpenAiProvider implements AiProviderPort {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", model);
         body.put("stream", stream);
+        if (stream) {
+            body.putObject("stream_options").put("include_usage", true);
+        }
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }

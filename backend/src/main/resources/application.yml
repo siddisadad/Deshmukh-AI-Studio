@@ -84,6 +84,9 @@ aistudio:
       enabled: ${AI_CIRCUIT_BREAKER_ENABLED:true}
       failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}
       open-seconds: ${AI_CIRCUIT_BREAKER_OPEN_SECONDS:60}
+    adaptive-routing:
+      enabled: ${AI_ADAPTIVE_ROUTING_ENABLED:false}
+      sample-size: ${AI_ADAPTIVE_ROUTING_SAMPLE_SIZE:50}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}

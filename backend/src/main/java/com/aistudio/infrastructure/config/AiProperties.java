@@ -13,7 +13,8 @@ public record AiProperties(
         RateLimit rateLimit,
         Embedding embedding,
         Rag rag,
-        CircuitBreaker circuitBreaker
+        CircuitBreaker circuitBreaker,
+        AdaptiveRouting adaptiveRouting
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }
@@ -34,5 +35,8 @@ public record AiProperties(
     }
 
     public record CircuitBreaker(boolean enabled, int failureThreshold, int openSeconds) {
+    }
+
+    public record AdaptiveRouting(boolean enabled, int sampleSize) {
     }
 }

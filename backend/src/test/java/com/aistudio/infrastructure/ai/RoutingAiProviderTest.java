@@ -74,6 +74,29 @@ class RoutingAiProviderTest {
         assertThat(routing.providerId()).isEqualTo("mock");
     }
 
+    @Test
+    void adaptiveRoutingPrefersFasterProvider() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("slow", new SlowProvider("slow", 40));
+        registry.register("fast", new FastProvider("fast"));
+
+        AiProviderLatencyTracker tracker = new AiProviderLatencyTracker(10);
+        tracker.recordLatency("slow", 500);
+        tracker.recordLatency("fast", 20);
+
+        RoutingAiProvider routing = new RoutingAiProvider(
+                registry,
+                List.of("slow", "fast"),
+                disabledBreaker(),
+                tracker,
+                true
+        );
+
+        AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+        assertThat(result.text()).contains("fast response");
+        assertThat(routing.providerId()).isEqualTo("fast");
+    }
+
     private static AiProviderPort.AiGenerationRequest sampleRequest() {
         return new AiProviderPort.AiGenerationRequest(
                 "You are helpful.",
@@ -94,6 +117,49 @@ class RoutingAiProviderTest {
         @Override
         public AiGenerationResult generate(AiGenerationRequest request) {
             throw new AiProviderException(id + " failed");
+        }
+
+        @Override
+        public String providerId() {
+            return id;
+        }
+    }
+
+    private static final class SlowProvider implements AiProviderPort {
+        private final String id;
+        private final long delayMs;
+
+        SlowProvider(String id, long delayMs) {
+            this.id = id;
+            this.delayMs = delayMs;
+        }
+
+        @Override
+        public AiGenerationResult generate(AiGenerationRequest request) {
+            try {
+                Thread.sleep(delayMs);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+            return new AiGenerationResult(id + " response", id + "-model", 1, 1);
+        }
+
+        @Override
+        public String providerId() {
+            return id;
+        }
+    }
+
+    private static final class FastProvider implements AiProviderPort {
+        private final String id;
+
+        FastProvider(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public AiGenerationResult generate(AiGenerationRequest request) {
+            return new AiGenerationResult(id + " response", id + "-model", 1, 1);
         }
 
         @Override

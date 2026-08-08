@@ -88,6 +88,8 @@ public class AssistantController {
                         h.circuitState(),
                         h.failureCount(),
                         h.circuitOpenUntil(),
+                        h.averageLatencyMs(),
+                        h.latencySampleCount(),
                         h.probeStatus() == null ? null : (h.probeStatus() ? "up" : "down"),
                         h.probedAt()))
                 .toList());

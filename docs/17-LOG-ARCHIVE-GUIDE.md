@@ -94,6 +94,7 @@ Default stack keeps chunks on the `loki-data` volume (`monitoring/loki-config.ym
 
 - [monitoring/README.md](../monitoring/README.md) — Promtail, retention, alerts
 - [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) — monitoring overlay on staging/prod
+- [19-CHAT-ARCHIVE-SYNC-GUIDE.md](19-CHAT-ARCHIVE-SYNC-GUIDE.md) — conversation thread off-site archive
 
 ---
 

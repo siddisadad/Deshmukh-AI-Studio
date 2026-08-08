@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.3-beta] — 2026-08-08
+
 ### Added
 
 - `scripts/validate-workspace.sh` — fast lint/build/unit-test gate (no Docker)
@@ -18,7 +20,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ### Fixed
 
-- Staging dogfood sign-off example `IMAGE_TAG` updated to `v0.2.2-beta`
+- CI `environment-config` uses Java 21; phased staging dry-run startup fixes flaky API health checks
+- Staging dogfood sign-off example `IMAGE_TAG` updated to `v0.2.3-beta`
 - Deployment guide `IMAGE_TAG` examples aligned with current releases
 
 ## [0.2.2-beta] — 2026-08-08

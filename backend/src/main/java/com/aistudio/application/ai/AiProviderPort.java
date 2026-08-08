@@ -20,6 +20,13 @@ public interface AiProviderPort {
         return result;
     }
 
+    /**
+     * Lightweight connectivity probe (models list or minimal completion).
+     */
+    default boolean probeHealth() {
+        return true;
+    }
+
     static void chunkText(String text, Consumer<String> onDelta) {
         if (text == null || text.isBlank()) {
             return;

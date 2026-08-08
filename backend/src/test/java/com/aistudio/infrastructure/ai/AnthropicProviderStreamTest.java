@@ -93,7 +93,8 @@ class AnthropicProviderStreamTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                new AiProperties.CircuitBreaker(false, 3, 60)
         );
     }
 }

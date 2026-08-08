@@ -11,13 +11,17 @@ import org.junit.jupiter.api.Test;
 
 class RoutingAiProviderTest {
 
+    private static AiProviderCircuitBreaker disabledBreaker() {
+        return new AiProviderCircuitBreaker(false, 3, 60);
+    }
+
     @Test
     void failsOverToSecondProviderOnGenerate() {
         AiProviderRegistry registry = new AiProviderRegistry();
         registry.register("fail", new FailingProvider("fail"));
         registry.register("mock", new MockAiProvider());
 
-        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail", "mock"));
+        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail", "mock"), disabledBreaker());
         AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
 
         assertThat(result.text()).contains("Mock AI response");
@@ -30,7 +34,7 @@ class RoutingAiProviderTest {
         registry.register("fail", new FailingProvider("fail"));
         registry.register("mock", new MockAiProvider());
 
-        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail", "mock"));
+        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail", "mock"), disabledBreaker());
         AtomicReference<String> streamed = new AtomicReference<>("");
         AiProviderPort.AiGenerationResult result = routing.stream(sampleRequest(), delta -> {
             streamed.set(streamed.get() + delta);
@@ -47,11 +51,27 @@ class RoutingAiProviderTest {
         registry.register("fail1", new FailingProvider("fail1"));
         registry.register("fail2", new FailingProvider("fail2"));
 
-        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail1", "fail2"));
+        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail1", "fail2"), disabledBreaker());
 
         assertThatThrownBy(() -> routing.generate(sampleRequest()))
                 .isInstanceOf(AiProviderException.class)
                 .hasMessageContaining("fail2");
+    }
+
+    @Test
+    void skipsProviderWhenCircuitOpen() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("fail", new FailingProvider("fail"));
+        registry.register("mock", new MockAiProvider());
+
+        AiProviderCircuitBreaker breaker = new AiProviderCircuitBreaker(true, 1, 60);
+        breaker.recordFailure("fail");
+
+        RoutingAiProvider routing = new RoutingAiProvider(registry, List.of("fail", "mock"), breaker);
+        AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+
+        assertThat(result.text()).contains("Mock AI response");
+        assertThat(routing.providerId()).isEqualTo("mock");
     }
 
     private static AiProviderPort.AiGenerationRequest sampleRequest() {

@@ -144,6 +144,26 @@ public class AnthropicProvider implements AiProviderPort {
         return "anthropic";
     }
 
+    @Override
+    public boolean probeHealth() {
+        try {
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("model", model);
+            body.put("max_tokens", 1);
+            ArrayNode messages = body.putArray("messages");
+            messages.addObject().put("role", "user").put("content", "ping");
+            client.post()
+                    .uri("/v1/messages")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body.toString())
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
     private ObjectNode buildBody(AiGenerationRequest request, boolean stream) {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", model);

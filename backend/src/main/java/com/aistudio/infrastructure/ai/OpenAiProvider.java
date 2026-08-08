@@ -139,6 +139,16 @@ public class OpenAiProvider implements AiProviderPort {
         return "openai";
     }
 
+    @Override
+    public boolean probeHealth() {
+        try {
+            client.get().uri("/v1/models").retrieve().toBodilessEntity();
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
     private ObjectNode buildBody(AiGenerationRequest request, boolean stream) {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", model);

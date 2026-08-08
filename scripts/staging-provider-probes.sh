@@ -209,4 +209,29 @@ else
   echo "==> Loki multi-region (skip — LOKI_QUERY_REGIONS not set)"
 fi
 
+ai_provider="${AI_PROVIDER:-mock}"
+if [[ "$ai_provider" == "mock" ]]; then
+  echo "==> AI provider mock (skip live API probes)"
+else
+  echo "==> AI provider health (probe=true)"
+  health_json="$(curl -fsS --max-time 45 "${API_BASE}/assistants/provider-health?probe=true" \
+    -H "Authorization: Bearer ${probe_token}")"
+  if ! printf '%s' "${health_json}" | grep -q '"id"'; then
+    echo "FAIL: /assistants/provider-health returned unexpected body: ${health_json}" >&2
+    exit 1
+  fi
+  python3 - "${health_json}" <<'PY'
+import json, sys
+data = json.loads(sys.argv[1])
+providers = data.get("providers") or []
+if not providers:
+    raise SystemExit("FAIL: no providers in health response")
+for p in providers:
+    pid = p.get("id")
+    if p.get("probeStatus") != "up":
+        raise SystemExit(f"FAIL: AI provider {pid} probeStatus={p.get('probeStatus')}")
+print(f"OK: AI provider probes ({len(providers)} configured)")
+PY
+fi
+
 echo "OK: staging provider probes passed"

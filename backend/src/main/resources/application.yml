@@ -80,6 +80,10 @@ aistudio:
       enabled: ${RAG_ENABLED:true}
       top-k: ${RAG_TOP_K:8}
       max-chars: ${RAG_MAX_CHARS:6000}
+    circuit-breaker:
+      enabled: ${AI_CIRCUIT_BREAKER_ENABLED:true}
+      failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}
+      open-seconds: ${AI_CIRCUIT_BREAKER_OPEN_SECONDS:60}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}

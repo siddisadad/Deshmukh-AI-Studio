@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.31-beta] — 2026-08-08
+
+### Added
+
+- AI provider circuit breaker — skip failing providers in routing chains (`AI_CIRCUIT_BREAKER_*`)
+- `GET /api/v1/assistants/provider-health` with optional `probe=true` live connectivity checks
+- OpenAI `/v1/models` and Anthropic minimal-message health probes
+- `staging-provider-probes.sh` AI provider probe when `AI_PROVIDER` is not `mock`
+- `docs/36-AI-PROVIDER-HEALTH-CIRCUIT-GUIDE.md`
+
 ## [0.2.30-beta] — 2026-08-08
 
 ### Added

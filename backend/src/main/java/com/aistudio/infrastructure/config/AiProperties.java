@@ -12,7 +12,8 @@ public record AiProperties(
         Context context,
         RateLimit rateLimit,
         Embedding embedding,
-        Rag rag
+        Rag rag,
+        CircuitBreaker circuitBreaker
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }
@@ -30,5 +31,8 @@ public record AiProperties(
     }
 
     public record Rag(boolean enabled, int topK, int maxChars) {
+    }
+
+    public record CircuitBreaker(boolean enabled, int failureThreshold, int openSeconds) {
     }
 }

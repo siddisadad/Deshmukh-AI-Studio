@@ -56,4 +56,24 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   exit 1
 fi
 
+# Staging/prod compose uses SPRING_PROFILES_ACTIVE=prod (ProductionCorsValidator).
+IFS=',' read -ra cors_origins <<< "$CORS_ORIGINS"
+for origin in "${cors_origins[@]}"; do
+  trimmed="${origin#"${origin%%[![:space:]]*}"}"
+  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+  if [[ -z "$trimmed" ]]; then
+    continue
+  fi
+  if [[ ! "$trimmed" =~ ^https:// ]]; then
+    echo "CORS_ORIGINS entry must use HTTPS for staging/production: $trimmed" >&2
+    echo "Use ./scripts/staging-dry-run.sh for local prod-profile validation with test HTTPS origins." >&2
+    exit 1
+  fi
+  if [[ "$trimmed" =~ localhost ]] || [[ "$trimmed" =~ 127\. ]]; then
+    echo "CORS_ORIGINS must not include localhost for staging/production: $trimmed" >&2
+    echo "Set CORS_ORIGINS=https://<your-staging-host> (see docs/13-DEPLOYMENT-GUIDE.md)." >&2
+    exit 1
+  fi
+done
+
 echo "Staging/production env OK (BILLING_PROVIDER=${billing_provider}, SSO_PROVIDER=${sso_provider})."

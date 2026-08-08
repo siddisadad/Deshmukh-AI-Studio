@@ -188,3 +188,12 @@ jobs:
           export DB_PASSWORD=test
           export CORS_ORIGINS=https://example.com
           bash scripts/validate-staging-env.sh
+      - name: Reject localhost CORS for prod-shaped deploy
+        run: |
+          export JWT_SECRET=test-secret-key-at-least-32-bytes-long
+          export DB_PASSWORD=test
+          export CORS_ORIGINS=http://localhost:8088
+          if bash scripts/validate-staging-env.sh; then
+            echo "expected validation failure for localhost CORS" >&2
+            exit 1
+          fi

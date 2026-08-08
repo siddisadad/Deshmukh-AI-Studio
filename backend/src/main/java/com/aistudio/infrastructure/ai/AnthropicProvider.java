@@ -12,13 +12,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-@Component
-@ConditionalOnProperty(name = "aistudio.ai.provider", havingValue = "anthropic")
 public class AnthropicProvider implements AiProviderPort {
 
     private final RestClient client;

@@ -51,6 +51,8 @@ aistudio:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:
     provider: ${AI_PROVIDER:mock}
+    provider-chain: ${AI_PROVIDER_CHAIN:}
+    provider-fallbacks: ${AI_PROVIDER_FALLBACKS:}
     openai:
       api-key: ${OPENAI_API_KEY:}
       model: ${OPENAI_MODEL:gpt-4o-mini}

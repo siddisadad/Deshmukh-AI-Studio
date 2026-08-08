@@ -83,6 +83,8 @@ class OpenAiProviderStreamTest {
     private static AiProperties openAiProps(String baseUrl) {
         return new AiProperties(
                 "openai",
+                null,
+                null,
                 new AiProperties.OpenAi("sk-test", "gpt-4o-mini", baseUrl),
                 null,
                 null,

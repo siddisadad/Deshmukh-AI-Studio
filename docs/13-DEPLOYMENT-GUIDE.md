@@ -307,6 +307,8 @@ Draft builds from feature branches validate install but cannot be promoted — m
 - `docker compose logs -f api` — **prod profile emits JSON** logs (Logstash encoder) with `requestId` from `X-Request-Id` / MDC
 - Ship JSON stdout to Loki/ELK when ready (no agent required in-repo)
 - Uptime: `./scripts/healthcheck.sh https://staging.example.com` (edge `/actuator/health` + SPA)
+- Post-deploy: `./scripts/post-deploy-smoke.sh https://staging.example.com` (health, info, confirms prometheus is not on the public edge)
+- **Prometheus:** `GET /actuator/prometheus` on the API (authenticated; not proxied by nginx). Scrape from the internal Docker network or VPN, not the public hostname.
 - Disk alerts for Postgres volume (host/ops)
 
 ---

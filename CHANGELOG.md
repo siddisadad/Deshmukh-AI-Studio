@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Prometheus metrics at `/actuator/prometheus` (JWT required; not exposed on nginx edge)
+- `scripts/post-deploy-smoke.sh` for post-deploy health + info checks
+
 ### Fixed
 
 - `validate-staging-env.sh` rejects HTTP/localhost `CORS_ORIGINS` (matches prod `ProductionCorsValidator`)

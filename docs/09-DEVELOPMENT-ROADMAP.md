@@ -118,6 +118,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 |---|---|---|
 | RAG over documents/code metadata | pgvector index + search UI | Larger corpora, real embedding ops |
 | Streaming AI responses | SSE chat | Token UX polish, reconnect |
+| Observability | JSON logs, health, post-deploy smoke | Prometheus scrape (internal), dashboards |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
 | SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides, SAML |
 | Multi-thread conversations | Per-assistant threads | Thread search, sharing |

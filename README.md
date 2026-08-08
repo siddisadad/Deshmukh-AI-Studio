@@ -62,6 +62,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 # Validate staging-shaped compose locally (prod API profile, separate API/UI ports, no GHCR)
 ./scripts/staging-dry-run.sh
 
+# Post-deploy smoke (health + info; after staging/prod is up)
+./scripts/post-deploy-smoke.sh http://localhost:8088
+
 # Deploy staging from GHCR (requires docker login ghcr.io if private)
 cp .env.example .env
 ./scripts/validate-staging-env.sh

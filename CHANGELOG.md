@@ -6,10 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.5-beta] — 2026-08-08
+
 ### Added
 
-- Horizontal job worker scaling: `FOR UPDATE SKIP LOCKED` claiming, `locked_by` / `locked_at`, stale lock reclaim
+- Horizontal job worker scaling: Postgres `FOR UPDATE SKIP LOCKED` claiming, `locked_by` / `locked_at`
+- Stale worker lock reclaim (`JOB_STALE_LOCK_SECONDS`, `JOB_MAX_ATTEMPTS`)
 - `docker compose up --scale worker=N` and `WORKER_REPLICAS` for staging GHCR deploy
+- `AISTUDIO_JOBS_WORKER_ID` for stable worker identity in multi-replica setups
 
 ## [0.2.4-beta] — 2026-08-08
 

@@ -759,7 +759,7 @@ public class ConversationService {
         map.put("id", conversation.getId());
         map.put("projectId", conversation.getProjectId());
         map.put("assistantRole", conversation.getAssistantRole().name());
-        map.put("title", conversation.getTitle());
+        map.put("title", redactMessageContent(conversation.getTitle(), redactionPolicy));
         map.put("visibility", conversation.getVisibility().name());
         map.put("exportedAt", Instant.now());
         if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {

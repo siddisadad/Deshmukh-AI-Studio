@@ -50,9 +50,25 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Building and starting staging-shaped stack (UI :${STAGING_UI_PORT}, API :${STAGING_API_PORT})…"
-"${COMPOSE[@]}" up -d --build
+"${COMPOSE[@]}" up -d --build postgres
+"${COMPOSE[@]}" up -d --build api worker
 
-echo "Waiting for health…"
+echo "Waiting for API before edge UI…"
+for i in $(seq 1 60); do
+  if curl -fsS --max-time 5 "http://localhost:${STAGING_API_PORT}/actuator/health" >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$i" -eq 60 ]; then
+    echo "API did not become healthy" >&2
+    "${COMPOSE[@]}" logs --no-color api worker || true
+    exit 1
+  fi
+  sleep 5
+done
+
+"${COMPOSE[@]}" up -d --build frontend
+
+echo "Waiting for edge health…"
 for i in $(seq 1 60); do
   if curl -fsS --max-time 5 "http://localhost:${STAGING_UI_PORT}/actuator/health" >/dev/null 2>&1 \
     && curl -fsS --max-time 5 -o /dev/null "http://localhost:${STAGING_UI_PORT}/" \

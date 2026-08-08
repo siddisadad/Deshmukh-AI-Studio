@@ -93,8 +93,9 @@ The script runs:
 2. `healthcheck.sh` (edge)
 3. `post-deploy-smoke.sh` (edge; confirms `/actuator/prometheus` is **not** on the public hostname)
 4. `api-smoke.sh` (authenticated API journey)
-5. Optional internal `/actuator/prometheus` check
-6. Prints manual checklist items based on `BILLING_PROVIDER`, `SSO_PROVIDER`, and `MAIL_PROVIDER`
+5. `staging-provider-probes.sh` (Stripe/OIDC/SAML/SMTP readiness — [24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md))
+6. Optional internal `/actuator/prometheus` check
+7. Prints manual checklist items based on `BILLING_PROVIDER`, `SSO_PROVIDER`, and `MAIL_PROVIDER`
 
 CI runs `bash -n` on these scripts and `staging-dry-run.sh` invokes `api-smoke.sh` locally.
 

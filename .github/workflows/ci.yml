@@ -218,6 +218,7 @@ jobs:
           bash -n scripts/export-loki-logs.sh
           bash -n scripts/worker-scale-hint.sh
           bash -n scripts/staging-dogfood.sh
+          bash -n scripts/staging-provider-probes.sh
           bash -n scripts/write-prometheus-token.sh
           bash -n scripts/api-smoke.sh
           if ./scripts/write-prometheus-token.sh; then

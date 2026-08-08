@@ -216,6 +216,12 @@ jobs:
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config-s3.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/grafana/provisioning/datasources/loki-regions.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/grafana/provisioning/datasources/prometheus-regions.yml'))"
+          bash -n scripts/write-grafana-prometheus-regions.sh
+          bash -n scripts/write-grafana-federated-dashboard.sh
+          bash -n scripts/sync-loki-ruler-regions.sh
+          LOKI_QUERY_REGIONS=ci=http://127.0.0.1:3100 ./scripts/write-grafana-federated-dashboard.sh
+          python3 -c "import json; json.load(open('monitoring/grafana/dashboards/aistudio-federated.json'))"
           bash -n scripts/export-loki-logs.sh
           bash -n scripts/query-loki-multi-region.sh
           bash -n scripts/write-grafana-loki-regions.sh

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.28-beta] — 2026-08-08
+
+### Added
+
+- Federated Grafana dashboard (`aistudio-federated`) — per-region API up, 5xx, ERROR/WARN log rates
+- `scripts/write-grafana-prometheus-regions.sh` — regional Prometheus datasources
+- `scripts/write-grafana-federated-dashboard.sh` — generates federated dashboard JSON
+- `scripts/sync-loki-ruler-regions.sh` — fan-out `loki-alerts.yml` to regional Loki rulers
+- `docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md`
+
 ## [0.2.27-beta] — 2026-08-08
 
 ### Added

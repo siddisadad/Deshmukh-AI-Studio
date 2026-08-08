@@ -16,11 +16,16 @@ export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
 ./scripts/write-prometheus-token.sh
 ```
 
-3. Optional multi-region Loki datasources (`LOKI_QUERY_REGIONS`):
+3. Optional multi-region observability (`LOKI_QUERY_REGIONS`, `PROMETHEUS_QUERY_REGIONS`):
 
 ```bash
 ./scripts/write-grafana-loki-regions.sh
+./scripts/write-grafana-prometheus-regions.sh
+./scripts/write-grafana-federated-dashboard.sh
+./scripts/sync-loki-ruler-regions.sh   # remote Loki rulers
 ```
+
+See [docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](../docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md).
 
 ## Start stack
 
@@ -69,6 +74,7 @@ Deletion is asynchronous (after compaction + `retention_delete_delay`). Align `m
 - Playbook: [docs/17-LOG-ARCHIVE-GUIDE.md](../docs/17-LOG-ARCHIVE-GUIDE.md)
 - **Long-term tiering / DR:** [docs/21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md](../docs/21-OBSERVABILITY-LONG-TERM-ARCHIVE-GUIDE.md)
 - **Multi-region live query:** [docs/27-LOKI-MULTI-REGION-QUERY-GUIDE.md](../docs/27-LOKI-MULTI-REGION-QUERY-GUIDE.md) — `scripts/query-loki-multi-region.sh`, `write-grafana-loki-regions.sh`
+- **Federated dashboards / ruler fan-out:** [docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md](../docs/33-FEDERATED-GRAFANA-LOKI-RULER-GUIDE.md)
 
 Staging-shaped stack:
 

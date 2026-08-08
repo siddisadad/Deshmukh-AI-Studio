@@ -26,6 +26,7 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 - Grafana: http://localhost:3000 (default `admin` / `GRAFANA_ADMIN_PASSWORD` or `admin`)
 - Prometheus: http://localhost:9090 (internal ops; do not expose publicly)
+- Alertmanager: http://localhost:9093 (internal ops; do not expose publicly)
 
 Staging-shaped stack:
 
@@ -41,4 +42,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 
 ## Alerts
 
-`monitoring/alerts.yml` defines `ApiDown`, `ApiHighErrorRate`, and `ApiHighLatencyP95`. Wire Alertmanager in production.
+`monitoring/alerts.yml` defines `ApiDown`, `ApiHighErrorRate`, and `ApiHighLatencyP95`. Prometheus forwards firing alerts to Alertmanager (`monitoring/alertmanager.yml`).
+
+- Alertmanager UI: http://localhost:9093 (do not expose publicly without auth)
+- Default receiver logs alerts in the UI only; add `webhook_configs` or `email_configs` in `alertmanager.yml` for paging in production

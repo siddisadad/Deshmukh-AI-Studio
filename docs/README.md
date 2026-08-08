@@ -29,8 +29,9 @@ Read in order; each document builds on the previous.
 | 22 | [22-BILLING-USAGE-INVOICES-GUIDE.md](22-BILLING-USAGE-INVOICES-GUIDE.md) | AI usage metering history + Stripe invoices |
 | 23 | [23-STREAMING-TOKEN-UX-GUIDE.md](23-STREAMING-TOKEN-UX-GUIDE.md) | SSE streaming token UX + usage metadata |
 | 24 | [24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md) | Automated Stripe/OIDC/SAML/SMTP staging probes |
+| 25 | [25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md](25-CHAT-RETENTION-LEGAL-HOLD-GUIDE.md) | Chat thread retention policy + legal hold |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.19-beta** adds staging provider probes — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.20-beta** adds chat retention and legal hold — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

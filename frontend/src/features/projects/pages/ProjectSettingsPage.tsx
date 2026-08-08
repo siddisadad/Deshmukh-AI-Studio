@@ -23,6 +23,7 @@ import {
   type KnowledgeStatus,
 } from '../api/knowledgeApi';
 import { jobsApi, type BackgroundJob } from '../api/jobsApi';
+import { chatApi } from '../../chat/api/chatApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
@@ -34,6 +35,7 @@ export function ProjectSettingsPage() {
   const [name, setName] = useState('');
   const [projectKey, setProjectKey] = useState('');
   const [description, setDescription] = useState('');
+  const [chatRetentionDays, setChatRetentionDays] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,9 @@ export function ProjectSettingsPage() {
         setName(p.name);
         setProjectKey(p.projectKey);
         setDescription(p.description || '');
+        setChatRetentionDays(
+          p.chatRetentionDays != null && p.chatRetentionDays > 0 ? String(p.chatRetentionDays) : '',
+        );
         setAssets(listed);
         setKnowledge(status);
         setJobs(listedJobs);
@@ -89,11 +94,20 @@ export function ProjectSettingsPage() {
     setError(null);
     setMessage(null);
     try {
-      const updated = await projectsApi.updateProject(projectId, {
-        name,
-        projectKey,
-        description,
-      });
+      const retentionTrimmed = chatRetentionDays.trim();
+      const body: {
+        name: string;
+        projectKey: string;
+        description: string;
+        chatRetentionDays?: number;
+        clearChatRetention?: boolean;
+      } = { name, projectKey, description };
+      if (retentionTrimmed) {
+        body.chatRetentionDays = Number(retentionTrimmed);
+      } else {
+        body.clearChatRetention = true;
+      }
+      const updated = await projectsApi.updateProject(projectId, body);
       setProject(updated);
       setMessage('Project updated');
     } catch (err) {
@@ -179,6 +193,21 @@ export function ProjectSettingsPage() {
     }
   }
 
+  async function onPurgeExpiredThreads() {
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await chatApi.purgeExpiredConversations(projectId);
+      setMessage(`Purged ${result.purgedCount} expired thread(s) (legal hold skipped)`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Retention purge failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function onArchiveToggle() {
     if (!projectId || !project) return;
     setSaving(true);
@@ -229,8 +258,25 @@ export function ProjectSettingsPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+          <TextField
+            label="Chat thread retention (days)"
+            type="number"
+            value={chatRetentionDays}
+            onChange={(e) => setChatRetentionDays(e.target.value)}
+            helperText="Optional auto-delete after N days since last message. Leave empty to disable. Legal hold threads are never purged."
+            slotProps={{ htmlInput: { min: 1, max: 3650, 'data-testid': 'chat-retention-days' } }}
+          />
           <Button type="submit" variant="contained" disabled={saving}>
             Save changes
+          </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            disabled={saving || !chatRetentionDays.trim()}
+            onClick={() => void onPurgeExpiredThreads()}
+            data-testid="chat-retention-purge"
+          >
+            Purge expired threads now
           </Button>
         </Stack>
       </Paper>

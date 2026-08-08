@@ -30,6 +30,8 @@ export interface ConversationSummary {
   shareEnabled: boolean;
   shareExpiresAt: string | null;
   visibility: 'PROJECT' | 'PRIVATE';
+  legalHold: boolean;
+  retentionExpiresAt: string | null;
 }
 
 export interface ConversationShareResult {
@@ -332,8 +334,15 @@ export const chatApi = {
     http.post<ConversationSummary>(`/projects/${projectId}/conversations`, body).then((r) => r.data),
   getConversation: (conversationId: string) =>
     http.get<Conversation>(`/conversations/${conversationId}`).then((r) => r.data),
-  updateConversation: (conversationId: string, title: string) =>
-    http.patch<ConversationSummary>(`/conversations/${conversationId}`, { title }).then((r) => r.data),
+  updateConversation: (
+    conversationId: string,
+    body: { title?: string; visibility?: 'PROJECT' | 'PRIVATE'; legalHold?: boolean },
+  ) =>
+    http.patch<ConversationSummary>(`/conversations/${conversationId}`, body).then((r) => r.data),
+  purgeExpiredConversations: (projectId: string) =>
+    http
+      .post<{ purgedCount: number }>(`/projects/${projectId}/conversations/retention-purge`)
+      .then((r) => r.data),
   deleteConversation: (conversationId: string) =>
     http.delete(`/conversations/${conversationId}`).then(() => undefined),
   enableShare: (conversationId: string) =>

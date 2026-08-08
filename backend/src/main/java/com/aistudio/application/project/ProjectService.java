@@ -5,6 +5,7 @@ import com.aistudio.api.project.dto.ProjectResponse;
 import com.aistudio.api.project.dto.UpdateProjectRequest;
 import com.aistudio.application.audit.AuditService;
 import com.aistudio.application.billing.BillingService;
+import com.aistudio.application.ai.ConversationService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.project.ProjectRole;
@@ -28,19 +29,22 @@ public class ProjectService {
     private final ProjectAuthorizationService authorizationService;
     private final AuditService auditService;
     private final BillingService billingService;
+    private final ConversationService conversationService;
 
     public ProjectService(
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             ProjectAuthorizationService authorizationService,
             AuditService auditService,
-            BillingService billingService
+            BillingService billingService,
+            ConversationService conversationService
     ) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.authorizationService = authorizationService;
         this.auditService = auditService;
         this.billingService = billingService;
+        this.conversationService = conversationService;
     }
 
     @Transactional
@@ -115,7 +119,18 @@ public class ProjectService {
             }
             project.setProjectKey(key);
         }
+        boolean retentionPolicyChanged = false;
+        if (Boolean.TRUE.equals(request.clearChatRetention())) {
+            project.setChatRetentionDays(null);
+            retentionPolicyChanged = true;
+        } else if (request.chatRetentionDays() != null) {
+            project.setChatRetentionDays(request.chatRetentionDays());
+            retentionPolicyChanged = true;
+        }
         projectRepository.save(project);
+        if (retentionPolicyChanged) {
+            conversationService.reapplyProjectRetentionPolicy(projectId);
+        }
         return toResponse(project, authorizationService.resolveProjectRole(projectId, userId));
     }
 
@@ -152,6 +167,7 @@ public class ProjectService {
                 project.getDescription(),
                 project.getStatus().name(),
                 role.name(),
+                project.getChatRetentionDays(),
                 project.getArchivedAt(),
                 project.getCreatedAt(),
                 project.getUpdatedAt()

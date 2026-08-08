@@ -8,6 +8,7 @@ export interface Project {
   description?: string | null;
   status: 'ACTIVE' | 'ARCHIVED';
   role: string;
+  chatRetentionDays?: number | null;
   archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -47,7 +48,16 @@ export const projectsApi = {
   createProject: (orgId: string, body: { name: string; projectKey: string; description?: string }) =>
     http.post<Project>(`/organizations/${orgId}/projects`, body).then((r) => r.data),
   getProject: (projectId: string) => http.get<Project>(`/projects/${projectId}`).then((r) => r.data),
-  updateProject: (projectId: string, body: { name?: string; projectKey?: string; description?: string }) =>
+  updateProject: (
+    projectId: string,
+    body: {
+      name?: string;
+      projectKey?: string;
+      description?: string;
+      chatRetentionDays?: number;
+      clearChatRetention?: boolean;
+    },
+  ) =>
     http.patch<Project>(`/projects/${projectId}`, body).then((r) => r.data),
   archiveProject: (projectId: string) => http.post<Project>(`/projects/${projectId}/archive`).then((r) => r.data),
   unarchiveProject: (projectId: string) => http.post<Project>(`/projects/${projectId}/unarchive`).then((r) => r.data),

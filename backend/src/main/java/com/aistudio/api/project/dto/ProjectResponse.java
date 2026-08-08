@@ -11,6 +11,7 @@ public record ProjectResponse(
         String description,
         String status,
         String role,
+        Integer chatRetentionDays,
         Instant archivedAt,
         Instant createdAt,
         Instant updatedAt

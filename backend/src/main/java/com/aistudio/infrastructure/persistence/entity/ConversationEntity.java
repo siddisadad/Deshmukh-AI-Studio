@@ -59,6 +59,12 @@ public class ConversationEntity {
     @Column(name = "share_created_at")
     private Instant shareCreatedAt;
 
+    @Column(name = "legal_hold", nullable = false)
+    private boolean legalHold = false;
+
+    @Column(name = "retention_expires_at")
+    private Instant retentionExpiresAt;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

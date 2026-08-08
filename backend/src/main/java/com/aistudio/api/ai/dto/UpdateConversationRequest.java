@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record UpdateConversationRequest(
         @Size(max = 200) String title,
-        @Pattern(regexp = "PROJECT|PRIVATE", message = "visibility must be PROJECT or PRIVATE") String visibility
+        @Pattern(regexp = "PROJECT|PRIVATE", message = "visibility must be PROJECT or PRIVATE") String visibility,
+        Boolean legalHold
 ) {
 }

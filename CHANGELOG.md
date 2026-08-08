@@ -6,6 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.1-beta] — 2026-08-08
+
 ### Added
 
 - `docs/14-STAGING-DOGFOOD-GUIDE.md` — staging deploy, automated gates, Stripe/OIDC dogfood, sign-off checklist
@@ -17,7 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 ### Fixed
 
 - Chat thread search `TextField` uses MUI `slotProps` (fixes frontend build on MUI v6)
-
+- E2E smoke: thread search test id no longer matches `chat-thread-*` list locator
 
 ## [0.2.0-beta] — 2026-08-08
 

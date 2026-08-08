@@ -120,7 +120,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Streaming AI responses | SSE chat + reconnect/retry UX | Token UX polish |
 | Observability | JSON logs, health, smoke, Prometheus, Grafana overlay + alerts | Alertmanager wiring, Loki |
 | Billing / plans | Stripe checkout + webhook (env-gated) | Invoices, usage metering depth |
-| SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides, SAML |
+| SSO (OIDC/SAML) | Real OIDC adapter (env-gated) | IdP-specific guides ([14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) §6), SAML |
 | Multi-thread conversations | Per-assistant threads | Thread search, sharing |
 | Plugin architecture | SPI + org toggles | Marketplace, third-party packs |
 | Background AI jobs | Reindex + doc generate queue | Dedicated worker service |

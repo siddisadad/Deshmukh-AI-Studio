@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.61-beta] — 2026-08-09
+
+### Added
+
+- Git sync file content hydration — fetch snippets from GitHub/GitLab/Bitbucket after tree listing
+- Config — `GIT_SYNC_FETCH_CONTENT`, `GIT_SYNC_MAX_SNIPPET_BYTES`, `GIT_SYNC_MAX_CONTENT_FETCH_BYTES`
+- `GitMetadataPort.hydrateFileContents` — per-provider raw file fetch with truncation
+- `docs/66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md`
+
 ## [0.2.60-beta] — 2026-08-09
 
 ### Added

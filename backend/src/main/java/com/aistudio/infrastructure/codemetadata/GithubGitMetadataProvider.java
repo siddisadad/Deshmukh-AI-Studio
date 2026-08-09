@@ -21,6 +21,8 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
 
     private final RestClient client;
     private final ObjectMapper objectMapper;
+    private final int maxSnippetBytes;
+    private final int maxContentFetchBytes;
 
     public GithubGitMetadataProvider(GitProperties properties, ObjectMapper objectMapper) {
         String token = properties.apiToken();
@@ -31,6 +33,8 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
                 ? "https://api.github.com"
                 : properties.apiBaseUrl();
         this.objectMapper = objectMapper;
+        this.maxSnippetBytes = properties.effectiveMaxSnippetBytes();
+        this.maxContentFetchBytes = properties.effectiveMaxContentFetchBytes();
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + token)
@@ -79,6 +83,55 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
         } catch (Exception ex) {
             throw new DomainException("GIT_ERROR", "GitHub repository sync failed: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public List<GitFileEntry> hydrateFileContents(String repository, String branch, List<GitFileEntry> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = parseRepository(repository);
+        String owner = parts[0];
+        String repo = parts[1];
+        String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
+        List<GitFileEntry> hydrated = new ArrayList<>();
+        for (GitFileEntry file : files) {
+            if (!GitSnippetUtils.shouldFetchContent(file.sizeBytes(), maxContentFetchBytes)) {
+                hydrated.add(file);
+                continue;
+            }
+            if (file.snippet() != null && !file.snippet().isBlank()) {
+                hydrated.add(file);
+                continue;
+            }
+            try {
+                String pathJson = client.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/repos/{owner}/{repo}/contents/{path}")
+                                .queryParam("ref", branchName)
+                                .build(owner, repo, file.path()))
+                        .retrieve()
+                        .body(String.class);
+                JsonNode node = objectMapper.readTree(pathJson);
+                String encoding = node.path("encoding").asText("");
+                String raw = node.path("content").asText("");
+                if ("base64".equalsIgnoreCase(encoding) && !raw.isBlank()) {
+                    raw = new String(
+                            java.util.Base64.getDecoder().decode(raw.replace("\n", "")),
+                            java.nio.charset.StandardCharsets.UTF_8
+                    );
+                }
+                hydrated.add(new GitFileEntry(
+                        file.path(),
+                        file.language(),
+                        GitSnippetUtils.truncateToUtf8Bytes(raw, maxSnippetBytes),
+                        file.sizeBytes() > 0 ? file.sizeBytes() : node.path("size").asInt(0)
+                ));
+            } catch (Exception ex) {
+                hydrated.add(file);
+            }
+        }
+        return hydrated;
     }
 
     private static String[] parseRepository(String repository) {

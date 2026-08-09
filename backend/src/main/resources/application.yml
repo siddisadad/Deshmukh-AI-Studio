@@ -145,6 +145,9 @@ aistudio:
     gitlab-api-base-url: ${GITLAB_API_BASE_URL:https://gitlab.com/api/v4}
     bitbucket-api-token: ${BITBUCKET_SYNC_TOKEN:}
     bitbucket-api-base-url: ${BITBUCKET_API_BASE_URL:https://api.bitbucket.org/2.0}
+    fetch-file-content: ${GIT_SYNC_FETCH_CONTENT:true}
+    max-snippet-bytes: ${GIT_SYNC_MAX_SNIPPET_BYTES:4000}
+    max-content-fetch-bytes: ${GIT_SYNC_MAX_CONTENT_FETCH_BYTES:512000}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

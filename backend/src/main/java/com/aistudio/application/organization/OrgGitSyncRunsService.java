@@ -1,7 +1,11 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
+import com.aistudio.api.organization.dto.OrgGitSyncRunExportPayload;
 import com.aistudio.api.organization.dto.OrgGitSyncRunItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
@@ -20,18 +24,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrgGitSyncRunsService {
 
+    private static final int MAX_EXPORT_ROWS = 1000;
+
     private final ProjectRepository projectRepository;
     private final ProjectGitSyncRunRepository syncRunRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final ObjectMapper objectMapper;
 
     public OrgGitSyncRunsService(
             ProjectRepository projectRepository,
             ProjectGitSyncRunRepository syncRunRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            ObjectMapper objectMapper
     ) {
         this.projectRepository = projectRepository;
         this.syncRunRepository = syncRunRepository;
         this.authorizationService = authorizationService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -117,6 +126,38 @@ public class OrgGitSyncRunsService {
         return new OrgGitSyncRunPageResponse(items, safeOffset, safeLimit, totalCount, hasMore);
     }
 
+    @Transactional(readOnly = true)
+    public OrgGitSyncRunExport exportRuns(
+            UUID organizationId,
+            UUID userId,
+            String format,
+            String source,
+            String status,
+            UUID projectId
+    ) {
+        OrgGitSyncRunPageResponse page = listRuns(
+                organizationId,
+                userId,
+                MAX_EXPORT_ROWS,
+                0,
+                source,
+                status,
+                projectId
+        );
+        OrgGitSyncRunExportPayload payload = new OrgGitSyncRunExportPayload(
+                organizationId,
+                page.totalCount(),
+                page.items().size(),
+                page.hasMore(),
+                page.items()
+        );
+        String normalizedFormat = normalizeExportFormat(format);
+        if ("json".equals(normalizedFormat)) {
+            return exportAsJson(payload);
+        }
+        return exportAsCsv(payload);
+    }
+
     private OrgGitSyncRunItemResponse toItem(ProjectGitSyncRunEntity run, ProjectEntity project) {
         String projectName = project != null ? project.getName() : "Unknown";
         String projectKey = project != null ? project.getProjectKey() : "";
@@ -150,5 +191,66 @@ public class OrgGitSyncRunsService {
             return normalized;
         }
         throw new DomainException("VALIDATION_ERROR", "status filter must be success or failed");
+    }
+
+    private String normalizeExportFormat(String format) {
+        if (format == null || format.isBlank()) {
+            return "csv";
+        }
+        String normalized = format.trim().toLowerCase(Locale.ROOT);
+        if (!"csv".equals(normalized) && !"json".equals(normalized)) {
+            throw new DomainException("VALIDATION_ERROR", "format must be csv or json");
+        }
+        return normalized;
+    }
+
+    private OrgGitSyncRunExport exportAsJson(OrgGitSyncRunExportPayload payload) {
+        try {
+            byte[] body = objectMapper.copy()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .writeValueAsBytes(payload);
+            return new OrgGitSyncRunExport(
+                    body,
+                    "application/json; charset=UTF-8",
+                    "git-sync-runs-" + payload.organizationId() + ".json"
+            );
+        } catch (Exception ex) {
+            throw new DomainException("INTERNAL_ERROR", "Failed to export git sync runs as JSON");
+        }
+    }
+
+    private OrgGitSyncRunExport exportAsCsv(OrgGitSyncRunExportPayload payload) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("id,projectId,projectName,projectKey,gitLinkId,source,status,fileCount,errorMessage,startedAt,finishedAt\n");
+        for (OrgGitSyncRunItemResponse item : payload.items()) {
+            csv.append(csvCell(item.id()))
+                    .append(',').append(csvCell(item.projectId()))
+                    .append(',').append(csvCell(item.projectName()))
+                    .append(',').append(csvCell(item.projectKey()))
+                    .append(',').append(csvCell(item.gitLinkId()))
+                    .append(',').append(csvCell(item.source()))
+                    .append(',').append(csvCell(item.status()))
+                    .append(',').append(item.fileCount())
+                    .append(',').append(csvCell(item.errorMessage()))
+                    .append(',').append(csvCell(item.startedAt()))
+                    .append(',').append(csvCell(item.finishedAt()))
+                    .append('\n');
+        }
+        return new OrgGitSyncRunExport(
+                csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                "text/csv; charset=UTF-8",
+                "git-sync-runs-" + payload.organizationId() + ".csv"
+        );
+    }
+
+    private String csvCell(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = value.toString();
+        if (text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")) {
+            return "\"" + text.replace("\"", "\"\"") + "\"";
+        }
+        return text;
     }
 }

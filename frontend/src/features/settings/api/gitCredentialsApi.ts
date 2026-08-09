@@ -193,4 +193,23 @@ export const gitCredentialsApi = {
       .get<OrgGitSyncRunPage>(`/organizations/${orgId}/git-sync-runs?${params.toString()}`)
       .then((r) => r.data);
   },
+  downloadSyncRunsExport: async (
+    orgId: string,
+    format: 'csv' | 'json',
+    filters?: { source?: string; status?: string; projectId?: string }
+  ) => {
+    const params: Record<string, string> = { format };
+    if (filters?.source && filters.source !== 'all') params.source = filters.source;
+    if (filters?.status && filters.status !== 'all') params.status = filters.status;
+    if (filters?.projectId) params.projectId = filters.projectId;
+    const response = await http.get(`/organizations/${orgId}/git-sync-runs/export`, {
+      params,
+      responseType: 'blob',
+    });
+    triggerBlobDownload(
+      response.data as Blob,
+      response.headers['content-disposition'] as string | undefined,
+      `git-sync-runs-${orgId}.${format}`,
+    );
+  },
 };

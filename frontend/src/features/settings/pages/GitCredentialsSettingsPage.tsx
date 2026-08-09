@@ -44,6 +44,7 @@ export function GitCredentialsSettingsPage() {
   const [runHasMore, setRunHasMore] = useState(false);
   const [runTotalCount, setRunTotalCount] = useState(0);
   const [runLoadingMore, setRunLoadingMore] = useState(false);
+  const [runExporting, setRunExporting] = useState<'csv' | 'json' | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -172,6 +173,23 @@ export function GitCredentialsSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to export overview');
     } finally {
       setOverviewExporting(null);
+    }
+  }
+
+  async function exportSyncRuns(format: 'csv' | 'json') {
+    if (!org?.id) return;
+    setRunExporting(format);
+    setError(null);
+    try {
+      await gitCredentialsApi.downloadSyncRunsExport(org.id, format, {
+        source: runSourceFilter,
+        status: runStatusFilter,
+      });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to export sync runs');
+    } finally {
+      setRunExporting(null);
     }
   }
 
@@ -459,6 +477,24 @@ export function GitCredentialsSettingsPage() {
             data-testid="org-git-sync-runs-refresh"
           >
             Refresh
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={runExporting !== null}
+            onClick={() => void exportSyncRuns('csv')}
+            data-testid="org-git-sync-runs-export-csv"
+          >
+            {runExporting === 'csv' ? 'Exporting…' : 'Export CSV'}
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={runExporting !== null}
+            onClick={() => void exportSyncRuns('json')}
+            data-testid="org-git-sync-runs-export-json"
+          >
+            {runExporting === 'json' ? 'Exporting…' : 'Export JSON'}
           </Button>
         </Stack>
         {syncRunsQuery.isLoading && runItems.length === 0 && (

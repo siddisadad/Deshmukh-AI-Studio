@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.persistence.repository;
 
 import com.aistudio.domain.job.JobStatus;
+import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.persistence.entity.BackgroundJobEntity;
 import java.util.List;
 import java.util.UUID;
@@ -21,4 +22,6 @@ public interface BackgroundJobRepository extends JpaRepository<BackgroundJobEnti
     long countByStatus(JobStatus status);
 
     long countByProjectIdAndStatus(UUID projectId, JobStatus status);
+
+    long countByProjectIdAndJobTypeAndStatus(UUID projectId, JobType jobType, JobStatus status);
 }

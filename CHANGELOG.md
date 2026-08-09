@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.63-beta] — 2026-08-09
+
+### Added
+
+- Git scheduled sync cron — enqueue `CODE_METADATA_SYNC` for enabled git links on interval
+- Config — `GIT_SYNC_SCHEDULED_ENABLED`, `GIT_SYNC_SCHEDULED_INTERVAL_MS`
+- Skips projects with pending `CODE_METADATA_SYNC` jobs
+- `docs/68-GIT-SCHEDULED-SYNC-GUIDE.md`
+
 ## [0.2.62-beta] — 2026-08-09
 
 ### Added

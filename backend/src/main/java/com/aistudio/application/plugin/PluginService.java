@@ -26,25 +26,32 @@ public class PluginService implements ApplicationRunner {
     private final PluginRegistry pluginRegistry;
     private final OrganizationPluginRepository organizationPluginRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final PluginPackCatalogSync pluginPackCatalogSync;
 
     public PluginService(
             PluginRegistry pluginRegistry,
             OrganizationPluginRepository organizationPluginRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            PluginPackCatalogSync pluginPackCatalogSync
     ) {
         this.pluginRegistry = pluginRegistry;
         this.organizationPluginRepository = organizationPluginRepository;
         this.authorizationService = authorizationService;
+        this.pluginPackCatalogSync = pluginPackCatalogSync;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         pluginRegistry.syncCatalog();
+        pluginPackCatalogSync.syncFromManifests();
     }
 
     @Transactional(readOnly = true)
     public List<PluginResponse> listCatalog() {
-        return pluginRegistry.all().stream().map(this::toPlugin).toList();
+        return pluginRegistry.all().stream()
+                .filter(plugin -> !pluginRegistry.isMarketplacePlugin(plugin.id()))
+                .map(this::toPlugin)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -57,6 +64,7 @@ public class PluginService implements ApplicationRunner {
                         (a, b) -> a
                 ));
         return pluginRegistry.all().stream()
+                .filter(plugin -> pluginRegistry.isVisibleForOrganization(organizationId, plugin.id()))
                 .map(plugin -> {
                     boolean enabled = overrides.getOrDefault(plugin.id(), true);
                     return new OrgPluginResponse(

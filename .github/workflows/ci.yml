@@ -248,6 +248,8 @@ jobs:
           bash -n scripts/scheduled-siem-export.sh
           bash -n scripts/scheduled-staging-signoff.sh
           bash -n scripts/release-gate-check.sh
+          python3 -c "import json; json.load(open('backend/src/main/resources/plugin-packs/devtools.json'))"
+          python3 -c "import json; json.load(open('backend/src/main/resources/plugin-packs/compliance.json'))"
           bash -n scripts/staging-provider-probes.sh
           bash -n scripts/scheduled-chat-retention.sh
           bash -n scripts/write-prometheus-token.sh

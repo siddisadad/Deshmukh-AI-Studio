@@ -1,0 +1,13 @@
+{
+  "id": "pack.thirdparty.devtools",
+  "slug": "devtools",
+  "name": "Developer Tools Pack",
+  "publisher": "AI Studio Partners",
+  "version": "1.0.0",
+  "description": "Markdown preview and word-count tools for engineering workflows.",
+  "verified": true,
+  "pluginIds": [
+    "thirdparty.tool.markdown_preview",
+    "thirdparty.tool.word_count"
+  ]
+}

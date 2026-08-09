@@ -9,6 +9,7 @@ public record OrgGitSyncOverviewResponse(
         int linkedProjects,
         int enabledLinks,
         int scheduledSyncLinks,
+        int manualSyncLinks,
         int failedLastSync,
         List<OrgGitSyncOverviewItemResponse> items
 ) {

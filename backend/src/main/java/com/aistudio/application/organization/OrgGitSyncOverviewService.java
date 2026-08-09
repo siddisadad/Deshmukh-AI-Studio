@@ -1,5 +1,6 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
@@ -86,6 +87,7 @@ public class OrgGitSyncOverviewService {
         int linkedProjects = 0;
         int enabledLinks = 0;
         int scheduledSyncLinks = 0;
+        int manualSyncLinks = 0;
         int failedLastSync = 0;
         for (OrgGitSyncOverviewItemResponse item : items) {
             if (item.linked()) {
@@ -94,6 +96,8 @@ public class OrgGitSyncOverviewService {
                     enabledLinks++;
                     if (item.scheduledSyncEnabled()) {
                         scheduledSyncLinks++;
+                    } else {
+                        manualSyncLinks++;
                     }
                 }
                 if ("failed".equals(item.lastSyncStatus())) {
@@ -113,8 +117,40 @@ public class OrgGitSyncOverviewService {
                 linkedProjects,
                 enabledLinks,
                 scheduledSyncLinks,
+                manualSyncLinks,
                 failedLastSync,
                 filteredItems
+        );
+    }
+
+    @Transactional
+    public OrgGitSyncEnableScheduledResponse enableScheduledSyncs(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
+        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
+        if (!projects.isEmpty()) {
+            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
+            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
+                linksByProjectId.put(link.getProjectId(), link);
+            }
+        }
+
+        List<ProjectGitLinkEntity> manualLinks = linksByProjectId.values().stream()
+                .filter(link -> link.isEnabled() && !link.isScheduledSyncEnabled())
+                .toList();
+
+        List<UUID> updatedProjectIds = new ArrayList<>();
+        for (ProjectGitLinkEntity link : manualLinks) {
+            link.setScheduledSyncEnabled(true);
+            gitLinkRepository.save(link);
+            updatedProjectIds.add(link.getProjectId());
+        }
+
+        return new OrgGitSyncEnableScheduledResponse(
+                manualLinks.size(),
+                updatedProjectIds.size(),
+                updatedProjectIds
         );
     }
 

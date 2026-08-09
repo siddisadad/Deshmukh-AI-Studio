@@ -262,6 +262,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 26. Phase 23 — Org bulk enable scheduled sync (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Bulk enable scheduled | `enable-scheduled-sync` API, `manualSyncLinks` count, overview button ([91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md](91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

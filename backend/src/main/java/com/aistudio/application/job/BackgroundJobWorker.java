@@ -1,5 +1,6 @@
 package com.aistudio.application.job;
 
+import com.aistudio.application.codemetadata.ProjectGitSyncService;
 import com.aistudio.application.document.DocumentService;
 import com.aistudio.application.knowledge.KnowledgeIndexService;
 import com.aistudio.domain.job.JobStatus;
@@ -29,6 +30,7 @@ public class BackgroundJobWorker {
     private final BackgroundJobClaimer claimer;
     private final WorkerIdentity workerIdentity;
     private final KnowledgeIndexService knowledgeIndexService;
+    private final ProjectGitSyncService projectGitSyncService;
     private final DocumentService documentService;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
@@ -41,6 +43,7 @@ public class BackgroundJobWorker {
             BackgroundJobClaimer claimer,
             WorkerIdentity workerIdentity,
             KnowledgeIndexService knowledgeIndexService,
+            ProjectGitSyncService projectGitSyncService,
             DocumentService documentService,
             TransactionTemplate transactionTemplate,
             ObjectMapper objectMapper,
@@ -52,6 +55,7 @@ public class BackgroundJobWorker {
         this.claimer = claimer;
         this.workerIdentity = workerIdentity;
         this.knowledgeIndexService = knowledgeIndexService;
+        this.projectGitSyncService = projectGitSyncService;
         this.documentService = documentService;
         this.transactionTemplate = transactionTemplate;
         this.objectMapper = objectMapper;
@@ -149,6 +153,10 @@ public class BackgroundJobWorker {
                         "model", response.model(),
                         "assistantRole", response.assistantRole()
                 ));
+            }
+            case CODE_METADATA_SYNC -> {
+                int fileCount = projectGitSyncService.syncProject(job.getProjectId());
+                yield objectMapper.writeValueAsString(Map.of("fileCount", fileCount, "source", "git"));
             }
         };
     }

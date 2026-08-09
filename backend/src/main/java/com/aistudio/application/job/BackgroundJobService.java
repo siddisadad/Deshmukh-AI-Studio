@@ -35,6 +35,16 @@ public class BackgroundJobService {
             String payloadJson
     ) {
         authorizationService.requireProjectEdit(projectId, userId);
+        return enqueueInternal(projectId, userId, jobType, payloadJson);
+    }
+
+    @Transactional
+    public JobResponse enqueueInternal(UUID projectId, JobType jobType, Object payload) {
+        return enqueueInternal(projectId, null, jobType, payload == null ? "{}" : toJson(payload));
+    }
+
+    @Transactional
+    public JobResponse enqueueInternal(UUID projectId, UUID userId, JobType jobType, String payloadJson) {
         BackgroundJobEntity job = new BackgroundJobEntity();
         job.setProjectId(projectId);
         job.setCreatedBy(userId);
@@ -44,6 +54,17 @@ public class BackgroundJobService {
         job.setResult("{}");
         jobRepository.save(job);
         return toResponse(job);
+    }
+
+    private String toJson(Object payload) {
+        if (payload instanceof String str) {
+            return str;
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(payload);
+        } catch (Exception ex) {
+            return "{}";
+        }
     }
 
     @Transactional(readOnly = true)

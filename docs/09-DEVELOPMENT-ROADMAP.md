@@ -132,7 +132,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 | Item | Status on `main` | Next depth |
 |---|---|---|
-| Code metadata RAG | Manifest API + `CODE_FILE` indexing ([63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md)) | Live Git sync, webhook reindex |
+| Code metadata RAG | Manifest API + `CODE_FILE` indexing ([63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md)), Git sync + webhook reindex ([64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE.md)) | Live Git host connectors beyond GitHub |
 
 ---
 

@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.59-beta] — 2026-08-09
+
+### Added
+
+- Git code metadata sync — V35 `project_git_links`, mock/GitHub tree fetch
+- `GET/PUT /api/v1/projects/{id}/git-link` — repository link + webhook secret
+- `POST /api/v1/projects/{id}/git-link/sync` and `/sync/async`
+- `POST /api/v1/git/webhook/github/{projectId}` — push webhook → `CODE_METADATA_SYNC` job
+- Background job type `CODE_METADATA_SYNC`
+- Project settings Git repository sync UI
+- `docs/64-GIT-CODE-METADATA-SYNC-GUIDE.md`
+
 ## [0.2.58-beta] — 2026-08-09
 
 ### Added

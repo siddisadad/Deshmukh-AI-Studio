@@ -51,6 +51,21 @@ public class ProjectCodeMetadataService {
     ) {
         authorizationService.requireProjectEdit(projectId, userId);
         List<ReplaceCodeMetadataRequest.CodeFileInput> files = request.files() == null ? List.of() : request.files();
+        replaceFilesInternal(projectId, GitFileEntry.fromManifestInputs(
+                files.stream()
+                        .map(f -> new GitFileEntry.ManifestFileInput(
+                                f.path(),
+                                f.language(),
+                                f.snippet(),
+                                f.sizeBytes()
+                        ))
+                        .toList()
+        ));
+        return toSummary(projectId);
+    }
+
+    @Transactional
+    public int replaceFilesInternal(UUID projectId, List<GitFileEntry> files) {
         if (files.size() > maxFilesPerProject) {
             throw new DomainException(
                     "VALIDATION_ERROR",
@@ -58,8 +73,7 @@ public class ProjectCodeMetadataService {
             );
         }
         codeFileRepository.deleteByProjectId(projectId);
-        List<ProjectCodeFileEntity> saved = new ArrayList<>(files.size());
-        for (ReplaceCodeMetadataRequest.CodeFileInput file : files) {
+        for (GitFileEntry file : files) {
             String path = normalizePath(file.path());
             if (path.isBlank()) {
                 continue;
@@ -70,10 +84,14 @@ public class ProjectCodeMetadataService {
             entity.setLanguage(file.language() == null ? "" : file.language().trim());
             entity.setSnippet(file.snippet() == null ? "" : file.snippet());
             entity.setSizeBytes(Math.max(0, file.sizeBytes()));
-            saved.add(codeFileRepository.save(entity));
+            codeFileRepository.save(entity);
         }
         knowledgeIndexService.reindexCodeFiles(projectId);
-        return toSummary(projectId);
+        return codeFileRepository.countByProjectId(projectId);
+    }
+
+    public int maxFilesPerProject() {
+        return maxFilesPerProject;
     }
 
     private CodeMetadataSummaryResponse toSummary(UUID projectId) {

@@ -68,8 +68,9 @@ Read in order; each document builds on the previous.
 | 61 | [61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md](61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md) | K8s HPA and cloud-native worker autoscaling |
 | 62 | [62-RAG-LARGE-CORPUS-EMBEDDING-GUIDE.md](62-RAG-LARGE-CORPUS-EMBEDDING-GUIDE.md) | RAG large corpus and embedding operations |
 | 63 | [63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md) | Code metadata manifest RAG ingestion |
+| 64 | [64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE.md) | Git sync and webhook code metadata reindex |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.58-beta** adds code metadata RAG — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.59-beta** adds Git code metadata sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

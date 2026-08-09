@@ -75,8 +75,9 @@ Read in order; each document builds on the previous.
 | 68 | [68-GIT-SCHEDULED-SYNC-GUIDE.md](68-GIT-SCHEDULED-SYNC-GUIDE.md) | Scheduled git sync cron |
 | 69 | [69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md) | Per-project git sync interval |
 | 70 | [70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md) | Per-project scheduled sync toggle |
+| 71 | [71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md](71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md) | Git path ignore patterns |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.65-beta** adds per-project scheduled sync toggle — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.66-beta** adds git path ignore patterns — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

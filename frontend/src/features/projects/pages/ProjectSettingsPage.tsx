@@ -61,6 +61,7 @@ export function ProjectSettingsPage() {
   const [gitEnabled, setGitEnabled] = useState(true);
   const [gitScheduledSyncEnabled, setGitScheduledSyncEnabled] = useState(true);
   const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState('');
+  const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
 
   useEffect(() => {
     if (!projectId) return;
@@ -97,6 +98,9 @@ export function ProjectSettingsPage() {
           link.scheduledSyncIntervalMinutes != null && link.scheduledSyncIntervalMinutes > 0
             ? String(link.scheduledSyncIntervalMinutes)
             : '',
+        );
+        setGitPathIgnorePatterns(
+          link.pathIgnorePatterns?.length ? link.pathIgnorePatterns.join('\n') : '',
         );
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
@@ -154,6 +158,10 @@ export function ProjectSettingsPage() {
     setMessage(null);
     try {
       const intervalTrimmed = gitSyncIntervalMinutes.trim();
+      const patternLines = gitPathIgnorePatterns
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
       const link = await gitLinkApi.upsert(projectId, {
         provider: gitProvider,
         repository: gitRepository.trim(),
@@ -163,6 +171,9 @@ export function ProjectSettingsPage() {
         ...(intervalTrimmed
           ? { scheduledSyncIntervalMinutes: Number(intervalTrimmed) }
           : { clearScheduledSyncInterval: true }),
+        ...(patternLines.length > 0
+          ? { pathIgnorePatterns: patternLines }
+          : { clearPathIgnorePatterns: true }),
       });
       setGitLink(link);
       setMessage(`Git link saved — configure ${gitProvider} webhook with the secret below`);
@@ -518,6 +529,16 @@ export function ProjectSettingsPage() {
             placeholder="Platform default (e.g. 60)"
             helperText="Optional per-project override (15–10080). Leave blank for platform GIT_SYNC_SCHEDULED_INTERVAL_MS."
             slotProps={{ htmlInput: { 'data-testid': 'git-sync-interval' } }}
+          />
+          <TextField
+            label="Path ignore patterns"
+            value={gitPathIgnorePatterns}
+            onChange={(e) => setGitPathIgnorePatterns(e.target.value)}
+            multiline
+            minRows={3}
+            placeholder="README.md\n**/node_modules/**\n*.min.js"
+            helperText="One Ant-style glob per line. Matched paths are skipped during git sync."
+            slotProps={{ htmlInput: { 'data-testid': 'git-path-ignore' } }}
           />
           {gitLink?.webhookUrl && (
             <Typography variant="body2" color="text.secondary">

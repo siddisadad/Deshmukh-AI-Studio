@@ -1,6 +1,7 @@
 package com.aistudio.api.codemetadata.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ProjectGitLinkResponse(
@@ -17,6 +18,7 @@ public record ProjectGitLinkResponse(
         String lastSyncStatus,
         String lastSyncError,
         Integer scheduledSyncIntervalMinutes,
+        List<String> pathIgnorePatterns,
         Instant updatedAt
 ) {
 }

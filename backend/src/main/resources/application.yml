@@ -92,6 +92,10 @@ aistudio:
     adaptive-routing:
       enabled: ${AI_ADAPTIVE_ROUTING_ENABLED:false}
       sample-size: ${AI_ADAPTIVE_ROUTING_SAMPLE_SIZE:50}
+    cost-aware-routing:
+      enabled: ${AI_COST_AWARE_ROUTING_ENABLED:false}
+    provider-quotas: ${AI_PROVIDER_QUOTAS:}
+    provider-cost-tiers: ${AI_PROVIDER_COST_TIERS:}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}

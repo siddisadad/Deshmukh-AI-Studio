@@ -92,6 +92,9 @@ class OpenAiProviderStreamTest {
                 null,
                 null,
                 new AiProperties.CircuitBreaker(false, 3, 60),
+                null,
+                null,
+                null,
                 null
         );
     }

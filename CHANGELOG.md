@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.40-beta] — 2026-08-09
+
+### Added
+
+- Cost-aware AI routing — `AI_COST_AWARE_ROUTING_ENABLED` prefers lower cost-tier providers in routing chains
+- Per-provider daily quotas — `AI_PROVIDER_QUOTAS` skips exhausted providers (UTC day reset)
+- Configurable cost tiers — `AI_PROVIDER_COST_TIERS` (defaults: mock=1, openai=5, anthropic=8)
+- `GET /assistants/provider-health` — `costTier`, `dailyQuota`, `quotaUsedToday`, `quotaRemaining`, `quotaExhausted`
+- `AiProviderCostTierRegistry`, `AiProviderQuotaTracker`
+- `docs/45-COST-AWARE-AI-ROUTING-GUIDE.md`
+
 ## [0.2.39-beta] — 2026-08-09
 
 ### Added

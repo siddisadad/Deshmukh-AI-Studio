@@ -90,6 +90,11 @@ public class AssistantController {
                         h.circuitOpenUntil(),
                         h.averageLatencyMs(),
                         h.latencySampleCount(),
+                        h.costTier(),
+                        h.dailyQuota(),
+                        h.quotaUsedToday(),
+                        h.quotaRemaining(),
+                        h.quotaExhausted(),
                         h.probeStatus() == null ? null : (h.probeStatus() ? "up" : "down"),
                         h.probedAt()))
                 .toList());

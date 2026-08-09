@@ -2,7 +2,9 @@ package com.aistudio.infrastructure.config;
 
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
+import com.aistudio.infrastructure.ai.AiProviderCostTierRegistry;
 import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
+import com.aistudio.infrastructure.ai.AiProviderQuotaTracker;
 import com.aistudio.infrastructure.ai.AiProviderRegistry;
 import com.aistudio.infrastructure.ai.RoutingAiProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,13 +40,26 @@ public class AiProviderConfiguration {
     }
 
     @Bean
+    AiProviderCostTierRegistry aiProviderCostTierRegistry(AiProperties properties) {
+        return new AiProviderCostTierRegistry(properties.providerCostTiers());
+    }
+
+    @Bean
+    AiProviderQuotaTracker aiProviderQuotaTracker(AiProperties properties) {
+        return new AiProviderQuotaTracker(properties.providerQuotas());
+    }
+
+    @Bean
     AiProviderPort aiProviderPort(
             AiProperties properties,
             AiProviderRegistry registry,
             AiProviderCircuitBreaker circuitBreaker,
-            AiProviderLatencyTracker latencyTracker
+            AiProviderLatencyTracker latencyTracker,
+            AiProviderCostTierRegistry costTierRegistry,
+            AiProviderQuotaTracker quotaTracker
     ) {
         boolean adaptiveRouting = properties.adaptiveRouting() != null && properties.adaptiveRouting().enabled();
+        boolean costAwareRouting = properties.costAwareRouting() != null && properties.costAwareRouting().enabled();
         String provider = normalize(properties.provider());
         if (provider == null || provider.isBlank()) {
             provider = "mock";
@@ -56,13 +71,29 @@ public class AiProviderConfiguration {
                         "aistudio.ai.provider=routing requires AI_PROVIDER_CHAIN (e.g. openai,anthropic,mock)"
                 );
             }
-            return new RoutingAiProvider(registry, chain, circuitBreaker, latencyTracker, adaptiveRouting);
+            return new RoutingAiProvider(
+                    registry,
+                    chain,
+                    circuitBreaker,
+                    latencyTracker,
+                    adaptiveRouting,
+                    costTierRegistry,
+                    quotaTracker,
+                    costAwareRouting);
         }
         List<String> chain = new ArrayList<>();
         chain.add(provider);
         chain.addAll(parseList(properties.providerFallbacks()));
         if (chain.size() > 1) {
-            return new RoutingAiProvider(registry, chain, circuitBreaker, latencyTracker, adaptiveRouting);
+            return new RoutingAiProvider(
+                    registry,
+                    chain,
+                    circuitBreaker,
+                    latencyTracker,
+                    adaptiveRouting,
+                    costTierRegistry,
+                    quotaTracker,
+                    costAwareRouting);
         }
         return registry.require(provider);
     }

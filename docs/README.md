@@ -49,6 +49,7 @@ Read in order; each document builds on the previous.
 | 42 | [42-SLO-ERROR-BUDGET-GUIDE.md](42-SLO-ERROR-BUDGET-GUIDE.md) | SLO dashboards and error budget alerts |
 | 43 | [43-STAGING-SIGNOFF-MATRIX-GUIDE.md](43-STAGING-SIGNOFF-MATRIX-GUIDE.md) | Multi-environment sign-off matrix |
 | 44 | [44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md](44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md) | Export watermarking and DLP scanning |
+| 45 | [45-COST-AWARE-AI-ROUTING-GUIDE.md](45-COST-AWARE-AI-ROUTING-GUIDE.md) | Cost-aware routing and provider quotas |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.39-beta** adds export watermarking and DLP scanning — see [CHANGELOG.md](../CHANGELOG.md).
 

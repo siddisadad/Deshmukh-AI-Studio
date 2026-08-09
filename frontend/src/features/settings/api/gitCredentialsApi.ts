@@ -91,6 +91,28 @@ export interface OrgGitSyncRetryFailedResult {
   enqueuedProjectIds: string[];
 }
 
+export interface OrgGitSyncRunItem {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectKey: string;
+  gitLinkId: string;
+  source: string;
+  status: string;
+  fileCount: number;
+  errorMessage: string | null;
+  startedAt: string;
+  finishedAt: string;
+}
+
+export interface OrgGitSyncRunPage {
+  items: OrgGitSyncRunItem[];
+  offset: number;
+  limit: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -156,5 +178,19 @@ export const gitCredentialsApi = {
       response.headers['content-disposition'] as string | undefined,
       `git-sync-overview-${orgId}.${format}`,
     );
+  },
+  listSyncRuns: (
+    orgId: string,
+    limit = 20,
+    filters?: { offset?: number; source?: string; status?: string; projectId?: string }
+  ) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (filters?.offset != null) params.set('offset', String(filters.offset));
+    if (filters?.source && filters.source !== 'all') params.set('source', filters.source);
+    if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
+    if (filters?.projectId) params.set('projectId', filters.projectId);
+    return http
+      .get<OrgGitSyncRunPage>(`/organizations/${orgId}/git-sync-runs?${params.toString()}`)
+      .then((r) => r.data);
   },
 };

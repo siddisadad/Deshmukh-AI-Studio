@@ -206,6 +206,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 19. Phase 16 — Org git sync run history (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Org-wide runs | Cross-project sync run list with filters + pagination ([84-ORG-GIT-SYNC-RUN-HISTORY-GUIDE.md](84-ORG-GIT-SYNC-RUN-HISTORY-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

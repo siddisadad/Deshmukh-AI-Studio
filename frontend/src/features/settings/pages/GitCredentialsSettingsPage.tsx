@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { useAuthStore } from '../../auth/store/authStore';
@@ -18,6 +18,7 @@ import {
   gitCredentialsApi,
   type GitConnectionTestResult,
   type OrgGitCredential,
+  type OrgGitSyncRunItem,
 } from '../api/gitCredentialsApi';
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
@@ -36,6 +37,13 @@ export function GitCredentialsSettingsPage() {
   const [overviewProviderFilter, setOverviewProviderFilter] = useState<'all' | 'github' | 'gitlab' | 'bitbucket'>('all');
   const [overviewStatusFilter, setOverviewStatusFilter] = useState<'all' | 'success' | 'failed' | 'never'>('all');
   const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
+  const [runSourceFilter, setRunSourceFilter] = useState<'all' | 'manual' | 'scheduled' | 'webhook'>('all');
+  const [runStatusFilter, setRunStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [runOffset, setRunOffset] = useState(0);
+  const [runItems, setRunItems] = useState<OrgGitSyncRunItem[]>([]);
+  const [runHasMore, setRunHasMore] = useState(false);
+  const [runTotalCount, setRunTotalCount] = useState(0);
+  const [runLoadingMore, setRunLoadingMore] = useState(false);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -71,6 +79,66 @@ export function GitCredentialsSettingsPage() {
       }),
     enabled: !!org?.id,
   });
+
+  const syncRunsQuery = useQuery({
+    queryKey: ['org-git-sync-runs', org?.id, runSourceFilter, runStatusFilter],
+    queryFn: () =>
+      gitCredentialsApi.listSyncRuns(org!.id, 20, {
+        offset: 0,
+        source: runSourceFilter,
+        status: runStatusFilter,
+      }),
+    enabled: !!org?.id,
+  });
+
+  useEffect(() => {
+    if (syncRunsQuery.data) {
+      setRunItems(syncRunsQuery.data.items);
+      setRunHasMore(syncRunsQuery.data.hasMore);
+      setRunTotalCount(syncRunsQuery.data.totalCount);
+      setRunOffset(0);
+    }
+  }, [syncRunsQuery.data]);
+
+  async function loadSyncRuns(
+    source = runSourceFilter,
+    status = runStatusFilter
+  ) {
+    if (!org?.id) return;
+    setRunOffset(0);
+    const page = await queryClient.fetchQuery({
+      queryKey: ['org-git-sync-runs', org.id, source, status],
+      queryFn: () =>
+        gitCredentialsApi.listSyncRuns(org.id, 20, {
+          offset: 0,
+          source,
+          status,
+        }),
+    });
+    setRunItems(page.items);
+    setRunHasMore(page.hasMore);
+    setRunTotalCount(page.totalCount);
+    setRunOffset(page.offset);
+  }
+
+  async function loadMoreSyncRuns() {
+    if (!org?.id || !runHasMore || runLoadingMore) return;
+    const nextOffset = runOffset + 20;
+    setRunLoadingMore(true);
+    try {
+      const page = await gitCredentialsApi.listSyncRuns(org.id, 20, {
+        offset: nextOffset,
+        source: runSourceFilter,
+        status: runStatusFilter,
+      });
+      setRunItems((prev) => [...prev, ...page.items]);
+      setRunHasMore(page.hasMore);
+      setRunTotalCount(page.totalCount);
+      setRunOffset(nextOffset);
+    } finally {
+      setRunLoadingMore(false);
+    }
+  }
 
   async function loadSyncOverview(
     linked = overviewLinkedFilter,
@@ -342,6 +410,86 @@ export function GitCredentialsSettingsPage() {
           ))}
         </Stack>
       )}
+
+      <Stack spacing={1} data-testid="org-git-sync-runs">
+        <Typography variant="subtitle2">Recent sync runs (org-wide)</Typography>
+        {runTotalCount > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            Showing {runItems.length} of {runTotalCount}
+          </Typography>
+        )}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
+          <TextField
+            select
+            label="Source"
+            size="small"
+            value={runSourceFilter}
+            onChange={(e) => {
+              const value = e.target.value as 'all' | 'manual' | 'scheduled' | 'webhook';
+              setRunSourceFilter(value);
+              void loadSyncRuns(value, runStatusFilter);
+            }}
+            slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-source-filter' } }}
+          >
+            <MenuItem value="all">All sources</MenuItem>
+            <MenuItem value="manual">Manual</MenuItem>
+            <MenuItem value="scheduled">Scheduled</MenuItem>
+            <MenuItem value="webhook">Webhook</MenuItem>
+          </TextField>
+          <TextField
+            select
+            label="Status"
+            size="small"
+            value={runStatusFilter}
+            onChange={(e) => {
+              const value = e.target.value as 'all' | 'success' | 'failed';
+              setRunStatusFilter(value);
+              void loadSyncRuns(runSourceFilter, value);
+            }}
+            slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-status-filter' } }}
+          >
+            <MenuItem value="all">All statuses</MenuItem>
+            <MenuItem value="success">Success</MenuItem>
+            <MenuItem value="failed">Failed</MenuItem>
+          </TextField>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void loadSyncRuns()}
+            data-testid="org-git-sync-runs-refresh"
+          >
+            Refresh
+          </Button>
+        </Stack>
+        {syncRunsQuery.isLoading && runItems.length === 0 && (
+          <Typography variant="body2" color="text.secondary">Loading sync runs…</Typography>
+        )}
+        {runItems.length === 0 && !syncRunsQuery.isLoading && (
+          <Typography variant="body2" color="text.secondary">No sync runs match the current filters.</Typography>
+        )}
+        {runItems.map((run) => (
+          <Typography
+            key={run.id}
+            variant="body2"
+            color={run.status === 'failed' ? 'error' : 'text.secondary'}
+          >
+            {run.projectKey} — {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
+            {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
+            {run.errorMessage ? ` · ${run.errorMessage}` : ''}
+          </Typography>
+        ))}
+        {runHasMore && (
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={runLoadingMore}
+            onClick={() => void loadMoreSyncRuns()}
+            data-testid="org-git-sync-runs-load-more"
+          >
+            {runLoadingMore ? 'Loading…' : 'Load more'}
+          </Button>
+        )}
+      </Stack>
 
       <Stack spacing={1}>
         <Typography variant="subtitle2">Configured providers</Typography>

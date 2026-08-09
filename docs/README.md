@@ -89,7 +89,7 @@ Read in order; each document builds on the previous.
 | 82 | [82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md](82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md) | Org bulk retry failed git syncs |
 | 83 | [83-ORG-GIT-SYNC-OVERVIEW-EXPORT-GUIDE.md](83-ORG-GIT-SYNC-OVERVIEW-EXPORT-GUIDE.md) | Org git sync overview export |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.78-beta** adds org git sync overview export — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.79-beta** adds org-wide git sync run history — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

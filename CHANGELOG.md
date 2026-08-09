@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.39-beta] — 2026-08-09
+
+### Added
+
+- Thread export watermarking — `CHAT_EXPORT_WATERMARK_ENABLED` embeds `exportId`, `exportedByUserId`, and notice in JSON/Markdown
+- Export DLP scanning — `CHAT_EXPORT_DLP_ENABLED` detects SSN, PEM private keys, internal hostnames, AWS secret patterns
+- Optional DLP webhook (`CHAT_EXPORT_DLP_WEBHOOK_URL`) and block-on-match (`CHAT_EXPORT_DLP_BLOCK_ON_MATCH`)
+- `ThreadExportWatermark`, `ThreadExportDlpScanner`, `ThreadExportDlpNotifier`
+- `docs/44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md`
+
 ## [0.2.38-beta] — 2026-08-09
 
 ### Added

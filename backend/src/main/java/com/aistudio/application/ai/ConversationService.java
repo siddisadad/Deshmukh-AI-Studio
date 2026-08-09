@@ -71,6 +71,12 @@ public class ConversationService {
     private final String appBaseUrl;
     private final ThreadExportRedactionPolicy defaultExportRedactionPolicy;
     private final ThreadExportRedactionPolicy complianceExportRedactionPolicy;
+    private final boolean exportWatermarkEnabled;
+    private final String exportWatermarkNotice;
+    private final boolean exportDlpEnabled;
+    private final boolean exportDlpBlockOnMatch;
+    private final String exportDlpWebhookUrl;
+    private final ThreadExportDlpNotifier exportDlpNotifier;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -88,7 +94,13 @@ public class ConversationService {
             @Value("${aistudio.ai.conversation.share-ttl-seconds:604800}") long shareTtlSeconds,
             @Value("${aistudio.billing.app-base-url:http://localhost:5173}") String appBaseUrl,
             @Value("${aistudio.ai.conversation.export-redaction-policy:none}") String exportRedactionPolicy,
-            @Value("${aistudio.ai.conversation.compliance-export-redaction-policy:none}") String complianceExportRedactionPolicy
+            @Value("${aistudio.ai.conversation.compliance-export-redaction-policy:none}") String complianceExportRedactionPolicy,
+            @Value("${aistudio.ai.conversation.export-watermark-enabled:false}") boolean exportWatermarkEnabled,
+            @Value("${aistudio.ai.conversation.export-watermark-notice:}") String exportWatermarkNotice,
+            @Value("${aistudio.ai.conversation.export-dlp-enabled:false}") boolean exportDlpEnabled,
+            @Value("${aistudio.ai.conversation.export-dlp-block-on-match:true}") boolean exportDlpBlockOnMatch,
+            @Value("${aistudio.ai.conversation.export-dlp-webhook-url:}") String exportDlpWebhookUrl,
+            ThreadExportDlpNotifier exportDlpNotifier
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -108,6 +120,12 @@ public class ConversationService {
         this.appBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
         this.defaultExportRedactionPolicy = ThreadExportRedactionPolicy.fromWireValue(exportRedactionPolicy);
         this.complianceExportRedactionPolicy = ThreadExportRedactionPolicy.fromWireValue(complianceExportRedactionPolicy);
+        this.exportWatermarkEnabled = exportWatermarkEnabled;
+        this.exportWatermarkNotice = exportWatermarkNotice;
+        this.exportDlpEnabled = exportDlpEnabled;
+        this.exportDlpBlockOnMatch = exportDlpBlockOnMatch;
+        this.exportDlpWebhookUrl = exportDlpWebhookUrl;
+        this.exportDlpNotifier = exportDlpNotifier;
     }
 
     @Transactional(readOnly = true)
@@ -286,10 +304,14 @@ public class ConversationService {
         List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
         String normalizedFormat = normalizeExportFormat(format);
         ThreadExportRedactionPolicy redactionPolicy = resolveExportRedactionPolicy(redaction);
+        ThreadExportWatermark.Metadata exportMetadata = buildExportMetadata(userId);
+        ExportedConversation exported;
         if ("json".equals(normalizedFormat)) {
-            return exportAsJson(conversation, messages, redactionPolicy);
+            exported = exportAsJson(conversation, messages, redactionPolicy, exportMetadata);
+        } else {
+            exported = exportAsMarkdown(conversation, messages, redactionPolicy, exportMetadata);
         }
-        return exportAsMarkdown(conversation, messages, redactionPolicy);
+        return finalizeUserExport(exported, exportMetadata, conversation.getProjectId(), conversation.getId());
     }
 
     @Transactional(readOnly = true)
@@ -315,10 +337,14 @@ public class ConversationService {
                 .toList();
         String normalizedFormat = normalizeExportFormat(format);
         ThreadExportRedactionPolicy redactionPolicy = resolveExportRedactionPolicy(redaction);
+        ThreadExportWatermark.Metadata exportMetadata = buildExportMetadata(userId);
+        ExportedConversation exported;
         if ("json".equals(normalizedFormat)) {
-            return exportProjectAsJson(project, visible, redactionPolicy);
+            exported = exportProjectAsJson(project, visible, redactionPolicy, exportMetadata);
+        } else {
+            exported = exportProjectAsMarkdown(project, visible, redactionPolicy, exportMetadata);
         }
-        return exportProjectAsMarkdown(project, visible, redactionPolicy);
+        return finalizeUserExport(exported, exportMetadata, project.getId(), null);
     }
 
     @Transactional(readOnly = true)
@@ -669,14 +695,55 @@ public class ConversationService {
         return defaultExportRedactionPolicy;
     }
 
+    private ThreadExportWatermark.Metadata buildExportMetadata(UUID userId) {
+        return new ThreadExportWatermark.Metadata(
+                UUID.randomUUID(),
+                Instant.now(),
+                userId,
+                exportWatermarkEnabled ? exportWatermarkNotice : null);
+    }
+
+    private ExportedConversation finalizeUserExport(
+            ExportedConversation exported,
+            ThreadExportWatermark.Metadata exportMetadata,
+            UUID projectId,
+            UUID conversationId
+    ) {
+        if (!exportDlpEnabled) {
+            return exported;
+        }
+        String text = new String(exported.body(), StandardCharsets.UTF_8);
+        ThreadExportDlpScanResult scanResult = ThreadExportDlpScanner.scan(text);
+        if (!scanResult.hasMatches()) {
+            return exported;
+        }
+        exportDlpNotifier.notifyIfConfigured(
+                exportDlpWebhookUrl,
+                exportMetadata.exportId(),
+                exportMetadata.exportedByUserId(),
+                projectId,
+                conversationId,
+                scanResult);
+        if (exportDlpBlockOnMatch) {
+            String categories = scanResult.matches().stream()
+                    .map(ThreadExportDlpMatch::category)
+                    .distinct()
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("policy");
+            throw new DomainException("FORBIDDEN", "Export blocked by DLP policy: " + categories);
+        }
+        return exported;
+    }
+
     private ExportedConversation exportAsJson(
             ConversationEntity conversation,
             List<MessageEntity> messages,
-            ThreadExportRedactionPolicy redactionPolicy
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
     ) {
         try {
             byte[] body = exportObjectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsBytes(conversationExportMap(conversation, messages, redactionPolicy));
+                    .writeValueAsBytes(conversationExportMap(conversation, messages, redactionPolicy, exportMetadata));
             return new ExportedConversation(
                     body,
                     MediaType.APPLICATION_JSON_VALUE,
@@ -689,9 +756,10 @@ public class ConversationService {
     private ExportedConversation exportAsMarkdown(
             ConversationEntity conversation,
             List<MessageEntity> messages,
-            ThreadExportRedactionPolicy redactionPolicy
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
     ) {
-        byte[] body = buildConversationMarkdown(conversation, messages, redactionPolicy)
+        byte[] body = buildConversationMarkdown(conversation, messages, redactionPolicy, exportMetadata)
                 .getBytes(StandardCharsets.UTF_8);
         return new ExportedConversation(body, "text/markdown; charset=UTF-8", safeExportFilename(conversation, "md"));
     }
@@ -699,18 +767,22 @@ public class ConversationService {
     private ExportedConversation exportProjectAsJson(
             ProjectEntity project,
             List<ConversationEntity> conversations,
-            ThreadExportRedactionPolicy redactionPolicy
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
     ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("projectId", project.getId());
         payload.put("projectKey", project.getProjectKey());
         payload.put("projectName", project.getName());
-        payload.put("exportedAt", Instant.now());
+        payload.put("exportedAt", exportMetadata.exportedAt());
         payload.put("conversationCount", conversations.size());
+        if (exportWatermarkEnabled) {
+            ThreadExportWatermark.applyToJsonMap(payload, exportMetadata);
+        }
         List<Map<String, Object>> conversationPayloads = new ArrayList<>();
         for (ConversationEntity conversation : conversations) {
             List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-            conversationPayloads.add(conversationExportMap(conversation, messages, redactionPolicy));
+            conversationPayloads.add(conversationExportMap(conversation, messages, redactionPolicy, exportMetadata));
         }
         payload.put("conversations", conversationPayloads);
         try {
@@ -727,13 +799,21 @@ public class ConversationService {
     private ExportedConversation exportProjectAsMarkdown(
             ProjectEntity project,
             List<ConversationEntity> conversations,
-            ThreadExportRedactionPolicy redactionPolicy
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
     ) {
         StringBuilder markdown = new StringBuilder();
         markdown.append("# Project archive: ").append(project.getName()).append("\n\n");
         markdown.append("- **Project key:** ").append(project.getProjectKey()).append("\n");
-        markdown.append("- **Exported:** ").append(Instant.now()).append("\n");
+        markdown.append("- **Exported:** ").append(exportMetadata.exportedAt()).append("\n");
         markdown.append("- **Threads:** ").append(conversations.size()).append("\n");
+        if (exportWatermarkEnabled) {
+            markdown.append("- **Export ID:** ").append(exportMetadata.exportId()).append("\n");
+            markdown.append("- **Exported by:** ").append(exportMetadata.exportedByUserId()).append("\n");
+            if (exportMetadata.notice() != null && !exportMetadata.notice().isBlank()) {
+                markdown.append("- **Notice:** ").append(exportMetadata.notice()).append("\n");
+            }
+        }
         if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
             markdown.append("- **Redaction:** ").append(redactionPolicy.wireValue()).append("\n");
         }
@@ -741,7 +821,10 @@ public class ConversationService {
         markdown.append("---\n\n");
         for (ConversationEntity conversation : conversations) {
             List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-            markdown.append(buildConversationMarkdown(conversation, messages, redactionPolicy)).append("\n\n---\n\n");
+            markdown.append(buildConversationMarkdown(conversation, messages, redactionPolicy, exportMetadata)).append("\n\n---\n\n");
+        }
+        if (exportWatermarkEnabled) {
+            markdown.append(ThreadExportWatermark.markdownFooter(exportMetadata));
         }
         byte[] body = markdown.toString().getBytes(StandardCharsets.UTF_8);
         return new ExportedConversation(
@@ -755,13 +838,26 @@ public class ConversationService {
             List<MessageEntity> messages,
             ThreadExportRedactionPolicy redactionPolicy
     ) {
+        return conversationExportMap(conversation, messages, redactionPolicy, null);
+    }
+
+    private Map<String, Object> conversationExportMap(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
+    ) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", conversation.getId());
         map.put("projectId", conversation.getProjectId());
         map.put("assistantRole", conversation.getAssistantRole().name());
         map.put("title", redactMessageContent(conversation.getTitle(), redactionPolicy));
         map.put("visibility", conversation.getVisibility().name());
-        map.put("exportedAt", Instant.now());
+        Instant exportedAt = exportMetadata != null ? exportMetadata.exportedAt() : Instant.now();
+        map.put("exportedAt", exportedAt);
+        if (exportWatermarkEnabled && exportMetadata != null) {
+            ThreadExportWatermark.applyToJsonMap(map, exportMetadata);
+        }
         if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
             map.put("redactionPolicy", redactionPolicy.wireValue());
         }
@@ -838,12 +934,29 @@ public class ConversationService {
             List<MessageEntity> messages,
             ThreadExportRedactionPolicy redactionPolicy
     ) {
+        return buildConversationMarkdown(conversation, messages, redactionPolicy, null);
+    }
+
+    private String buildConversationMarkdown(
+            ConversationEntity conversation,
+            List<MessageEntity> messages,
+            ThreadExportRedactionPolicy redactionPolicy,
+            ThreadExportWatermark.Metadata exportMetadata
+    ) {
         StringBuilder markdown = new StringBuilder();
         markdown.append("# ").append(conversation.getTitle() == null ? "Conversation" : conversation.getTitle())
                 .append("\n\n");
         markdown.append("- **Assistant:** ").append(conversation.getAssistantRole().name()).append("\n");
         markdown.append("- **Visibility:** ").append(conversation.getVisibility().name()).append("\n");
-        markdown.append("- **Exported:** ").append(Instant.now()).append("\n");
+        Instant exportedAt = exportMetadata != null ? exportMetadata.exportedAt() : Instant.now();
+        markdown.append("- **Exported:** ").append(exportedAt).append("\n");
+        if (exportWatermarkEnabled && exportMetadata != null) {
+            markdown.append("- **Export ID:** ").append(exportMetadata.exportId()).append("\n");
+            markdown.append("- **Exported by:** ").append(exportMetadata.exportedByUserId()).append("\n");
+            if (exportMetadata.notice() != null && !exportMetadata.notice().isBlank()) {
+                markdown.append("- **Notice:** ").append(exportMetadata.notice()).append("\n");
+            }
+        }
         if (redactionPolicy != ThreadExportRedactionPolicy.NONE) {
             markdown.append("- **Redaction:** ").append(redactionPolicy.wireValue()).append("\n");
         }
@@ -853,6 +966,9 @@ public class ConversationService {
             String label = message.getSender() == MessageSender.USER ? "User" : "Assistant";
             markdown.append("### ").append(label).append(" — ").append(message.getCreatedAt()).append("\n\n");
             markdown.append(redactMessageContent(message.getContent(), redactionPolicy)).append("\n\n");
+        }
+        if (exportWatermarkEnabled && exportMetadata != null) {
+            markdown.append(ThreadExportWatermark.markdownFooter(exportMetadata));
         }
         return markdown.toString();
     }

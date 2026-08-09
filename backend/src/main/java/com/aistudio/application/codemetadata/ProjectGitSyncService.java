@@ -6,10 +6,12 @@ import com.aistudio.application.codemetadata.GitFileEntry;
 import com.aistudio.application.job.BackgroundJobService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
+import com.aistudio.domain.job.JobStatus;
 import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.config.GitProperties;
 import com.aistudio.infrastructure.codemetadata.GitWebhookPayloadParser;
 import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
+import com.aistudio.infrastructure.persistence.repository.BackgroundJobRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectGitLinkRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -35,6 +37,7 @@ public class ProjectGitSyncService {
     private static final Set<String> ALLOWED_PROVIDERS = Set.of("github", "gitlab", "bitbucket", "mock");
 
     private final ProjectGitLinkRepository gitLinkRepository;
+    private final BackgroundJobRepository backgroundJobRepository;
     private final ProjectAuthorizationService authorizationService;
     private final ProjectCodeMetadataService codeMetadataService;
     private final GitMetadataRegistry gitMetadataRegistry;
@@ -44,9 +47,11 @@ public class ProjectGitSyncService {
     private final String publicApiBaseUrl;
     private final boolean fetchFileContent;
     private final boolean webhookDeltaSync;
+    private final boolean scheduledSyncEnabled;
 
     public ProjectGitSyncService(
             ProjectGitLinkRepository gitLinkRepository,
+            BackgroundJobRepository backgroundJobRepository,
             ProjectAuthorizationService authorizationService,
             ProjectCodeMetadataService codeMetadataService,
             GitMetadataRegistry gitMetadataRegistry,
@@ -56,6 +61,7 @@ public class ProjectGitSyncService {
             GitProperties gitProperties
     ) {
         this.gitLinkRepository = gitLinkRepository;
+        this.backgroundJobRepository = backgroundJobRepository;
         this.authorizationService = authorizationService;
         this.codeMetadataService = codeMetadataService;
         this.gitMetadataRegistry = gitMetadataRegistry;
@@ -67,6 +73,7 @@ public class ProjectGitSyncService {
                 : gitProperties.publicApiBaseUrl().trim().replaceAll("/+$", "");
         this.fetchFileContent = gitProperties.fetchFileContentEnabled();
         this.webhookDeltaSync = gitProperties.webhookDeltaSyncEnabled();
+        this.scheduledSyncEnabled = gitProperties.isScheduledSyncEnabled();
     }
 
     @Transactional(readOnly = true)
@@ -125,6 +132,30 @@ public class ProjectGitSyncService {
             return syncLinkDelta(link, delta);
         }
         return syncLink(link);
+    }
+
+    @Transactional
+    public int enqueueScheduledSyncsForEnabledLinks() {
+        if (!scheduledSyncEnabled) {
+            return 0;
+        }
+        int enqueued = 0;
+        for (ProjectGitLinkEntity link : gitLinkRepository.findByEnabledTrue()) {
+            if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
+                    link.getProjectId(),
+                    JobType.CODE_METADATA_SYNC,
+                    JobStatus.PENDING
+            ) > 0) {
+                continue;
+            }
+            backgroundJobService.enqueueInternal(
+                    link.getProjectId(),
+                    JobType.CODE_METADATA_SYNC,
+                    Map.of("source", "scheduled")
+            );
+            enqueued++;
+        }
+        return enqueued;
     }
 
     @Transactional

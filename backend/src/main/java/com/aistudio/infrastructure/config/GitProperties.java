@@ -15,7 +15,9 @@ public record GitProperties(
         Boolean fetchFileContent,
         Integer maxSnippetBytes,
         Integer maxContentFetchBytes,
-        Boolean webhookDeltaSync
+        Boolean webhookDeltaSync,
+        Boolean scheduledSyncEnabled,
+        Integer scheduledSyncIntervalMs
 ) {
 
     public boolean fetchFileContentEnabled() {
@@ -24,6 +26,14 @@ public record GitProperties(
 
     public boolean webhookDeltaSyncEnabled() {
         return webhookDeltaSync == null || webhookDeltaSync;
+    }
+
+    public boolean isScheduledSyncEnabled() {
+        return scheduledSyncEnabled == null || scheduledSyncEnabled;
+    }
+
+    public long effectiveScheduledSyncIntervalMs() {
+        return scheduledSyncIntervalMs == null || scheduledSyncIntervalMs <= 0 ? 3600000L : scheduledSyncIntervalMs;
     }
 
     public int effectiveMaxSnippetBytes() {

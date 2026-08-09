@@ -166,6 +166,53 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanRetryFailedGitSyncForSingleProject() throws Exception {
+        JsonNode user = register("org-retry-one" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID failedProjectId = createProject(token, orgId, "Failed Proj", "FD");
+        UUID okProjectId = createProject(token, orgId, "Ok Proj", "OK");
+
+        mockMvc.perform(put("/api/v1/projects/" + failedProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/failed-one","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + okProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/ok-one","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        ProjectGitLinkEntity failedLink = gitLinkRepository.findByProjectId(failedProjectId).orElseThrow();
+        failedLink.setLastSyncStatus("failed");
+        failedLink.setLastSyncError("mock failure");
+        gitLinkRepository.save(failedLink);
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-project/" + failedProjectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(failedProjectId.toString()))
+                .andExpect(jsonPath("$.enqueued").value(true))
+                .andExpect(jsonPath("$.skippedPending").value(false));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-project/" + failedProjectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enqueued").value(false))
+                .andExpect(jsonPath("$.skippedPending").value(true));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-project/" + okProjectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void orgMemberCanExportGitSyncOverviewAsCsvAndJson() throws Exception {
         JsonNode user = register("org-sync-export" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

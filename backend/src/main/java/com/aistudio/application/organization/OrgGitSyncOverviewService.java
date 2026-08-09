@@ -3,6 +3,7 @@ package com.aistudio.application.organization;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -153,6 +154,46 @@ public class OrgGitSyncOverviewService {
                 skippedPending,
                 enqueuedProjectIds
         );
+    }
+
+    @Transactional
+    public OrgGitSyncRetryProjectResponse retryFailedSyncForProject(
+            UUID organizationId,
+            UUID projectId,
+            UUID userId
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        if (!project.getOrganizationId().equals(organizationId)) {
+            throw new DomainException("VALIDATION_ERROR", "projectId is not in this organization");
+        }
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
+        if (!link.isEnabled()) {
+            throw new DomainException("VALIDATION_ERROR", "Git link is disabled");
+        }
+        if (!"failed".equals(link.getLastSyncStatus())) {
+            throw new DomainException("VALIDATION_ERROR", "Project last sync status is not failed");
+        }
+
+        if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
+                projectId,
+                JobType.CODE_METADATA_SYNC,
+                JobStatus.PENDING
+        ) > 0) {
+            return new OrgGitSyncRetryProjectResponse(projectId, false, true);
+        }
+
+        backgroundJobService.enqueueInternal(
+                projectId,
+                userId,
+                JobType.CODE_METADATA_SYNC,
+                "{\"source\":\"manual\"}"
+        );
+        return new OrgGitSyncRetryProjectResponse(projectId, true, false);
     }
 
     @Transactional(readOnly = true)

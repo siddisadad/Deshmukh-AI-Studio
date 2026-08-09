@@ -61,6 +61,7 @@ public class OrgGitSyncOverviewService {
             UUID organizationId,
             UUID userId,
             Boolean linked,
+            Boolean enabled,
             String provider,
             String lastSyncStatus
     ) {
@@ -97,7 +98,7 @@ public class OrgGitSyncOverviewService {
         }
 
         List<OrgGitSyncOverviewItemResponse> filteredItems = items.stream()
-                .filter(item -> matchesFilters(item, linked, normalizedProvider, normalizedLastSyncStatus))
+                .filter(item -> matchesFilters(item, linked, enabled, normalizedProvider, normalizedLastSyncStatus))
                 .toList();
 
         return new OrgGitSyncOverviewResponse(
@@ -202,11 +203,12 @@ public class OrgGitSyncOverviewService {
             UUID userId,
             String format,
             Boolean linked,
+            Boolean enabled,
             String provider,
             String lastSyncStatus
     ) {
         OrgGitSyncOverviewResponse overview = getOverview(
-                organizationId, userId, linked, provider, lastSyncStatus);
+                organizationId, userId, linked, enabled, provider, lastSyncStatus);
         String normalizedFormat = normalizeExportFormat(format);
         if ("json".equals(normalizedFormat)) {
             return exportAsJson(overview);
@@ -217,11 +219,20 @@ public class OrgGitSyncOverviewService {
     private boolean matchesFilters(
             OrgGitSyncOverviewItemResponse item,
             Boolean linked,
+            Boolean enabled,
             String provider,
             String lastSyncStatus
     ) {
         if (linked != null && item.linked() != linked) {
             return false;
+        }
+        if (enabled != null) {
+            if (!item.linked()) {
+                return false;
+            }
+            if (item.enabled() != enabled) {
+                return false;
+            }
         }
         if (provider != null) {
             if (!item.linked() || item.provider() == null) {

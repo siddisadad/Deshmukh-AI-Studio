@@ -2,14 +2,19 @@ package com.aistudio.infrastructure.ai;
 
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.domain.common.AiProviderException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Tries providers in order until one succeeds (generate + stream failover).
- * Optional adaptive routing reorders the chain by recent latency before each request.
+ * Optional adaptive routing reorders by recent latency; cost-aware routing prefers cheaper tiers.
+ * Provider quotas skip exhausted providers for the UTC day.
  */
 public class RoutingAiProvider implements AiProviderPort {
 
@@ -20,6 +25,9 @@ public class RoutingAiProvider implements AiProviderPort {
     private final AiProviderCircuitBreaker circuitBreaker;
     private final AiProviderLatencyTracker latencyTracker;
     private final boolean adaptiveRoutingEnabled;
+    private final AiProviderCostTierRegistry costTierRegistry;
+    private final AiProviderQuotaTracker quotaTracker;
+    private final boolean costAwareRoutingEnabled;
     private final ThreadLocal<String> activeProviderId = new ThreadLocal<>();
 
     public RoutingAiProvider(
@@ -27,7 +35,7 @@ public class RoutingAiProvider implements AiProviderPort {
             List<String> chain,
             AiProviderCircuitBreaker circuitBreaker
     ) {
-        this(registry, chain, circuitBreaker, null, false);
+        this(registry, chain, circuitBreaker, null, false, null, null, false);
     }
 
     public RoutingAiProvider(
@@ -37,11 +45,35 @@ public class RoutingAiProvider implements AiProviderPort {
             AiProviderLatencyTracker latencyTracker,
             boolean adaptiveRoutingEnabled
     ) {
+        this(
+                registry,
+                chain,
+                circuitBreaker,
+                latencyTracker,
+                adaptiveRoutingEnabled,
+                null,
+                null,
+                false);
+    }
+
+    public RoutingAiProvider(
+            AiProviderRegistry registry,
+            List<String> chain,
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker,
+            boolean adaptiveRoutingEnabled,
+            AiProviderCostTierRegistry costTierRegistry,
+            AiProviderQuotaTracker quotaTracker,
+            boolean costAwareRoutingEnabled
+    ) {
         this.registry = registry;
         this.chain = chain;
         this.circuitBreaker = circuitBreaker;
         this.latencyTracker = latencyTracker;
         this.adaptiveRoutingEnabled = adaptiveRoutingEnabled && latencyTracker != null;
+        this.costTierRegistry = costTierRegistry;
+        this.quotaTracker = quotaTracker;
+        this.costAwareRoutingEnabled = costAwareRoutingEnabled && costTierRegistry != null;
     }
 
     @Override
@@ -49,8 +81,7 @@ public class RoutingAiProvider implements AiProviderPort {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
         for (String providerId : orderedChain()) {
-            if (circuitBreaker.shouldSkip(providerId)) {
-                log.warn("Skipping AI provider {} — circuit open", providerId);
+            if (shouldSkip(providerId)) {
                 continue;
             }
             AiProviderPort provider = registry.get(providerId);
@@ -81,8 +112,7 @@ public class RoutingAiProvider implements AiProviderPort {
         activeProviderId.remove();
         AiProviderException lastFailure = null;
         for (String providerId : orderedChain()) {
-            if (circuitBreaker.shouldSkip(providerId)) {
-                log.warn("Skipping AI provider {} — circuit open", providerId);
+            if (shouldSkip(providerId)) {
                 continue;
             }
             AiProviderPort provider = registry.get(providerId);
@@ -117,15 +147,51 @@ public class RoutingAiProvider implements AiProviderPort {
         return chain.isEmpty() ? "routing" : chain.getFirst();
     }
 
+    private boolean shouldSkip(String providerId) {
+        if (circuitBreaker.shouldSkip(providerId)) {
+            log.warn("Skipping AI provider {} — circuit open", providerId);
+            return true;
+        }
+        if (quotaTracker != null && quotaTracker.isQuotaExhausted(providerId)) {
+            log.warn("Skipping AI provider {} — daily quota exhausted", providerId);
+            return true;
+        }
+        return false;
+    }
+
     private List<String> orderedChain() {
-        if (!adaptiveRoutingEnabled) {
+        if (!adaptiveRoutingEnabled && !costAwareRoutingEnabled) {
             return chain;
         }
-        List<String> ordered = latencyTracker.orderByLatency(chain);
+        Map<String, Integer> originalIndex = new HashMap<>();
+        for (int i = 0; i < chain.size(); i++) {
+            originalIndex.put(chain.get(i), i);
+        }
+        List<String> ordered = new ArrayList<>(chain);
+        Comparator<String> comparator = Comparator.comparingInt(id -> originalIndex.get(id));
+        if (adaptiveRoutingEnabled) {
+            comparator = Comparator
+                    .comparingLong((String id) -> latencyScore(id, originalIndex.get(id)))
+                    .thenComparing(comparator);
+        }
+        if (costAwareRoutingEnabled) {
+            comparator = Comparator
+                    .comparingInt(costTierRegistry::tier)
+                    .thenComparing(comparator);
+        }
+        ordered.sort(comparator);
         if (!ordered.equals(chain)) {
-            log.debug("Adaptive routing order: {} (chain: {})", ordered, chain);
+            log.debug("Routing order: {} (chain: {})", ordered, chain);
         }
         return ordered;
+    }
+
+    private long latencyScore(String providerId, int chainIndex) {
+        AiProviderLatencyTracker.Snapshot snap = latencyTracker.snapshot(providerId);
+        if (snap.sampleCount() == 0) {
+            return 1_000_000L + chainIndex;
+        }
+        return snap.averageLatencyMs();
     }
 
     private void recordSuccess(String providerId, long startNanos) {
@@ -133,6 +199,9 @@ public class RoutingAiProvider implements AiProviderPort {
         if (latencyTracker != null) {
             long latencyMs = (System.nanoTime() - startNanos) / 1_000_000L;
             latencyTracker.recordLatency(providerId, latencyMs);
+        }
+        if (quotaTracker != null) {
+            quotaTracker.recordUsage(providerId);
         }
     }
 }

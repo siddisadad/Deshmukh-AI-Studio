@@ -97,6 +97,55 @@ class RoutingAiProviderTest {
         assertThat(routing.providerId()).isEqualTo("fast");
     }
 
+    @Test
+    void costAwareRoutingPrefersCheaperProvider() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("expensive", new FastProvider("expensive"));
+        registry.register("cheap", new FastProvider("cheap"));
+
+        AiProviderCostTierRegistry costTiers = new AiProviderCostTierRegistry("expensive:9,cheap:1");
+
+        RoutingAiProvider routing = new RoutingAiProvider(
+                registry,
+                List.of("expensive", "cheap"),
+                disabledBreaker(),
+                null,
+                false,
+                costTiers,
+                null,
+                true
+        );
+
+        AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+        assertThat(result.text()).contains("cheap response");
+        assertThat(routing.providerId()).isEqualTo("cheap");
+    }
+
+    @Test
+    void skipsProviderWhenQuotaExhausted() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("limited", new FastProvider("limited"));
+        registry.register("mock", new MockAiProvider());
+
+        AiProviderQuotaTracker quotas = new AiProviderQuotaTracker("limited:1");
+        quotas.recordUsage("limited");
+
+        RoutingAiProvider routing = new RoutingAiProvider(
+                registry,
+                List.of("limited", "mock"),
+                disabledBreaker(),
+                null,
+                false,
+                null,
+                quotas,
+                false
+        );
+
+        AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+        assertThat(result.text()).contains("Mock AI response");
+        assertThat(routing.providerId()).isEqualTo("mock");
+    }
+
     private static AiProviderPort.AiGenerationRequest sampleRequest() {
         return new AiProviderPort.AiGenerationRequest(
                 "You are helpful.",

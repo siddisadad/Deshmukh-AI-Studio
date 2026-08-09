@@ -14,7 +14,10 @@ public record AiProperties(
         Embedding embedding,
         Rag rag,
         CircuitBreaker circuitBreaker,
-        AdaptiveRouting adaptiveRouting
+        AdaptiveRouting adaptiveRouting,
+        CostAwareRouting costAwareRouting,
+        String providerQuotas,
+        String providerCostTiers
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }
@@ -38,5 +41,8 @@ public record AiProperties(
     }
 
     public record AdaptiveRouting(boolean enabled, int sampleSize) {
+    }
+
+    public record CostAwareRouting(boolean enabled) {
     }
 }

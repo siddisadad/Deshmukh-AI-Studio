@@ -1,7 +1,9 @@
 package com.aistudio.application.ai;
 
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
+import com.aistudio.infrastructure.ai.AiProviderCostTierRegistry;
 import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
+import com.aistudio.infrastructure.ai.AiProviderQuotaTracker;
 import com.aistudio.infrastructure.ai.AiProviderRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -15,15 +17,21 @@ public class AiProviderHealthService {
     private final AiProviderRegistry registry;
     private final AiProviderCircuitBreaker circuitBreaker;
     private final AiProviderLatencyTracker latencyTracker;
+    private final AiProviderCostTierRegistry costTierRegistry;
+    private final AiProviderQuotaTracker quotaTracker;
 
     public AiProviderHealthService(
             AiProviderRegistry registry,
             AiProviderCircuitBreaker circuitBreaker,
-            AiProviderLatencyTracker latencyTracker
+            AiProviderLatencyTracker latencyTracker,
+            AiProviderCostTierRegistry costTierRegistry,
+            AiProviderQuotaTracker quotaTracker
     ) {
         this.registry = registry;
         this.circuitBreaker = circuitBreaker;
         this.latencyTracker = latencyTracker;
+        this.costTierRegistry = costTierRegistry;
+        this.quotaTracker = quotaTracker;
     }
 
     public List<ProviderHealth> check(boolean runProbe) {
@@ -32,6 +40,7 @@ public class AiProviderHealthService {
             AiProviderPort provider = registry.get(providerId);
             AiProviderCircuitBreaker.Snapshot circuit = circuitBreaker.snapshot(providerId);
             AiProviderLatencyTracker.Snapshot latency = latencyTracker.snapshot(providerId);
+            AiProviderQuotaTracker.Snapshot quota = quotaTracker.snapshot(providerId);
             Boolean probeUp = null;
             Instant probedAt = null;
             if (runProbe && provider != null) {
@@ -46,6 +55,11 @@ public class AiProviderHealthService {
                     circuit.openUntil(),
                     latency.averageLatencyMs() >= 0 ? latency.averageLatencyMs() : null,
                     latency.sampleCount(),
+                    costTierRegistry.tier(providerId),
+                    quota.dailyLimit() > 0 ? quota.dailyLimit() : null,
+                    quota.dailyLimit() > 0 ? quota.usedToday() : null,
+                    quota.remaining(),
+                    quota.exhausted(),
                     probeUp,
                     probedAt
             ));
@@ -61,6 +75,11 @@ public class AiProviderHealthService {
             Instant circuitOpenUntil,
             Long averageLatencyMs,
             int latencySampleCount,
+            int costTier,
+            Integer dailyQuota,
+            Integer quotaUsedToday,
+            Integer quotaRemaining,
+            boolean quotaExhausted,
             Boolean probeStatus,
             Instant probedAt
     ) {

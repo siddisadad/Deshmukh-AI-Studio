@@ -270,7 +270,7 @@ Never store provider keys in workflow logs; use GitHub Secrets.
 
 ```bash
 cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
-export IMAGE_TAG=main  # or sha-... / v0.2.40-beta / 0.2.39-beta
+export IMAGE_TAG=main  # or sha-... / v0.2.41-beta / 0.2.40-beta
 docker compose -f docker-compose.yml -f docker-compose.staging.yml pull
 docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 ./scripts/healthcheck.sh http://localhost:8088
@@ -285,7 +285,7 @@ GHCR packages may be private — `docker login ghcr.io` with a PAT that has `rea
 ```bash
 cp .env.example .env   # set JWT_SECRET, DB_PASSWORD, CORS_ORIGINS
 ./scripts/validate-staging-env.sh
-export IMAGE_TAG=main  # or sha-... / v0.2.40-beta / 0.2.39-beta
+export IMAGE_TAG=main  # or sha-... / v0.2.41-beta / 0.2.40-beta
 docker login ghcr.io   # if packages are private
 ./scripts/staging-ghcr-deploy.sh
 ```

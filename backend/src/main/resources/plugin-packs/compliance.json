@@ -1,0 +1,13 @@
+{
+  "id": "pack.thirdparty.compliance",
+  "slug": "compliance",
+  "name": "Compliance Helpers Pack",
+  "publisher": "AI Studio Partners",
+  "version": "1.0.0",
+  "description": "Redaction scan and export checklist tools for compliance reviewers.",
+  "verified": true,
+  "pluginIds": [
+    "thirdparty.tool.redaction_scan",
+    "thirdparty.tool.export_checklist"
+  ]
+}

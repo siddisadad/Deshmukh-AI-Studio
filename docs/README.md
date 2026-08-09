@@ -64,8 +64,9 @@ Read in order; each document builds on the previous.
 | 57 | [57-SSO-MULTI-IDP-METADATA-GUIDE.md](57-SSO-MULTI-IDP-METADATA-GUIDE.md) | SSO multi-IdP and metadata refresh automation |
 | 58 | [58-THREAD-DLP-SIEM-EXPORT-GUIDE.md](58-THREAD-DLP-SIEM-EXPORT-GUIDE.md) | Org DLP connectors and SIEM export |
 | 59 | [59-STAGING-SIGNOFF-RELEASE-GATE-GUIDE.md](59-STAGING-SIGNOFF-RELEASE-GATE-GUIDE.md) | Scheduled sign-off cron and release gate |
+| 60 | [60-PLUGIN-MARKETPLACE-GUIDE.md](60-PLUGIN-MARKETPLACE-GUIDE.md) | Plugin marketplace and third-party packs |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.54-beta** adds scheduled sign-off cron + release gate — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.55-beta** adds plugin marketplace + third-party packs — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

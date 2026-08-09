@@ -7,7 +7,9 @@ import com.aistudio.domain.ai.AssistantRole;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.persistence.entity.OrganizationPluginEntity;
 import com.aistudio.infrastructure.persistence.entity.PluginEntity;
+import com.aistudio.infrastructure.persistence.repository.OrganizationPluginPackRepository;
 import com.aistudio.infrastructure.persistence.repository.OrganizationPluginRepository;
+import com.aistudio.infrastructure.persistence.repository.PluginPackMemberRepository;
 import com.aistudio.infrastructure.persistence.repository.PluginRepository;
 import jakarta.annotation.PostConstruct;
 import java.util.Comparator;
@@ -25,6 +27,8 @@ public class PluginRegistry {
     private final List<StudioPlugin> plugins;
     private final PluginRepository pluginRepository;
     private final OrganizationPluginRepository organizationPluginRepository;
+    private final PluginPackMemberRepository packMemberRepository;
+    private final OrganizationPluginPackRepository organizationPackRepository;
     private Map<String, StudioPlugin> byId = Map.of();
     private Map<AssistantRole, AssistantPlugin> assistantsByRole = Map.of();
     private Map<String, ToolPlugin> toolsById = Map.of();
@@ -32,11 +36,15 @@ public class PluginRegistry {
     public PluginRegistry(
             List<StudioPlugin> plugins,
             PluginRepository pluginRepository,
-            OrganizationPluginRepository organizationPluginRepository
+            OrganizationPluginRepository organizationPluginRepository,
+            PluginPackMemberRepository packMemberRepository,
+            OrganizationPluginPackRepository organizationPackRepository
     ) {
         this.plugins = plugins;
         this.pluginRepository = pluginRepository;
         this.organizationPluginRepository = organizationPluginRepository;
+        this.packMemberRepository = packMemberRepository;
+        this.organizationPackRepository = organizationPackRepository;
     }
 
     @PostConstruct
@@ -103,8 +111,22 @@ public class PluginRegistry {
         return plugin;
     }
 
+    public boolean isMarketplacePlugin(String pluginId) {
+        return packMemberRepository.findByPluginId(pluginId).isPresent();
+    }
+
+    public boolean isVisibleForOrganization(UUID organizationId, String pluginId) {
+        return packMemberRepository.findByPluginId(pluginId)
+                .map(member -> organizationPackRepository.existsByOrganizationIdAndPackId(
+                        organizationId, member.getPackId()))
+                .orElse(true);
+    }
+
     public boolean isEnabled(UUID organizationId, String pluginId) {
         require(pluginId);
+        if (isMarketplacePlugin(pluginId) && !isVisibleForOrganization(organizationId, pluginId)) {
+            return false;
+        }
         return organizationPluginRepository.findByOrganizationIdAndPluginId(organizationId, pluginId)
                 .map(OrganizationPluginEntity::isEnabled)
                 .orElse(true);

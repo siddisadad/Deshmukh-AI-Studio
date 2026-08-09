@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.55-beta] — 2026-08-09
+
+### Added
+
+- Plugin marketplace — V32 migration, `plugin_packs`, `plugin_pack_members`, `organization_plugin_packs`
+- JSON pack manifests in `backend/src/main/resources/plugin-packs/`
+- Third-party tool packs — Developer Tools (markdown preview, word count) and Compliance Helpers (redaction scan, export checklist)
+- `GET /api/v1/plugins/marketplace` and org install/uninstall endpoints
+- Pack-gated plugin visibility — tools hidden until pack installed
+- Settings UI marketplace section on `/settings/plugins`
+- `docs/60-PLUGIN-MARKETPLACE-GUIDE.md`
+
 ## [0.2.54-beta] — 2026-08-09
 
 ### Added

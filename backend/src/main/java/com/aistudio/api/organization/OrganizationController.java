@@ -397,8 +397,11 @@ public class OrganizationController {
     @Operation(summary = "Organization git sync overview across projects")
     public OrgGitSyncOverviewResponse getGitSyncOverview(
             @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return orgGitSyncOverviewService.getOverview(orgId, user.getId());
+        return orgGitSyncOverviewService.getOverview(orgId, user.getId(), linked, provider, lastSyncStatus);
     }
 }

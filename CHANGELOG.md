@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.75-beta] — 2026-08-09
+
+### Added
+
+- Org git sync overview filters — `linked`, `provider`, `lastSyncStatus` on `GET .../git-sync-overview`
+- Git settings — linked/provider/last-sync filter dropdowns on overview section
+- `docs/80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md`
+
 ## [0.2.74-beta] — 2026-08-09
 
 ### Added

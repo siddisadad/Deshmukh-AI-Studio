@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.86-beta] — 2026-08-09
+
+### Added
+
+- Org bulk enable scheduled sync — `POST .../git-sync-overview/enable-scheduled-sync`
+- Overview `manualSyncLinks` count, manual-only chip, and bulk enable button
+- `docs/91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md`, Phase 23 roadmap
+
 ## [0.2.85-beta] — 2026-08-09
 
 ### Added

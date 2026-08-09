@@ -15,9 +15,6 @@ describe('AboutPage', () => {
     );
 
     expect(screen.getByRole('heading', { level: 1, name: /Built for the way software actually ships/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Email hello@deshmukh.tech/i })).toHaveAttribute(
-      'href',
-      'mailto:hello@deshmukh.tech',
-    );
+    expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/contact');
   });
 });

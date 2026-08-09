@@ -40,11 +40,7 @@ export function MarketingShell({
               <NavLink to="/about">About</NavLink>
             </li>
             <li>
-              {homeAnchors ? (
-                <a href="#contact">Contact</a>
-              ) : (
-                <NavLink to="/#contact">Contact</NavLink>
-              )}
+              <NavLink to="/contact">Contact</NavLink>
             </li>
             <li>
               {signedIn ? (

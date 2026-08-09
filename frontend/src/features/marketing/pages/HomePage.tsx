@@ -1,19 +1,18 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingShell } from '../components/MarketingShell';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { useAuthStore } from '../../auth/store/authStore';
 
 export function HomePage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const signedIn = Boolean(accessToken);
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = 'Deshmukh Technology — Official Site';
-    return () => {
-      document.title = previous;
-    };
-  }, []);
+  usePageMeta({
+    title: 'Deshmukh Technology — Official Site',
+    description:
+      'Deshmukh Technology builds AI Studio — an AI-powered engineering workspace for software teams.',
+    path: '/',
+  });
 
   return (
     <MarketingShell homeAnchors>
@@ -101,9 +100,9 @@ export function HomePage() {
           </p>
         </div>
         <div>
-          <a className="dt-btn dt-btn--primary" href="mailto:hello@deshmukh.tech">
-            Email hello@deshmukh.tech
-          </a>
+          <Link className="dt-btn dt-btn--primary" to="/contact">
+            Open contact form
+          </Link>
         </div>
       </section>
     </MarketingShell>

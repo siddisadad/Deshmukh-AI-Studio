@@ -7,6 +7,7 @@ import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { SsoCallbackPage } from '../../features/auth/pages/SsoCallbackPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { AboutPage } from '../../features/marketing/pages/AboutPage';
+import { ContactPage } from '../../features/marketing/pages/ContactPage';
 import { HomePage } from '../../features/marketing/pages/HomePage';
 import { ServicesPage } from '../../features/marketing/pages/ServicesPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
   { path: '/about', element: <AboutPage /> },
   { path: '/services', element: <ServicesPage /> },
+  { path: '/contact', element: <ContactPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {

@@ -1,15 +1,14 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingShell } from '../components/MarketingShell';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export function AboutPage() {
-  useEffect(() => {
-    const previous = document.title;
-    document.title = 'About — Deshmukh Technology';
-    return () => {
-      document.title = previous;
-    };
-  }, []);
+  usePageMeta({
+    title: 'About — Deshmukh Technology',
+    description:
+      'Deshmukh Technology builds tools that keep human judgment at the center of software delivery.',
+    path: '/about',
+  });
 
   return (
     <MarketingShell>
@@ -48,9 +47,9 @@ export function AboutPage() {
           </p>
         </div>
         <div className="dt-hero__actions">
-          <a className="dt-btn dt-btn--primary" href="mailto:hello@deshmukh.tech">
-            Email hello@deshmukh.tech
-          </a>
+          <Link className="dt-btn dt-btn--primary" to="/contact">
+            Contact us
+          </Link>
           <Link className="dt-btn dt-btn--ghost" to="/services">
             View services
           </Link>

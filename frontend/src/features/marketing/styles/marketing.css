@@ -130,6 +130,88 @@
   line-height: 1.55;
 }
 
+.dt-contact-layout {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 860px) {
+  .dt-contact-layout {
+    grid-template-columns: 1.4fr 1fr;
+    align-items: start;
+  }
+}
+
+.dt-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 36rem;
+}
+
+.dt-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.dt-field span {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.dt-field input,
+.dt-field select,
+.dt-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--dt-line);
+  background: #fff;
+  color: var(--dt-ink);
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0;
+}
+
+.dt-field input:focus-visible,
+.dt-field select:focus-visible,
+.dt-field textarea:focus-visible {
+  outline: 2px solid var(--dt-teal);
+  outline-offset: 1px;
+}
+
+.dt-form .dt-btn {
+  justify-self: start;
+  margin-top: 0.25rem;
+  cursor: pointer;
+}
+
+.dt-form__note {
+  margin: 0;
+  color: var(--dt-muted);
+  font-size: 0.95rem;
+}
+
+.dt-contact-aside {
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--dt-teal-mist);
+}
+
+.dt-contact-aside h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--dt-font-display);
+  font-size: 1.2rem;
+}
+
+.dt-contact-aside p {
+  margin: 0;
+  color: var(--dt-muted);
+  line-height: 1.55;
+}
+
+.dt-contact-aside a {
+  color: var(--dt-teal);
+  font-weight: 600;
+}
+
 .dt-nav__cta {
   display: inline-flex;
   align-items: center;
@@ -242,8 +324,10 @@
   padding: 0.7rem 1.25rem;
   border: 1px solid transparent;
   text-decoration: none;
+  font: inherit;
   font-weight: 700;
   font-size: 0.98rem;
+  cursor: pointer;
   transition: transform 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingShell } from '../components/MarketingShell';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const SERVICES = [
   {
@@ -18,13 +18,12 @@ const SERVICES = [
 ] as const;
 
 export function ServicesPage() {
-  useEffect(() => {
-    const previous = document.title;
-    document.title = 'Services — Deshmukh Technology';
-    return () => {
-      document.title = previous;
-    };
-  }, []);
+  usePageMeta({
+    title: 'Services — Deshmukh Technology',
+    description:
+      'AI Studio, workspace deployment, and engineering partnerships from Deshmukh Technology.',
+    path: '/services',
+  });
 
   return (
     <MarketingShell>
@@ -57,7 +56,7 @@ export function ServicesPage() {
             Try the product or talk with us
           </h2>
           <p className="dt-section__copy">
-            Create an AI Studio account to explore the workspace, or email us about deployment and
+            Create an AI Studio account to explore the workspace, or reach out about deployment and
             partnership work.
           </p>
         </div>
@@ -65,9 +64,9 @@ export function ServicesPage() {
           <Link className="dt-btn dt-btn--primary" to="/register">
             Start with AI Studio
           </Link>
-          <a className="dt-btn dt-btn--ghost" href="mailto:hello@deshmukh.tech">
-            Email hello@deshmukh.tech
-          </a>
+          <Link className="dt-btn dt-btn--ghost" to="/contact">
+            Contact us
+          </Link>
         </div>
       </section>
     </MarketingShell>

@@ -230,6 +230,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 22. Phase 19 — Org git sync navigation (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Project git deep links | Overview + run rows link to project git settings ([87-ORG-GIT-SYNC-PROJECT-LINKS-GUIDE.md](87-ORG-GIT-SYNC-PROJECT-LINKS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

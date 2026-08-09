@@ -22,6 +22,11 @@ import {
 } from '../api/gitCredentialsApi';
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
+const GIT_SYNC_SECTION_HASH = '#git-repository-sync';
+
+function projectGitSettingsPath(projectId: string) {
+  return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
+}
 
 export function GitCredentialsSettingsPage() {
   const org = useAuthStore((s) => s.organization);
@@ -430,11 +435,11 @@ export function GitCredentialsSettingsPage() {
               )}
               <Link
                 component={RouterLink}
-                to={`/projects/${item.projectId}/settings`}
+                to={projectGitSettingsPath(item.projectId)}
                 variant="body2"
                 data-testid={`git-sync-overview-link-${item.projectKey}`}
               >
-                Project settings
+                Git settings
               </Link>
             </Stack>
           ))}
@@ -537,15 +542,29 @@ export function GitCredentialsSettingsPage() {
           <Typography variant="body2" color="text.secondary">No sync runs match the current filters.</Typography>
         )}
         {runItems.map((run) => (
-          <Typography
+          <Stack
             key={run.id}
-            variant="body2"
-            color={run.status === 'failed' ? 'error' : 'text.secondary'}
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { sm: 'center' } }}
           >
-            {run.projectKey} — {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
-            {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
-            {run.errorMessage ? ` · ${run.errorMessage}` : ''}
-          </Typography>
+            <Typography
+              variant="body2"
+              color={run.status === 'failed' ? 'error' : 'text.secondary'}
+            >
+              {run.projectKey} — {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
+              {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
+              {run.errorMessage ? ` · ${run.errorMessage}` : ''}
+            </Typography>
+            <Link
+              component={RouterLink}
+              to={projectGitSettingsPath(run.projectId)}
+              variant="body2"
+              data-testid={`org-git-sync-run-link-${run.projectKey}`}
+            >
+              Git settings
+            </Link>
+          </Stack>
         ))}
         {runHasMore && (
           <Button

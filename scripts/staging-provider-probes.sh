@@ -80,6 +80,7 @@ if ! printf '%s' "${plans_json}" | grep -q 'FREE'; then
   exit 1
 fi
 echo "OK: billing plans"
+org_id="$(json_get "${register_json}" "['organization']['id']")"
 
 probe_sso_start() {
   local provider_id="$1"
@@ -232,6 +233,78 @@ for p in providers:
         raise SystemExit(f"FAIL: AI provider {pid} probeStatus={p.get('probeStatus')}")
 print(f"OK: AI provider probes ({len(providers)} configured)")
 PY
+fi
+
+git_provider="${GIT_METADATA_PROVIDER:-mock}"
+if [[ "$git_provider" == "mock" ]]; then
+  echo "==> Git metadata mock (skip live git API probes)"
+else
+  echo "==> Git host API tokens"
+  if [[ -n "${GITHUB_SYNC_TOKEN:-}" ]]; then
+    github_base="${GITHUB_API_BASE_URL:-https://api.github.com}"
+    github_base="${github_base%/}"
+    status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+      -H "Authorization: Bearer ${GITHUB_SYNC_TOKEN}" \
+      -H "Accept: application/vnd.github+json" \
+      "${github_base}/user")"
+    if [[ "$status" != "200" ]]; then
+      echo "FAIL: GitHub token probe returned HTTP ${status}" >&2
+      exit 1
+    fi
+    echo "OK: GitHub API token"
+  else
+    echo "==> GitHub token not set (skip)"
+  fi
+  if [[ -n "${GITLAB_SYNC_TOKEN:-}" ]]; then
+    gitlab_base="${GITLAB_API_BASE_URL:-https://gitlab.com/api/v4}"
+    gitlab_base="${gitlab_base%/}"
+    status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+      -H "PRIVATE-TOKEN: ${GITLAB_SYNC_TOKEN}" \
+      "${gitlab_base}/user")"
+    if [[ "$status" != "200" ]]; then
+      echo "FAIL: GitLab token probe returned HTTP ${status}" >&2
+      exit 1
+    fi
+    echo "OK: GitLab API token"
+  else
+    echo "==> GitLab token not set (skip)"
+  fi
+  if [[ -n "${BITBUCKET_SYNC_TOKEN:-}" ]]; then
+    bitbucket_base="${BITBUCKET_API_BASE_URL:-https://api.bitbucket.org/2.0}"
+    bitbucket_base="${bitbucket_base%/}"
+    status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+      -H "Authorization: Bearer ${BITBUCKET_SYNC_TOKEN}" \
+      "${bitbucket_base}/user")"
+    if [[ "$status" != "200" ]]; then
+      echo "FAIL: Bitbucket token probe returned HTTP ${status}" >&2
+      exit 1
+    fi
+    echo "OK: Bitbucket API token"
+  else
+    echo "==> Bitbucket token not set (skip)"
+  fi
+
+  echo "==> Org git credential API probe"
+  api_probe_provider=""
+  if [[ -n "${GITHUB_SYNC_TOKEN:-}" ]]; then
+    api_probe_provider="github"
+  elif [[ -n "${GITLAB_SYNC_TOKEN:-}" ]]; then
+    api_probe_provider="gitlab"
+  elif [[ -n "${BITBUCKET_SYNC_TOKEN:-}" ]]; then
+    api_probe_provider="bitbucket"
+  fi
+  if [[ -n "$api_probe_provider" ]]; then
+    test_json="$(curl -fsS --max-time 20 -X POST \
+      "${API_BASE}/organizations/${org_id}/git-credentials/${api_probe_provider}/test" \
+      -H "Authorization: Bearer ${probe_token}")"
+    if ! printf '%s' "${test_json}" | grep -q '"ok":true'; then
+      echo "FAIL: git credential test (${api_probe_provider}) returned: ${test_json}" >&2
+      exit 1
+    fi
+    echo "OK: org git credential API probe (${api_probe_provider})"
+  else
+    echo "==> No git tokens configured (skip API probe)"
+  fi
 fi
 
 echo "OK: staging provider probes passed"

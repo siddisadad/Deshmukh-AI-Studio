@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.71-beta] — 2026-08-09
+
+### Added
+
+- Git credential rotation audit — `organization_git_credential_events` (CREATED, TOKEN_ROTATED, UPDATED, DELETED)
+- `GET /api/v1/organizations/{orgId}/git-credentials/events`
+- Settings → Git rotation audit list
+- Staging git probes in `staging-provider-probes.sh` (platform token + API credential test)
+- `docs/76-GIT-STAGING-PROBE-GUIDE.md`
+
 ## [0.2.70-beta] — 2026-08-09
 
 ### Added

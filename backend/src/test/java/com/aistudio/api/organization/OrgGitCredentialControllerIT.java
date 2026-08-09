@@ -75,6 +75,12 @@ class OrgGitCredentialControllerIT {
         mockMvc.perform(delete("/api/v1/organizations/" + orgId + "/git-credentials/gitlab")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-credentials/events?limit=10")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].action").value("DELETED"))
+                .andExpect(jsonPath("$[1].action").value("CREATED"));
     }
 
     private JsonNode register(String email) throws Exception {

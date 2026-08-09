@@ -1,5 +1,19 @@
 import { http } from '../../../shared/api/httpClient';
 
+function triggerBlobDownload(blob: Blob, disposition: string | undefined, defaultFilename: string) {
+  let filename = defaultFilename;
+  if (disposition) {
+    const match = /filename="([^"]+)"/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export interface OrgGitCredentialEvent {
   id: string;
   provider: string;
@@ -120,4 +134,27 @@ export const gitCredentialsApi = {
     http
       .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
       .then((r) => r.data),
+  downloadSyncOverviewExport: async (
+    orgId: string,
+    format: 'csv' | 'json',
+    filters?: {
+      linked?: boolean;
+      provider?: string;
+      lastSyncStatus?: string;
+    }
+  ) => {
+    const params: Record<string, string> = { format };
+    if (filters?.linked !== undefined) params.linked = String(filters.linked);
+    if (filters?.provider) params.provider = filters.provider;
+    if (filters?.lastSyncStatus) params.lastSyncStatus = filters.lastSyncStatus;
+    const response = await http.get(`/organizations/${orgId}/git-sync-overview/export`, {
+      params,
+      responseType: 'blob',
+    });
+    triggerBlobDownload(
+      response.data as Blob,
+      response.headers['content-disposition'] as string | undefined,
+      `git-sync-overview-${orgId}.${format}`,
+    );
+  },
 };

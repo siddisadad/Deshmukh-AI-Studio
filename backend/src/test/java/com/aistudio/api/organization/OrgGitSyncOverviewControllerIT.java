@@ -1,8 +1,10 @@
 package com.aistudio.api.organization;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -161,6 +163,53 @@ class OrgGitSyncOverviewControllerIT {
                 .andExpect(jsonPath("$.targeted").value(1))
                 .andExpect(jsonPath("$.enqueued").value(0))
                 .andExpect(jsonPath("$.skippedPending").value(1));
+    }
+
+    @Test
+    void orgMemberCanExportGitSyncOverviewAsCsvAndJson() throws Exception {
+        JsonNode user = register("org-sync-export" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID linkedProjectId = createProject(token, orgId, "Export Proj", "EX");
+
+        mockMvc.perform(put("/api/v1/projects/" + linkedProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/export","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/export?format=csv")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".csv")))
+                .andExpect(header().string("Content-Type", containsString("text/csv")));
+
+        MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/export?format=csv&linked=true")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csv = csvResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("projectId,projectName,projectKey"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains(linkedProjectId.toString()));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("acme/export"));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/export?format=json")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".json")))
+                .andExpect(header().string("Content-Type", containsString("application/json")));
+
+        MvcResult jsonResult = mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/export?format=json&provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode exportJson = objectMapper.readTree(jsonResult.getResponse().getContentAsByteArray());
+        org.junit.jupiter.api.Assertions.assertEquals(orgId.toString(), exportJson.get("organizationId").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(1, exportJson.get("items").size());
+        org.junit.jupiter.api.Assertions.assertEquals("github", exportJson.get("items").get(0).get("provider").asText());
     }
 
     private UUID createProject(String token, UUID orgId, String name, String key) throws Exception {

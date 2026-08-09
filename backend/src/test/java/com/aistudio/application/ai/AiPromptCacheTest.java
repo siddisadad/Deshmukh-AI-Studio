@@ -9,7 +9,7 @@ class AiPromptCacheTest {
 
     @Test
     void cachesComputedValueWhenEnabled() {
-        AiPromptCache cache = new AiPromptCache(true, 60, 10);
+        AiPromptCache cache = new AiPromptCache(true, 60, 10, false);
         AtomicInteger calls = new AtomicInteger();
         String first = cache.getOrCompute("key", () -> {
             calls.incrementAndGet();

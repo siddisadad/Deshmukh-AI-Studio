@@ -18,7 +18,8 @@ public record AiProperties(
         CostAwareRouting costAwareRouting,
         String providerQuotas,
         String providerCostTiers,
-        String assistantModelMap
+        String assistantModelMap,
+        CrossRegionRouting crossRegionRouting
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }
@@ -45,5 +46,13 @@ public record AiProperties(
     }
 
     public record CostAwareRouting(boolean enabled) {
+    }
+
+    public record CrossRegionRouting(
+            boolean enabled,
+            String deployRegion,
+            String endpointMap,
+            String regionChains
+    ) {
     }
 }

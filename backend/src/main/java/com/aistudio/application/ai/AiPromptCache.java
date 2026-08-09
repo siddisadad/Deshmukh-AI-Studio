@@ -19,16 +19,19 @@ public class AiPromptCache {
     private final boolean enabled;
     private final long ttlSeconds;
     private final int maxEntries;
+    private final boolean nativeEnabled;
     private final ConcurrentHashMap<String, Entry> cache = new ConcurrentHashMap<>();
 
     public AiPromptCache(
             @Value("${aistudio.ai.prompt-cache.enabled:false}") boolean enabled,
             @Value("${aistudio.ai.prompt-cache.ttl-seconds:300}") long ttlSeconds,
-            @Value("${aistudio.ai.prompt-cache.max-entries:500}") int maxEntries
+            @Value("${aistudio.ai.prompt-cache.max-entries:500}") int maxEntries,
+            @Value("${aistudio.ai.prompt-cache.native-enabled:false}") boolean nativeEnabled
     ) {
         this.enabled = enabled;
         this.ttlSeconds = Math.max(1, ttlSeconds);
         this.maxEntries = Math.max(1, maxEntries);
+        this.nativeEnabled = nativeEnabled;
     }
 
     public String getOrCompute(String key, Supplier<String> supplier) {
@@ -50,6 +53,10 @@ public class AiPromptCache {
 
     public boolean enabled() {
         return enabled;
+    }
+
+    public boolean nativeEnabled() {
+        return nativeEnabled;
     }
 
     public int size() {

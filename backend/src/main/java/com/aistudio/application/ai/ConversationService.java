@@ -515,6 +515,9 @@ public class ConversationService {
         if (modelRoute != null && modelRoute.model() != null && !modelRoute.model().isBlank()) {
             metadata.put("model", modelRoute.model());
         }
+        if (promptCache.nativeEnabled()) {
+            metadata.put("nativePromptCache", "true");
+        }
         AiProviderPort.AiGenerationRequest request = new AiProviderPort.AiGenerationRequest(
                 systemPrompt,
                 aiMessages,

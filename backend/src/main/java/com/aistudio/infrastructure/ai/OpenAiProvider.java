@@ -20,19 +20,27 @@ public class OpenAiProvider implements AiProviderPort {
     private final RestClient client;
     private final String model;
     private final ObjectMapper objectMapper;
+    private final String providerId;
 
     public OpenAiProvider(AiProperties properties, ObjectMapper objectMapper) {
+        this(properties, objectMapper, null, "openai");
+    }
+
+    public OpenAiProvider(AiProperties properties, ObjectMapper objectMapper, String baseUrlOverride, String providerId) {
         String apiKey = properties.openai() == null ? null : properties.openai().apiKey();
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("OPENAI_API_KEY / aistudio.ai.openai.api-key is required when provider=openai");
         }
-        String baseUrl = properties.openai().baseUrl() == null || properties.openai().baseUrl().isBlank()
-                ? "https://api.openai.com"
-                : properties.openai().baseUrl();
+        String baseUrl = baseUrlOverride != null && !baseUrlOverride.isBlank()
+                ? baseUrlOverride
+                : properties.openai().baseUrl() == null || properties.openai().baseUrl().isBlank()
+                        ? "https://api.openai.com"
+                        : properties.openai().baseUrl();
         this.model = properties.openai().model() == null || properties.openai().model().isBlank()
                 ? "gpt-4o-mini"
                 : properties.openai().model();
         this.objectMapper = objectMapper;
+        this.providerId = providerId == null || providerId.isBlank() ? "openai" : providerId;
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + apiKey)
@@ -136,7 +144,7 @@ public class OpenAiProvider implements AiProviderPort {
 
     @Override
     public String providerId() {
-        return "openai";
+        return providerId;
     }
 
     @Override
@@ -163,7 +171,17 @@ public class OpenAiProvider implements AiProviderPort {
             body.put("max_tokens", request.maxOutputTokens());
         }
         ArrayNode messages = body.putArray("messages");
-        messages.addObject().put("role", "system").put("content", request.systemPrompt());
+        if (useNativePromptCache(request)) {
+            ObjectNode system = messages.addObject();
+            system.put("role", "system");
+            ArrayNode content = system.putArray("content");
+            ObjectNode block = content.addObject();
+            block.put("type", "text");
+            block.put("text", request.systemPrompt());
+            block.putObject("cache_control").put("type", "ephemeral");
+        } else {
+            messages.addObject().put("role", "system").put("content", request.systemPrompt());
+        }
         for (AiMessage message : request.messages()) {
             messages.addObject().put("role", mapRole(message.role())).put("content", message.content());
         }
@@ -185,5 +203,12 @@ public class OpenAiProvider implements AiProviderPort {
             }
         }
         return model;
+    }
+
+    private static boolean useNativePromptCache(AiGenerationRequest request) {
+        if (request.metadata() == null) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(request.metadata().get("nativePromptCache"));
     }
 }

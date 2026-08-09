@@ -36,7 +36,17 @@ public class AiProviderCostTierRegistry {
       return configured;
     }
     Integer defaultTier = DEFAULT_TIERS.get(id);
-    return defaultTier != null ? defaultTier : DEFAULT_TIER;
+    if (defaultTier != null) {
+      return defaultTier;
+    }
+    int hyphen = id.indexOf('-');
+    if (hyphen > 0) {
+      Integer baseTier = DEFAULT_TIERS.get(id.substring(0, hyphen));
+      if (baseTier != null) {
+        return baseTier;
+      }
+    }
+    return DEFAULT_TIER;
   }
 
   public List<String> orderByCost(List<String> chain) {

@@ -4,6 +4,7 @@ import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
 import com.aistudio.application.ai.OrgAiRoutingPolicyService;
 import com.aistudio.infrastructure.ai.AiModelRoutingRegistry;
+import com.aistudio.infrastructure.ai.AiProviderCrossRegionRegistry;
 import com.aistudio.infrastructure.ai.AiProviderCostTierRegistry;
 import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
 import com.aistudio.infrastructure.ai.AiProviderQuotaTracker;
@@ -21,8 +22,25 @@ import org.springframework.context.annotation.Configuration;
 public class AiProviderConfiguration {
 
     @Bean
-    AiProviderRegistry aiProviderRegistry(AiProperties properties, ObjectMapper objectMapper) {
-        return new AiProviderRegistry(properties, objectMapper);
+    AiProviderCrossRegionRegistry aiProviderCrossRegionRegistry(AiProperties properties) {
+        AiProperties.CrossRegionRouting config = properties.crossRegionRouting();
+        if (config == null) {
+            return new AiProviderCrossRegionRegistry(false, "", "", "");
+        }
+        return new AiProviderCrossRegionRegistry(
+                config.enabled(),
+                config.deployRegion(),
+                config.endpointMap(),
+                config.regionChains());
+    }
+
+    @Bean
+    AiProviderRegistry aiProviderRegistry(
+            AiProperties properties,
+            ObjectMapper objectMapper,
+            AiProviderCrossRegionRegistry crossRegionRegistry
+    ) {
+        return new AiProviderRegistry(properties, objectMapper, crossRegionRegistry);
     }
 
     @Bean
@@ -64,7 +82,8 @@ public class AiProviderConfiguration {
             AiProviderLatencyTracker latencyTracker,
             AiProviderCostTierRegistry costTierRegistry,
             AiProviderQuotaTracker quotaTracker,
-            OrgAiRoutingPolicyService routingPolicyService
+            OrgAiRoutingPolicyService routingPolicyService,
+            AiProviderCrossRegionRegistry crossRegionRegistry
     ) {
         boolean adaptiveRouting = properties.adaptiveRouting() != null && properties.adaptiveRouting().enabled();
         boolean costAwareRouting = properties.costAwareRouting() != null && properties.costAwareRouting().enabled();
@@ -88,7 +107,8 @@ public class AiProviderConfiguration {
                     costTierRegistry,
                     quotaTracker,
                     costAwareRouting,
-                    routingPolicyService);
+                    routingPolicyService,
+                    crossRegionRegistry);
         }
         List<String> chain = new ArrayList<>();
         chain.add(provider);
@@ -103,7 +123,8 @@ public class AiProviderConfiguration {
                     costTierRegistry,
                     quotaTracker,
                     costAwareRouting,
-                    routingPolicyService);
+                    routingPolicyService,
+                    crossRegionRegistry);
         }
         return registry.require(provider);
     }

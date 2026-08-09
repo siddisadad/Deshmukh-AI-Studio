@@ -52,8 +52,9 @@ Read in order; each document builds on the previous.
 | 45 | [45-COST-AWARE-AI-ROUTING-GUIDE.md](45-COST-AWARE-AI-ROUTING-GUIDE.md) | Cost-aware routing and provider quotas |
 | 46 | [46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md](46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md) | Token budget caps and org routing policies |
 | 47 | [47-MODEL-ROUTING-PROMPT-CACHE-GUIDE.md](47-MODEL-ROUTING-PROMPT-CACHE-GUIDE.md) | Model-specific routing and prompt cache |
+| 48 | [48-PROVIDER-NATIVE-CACHE-CROSS-REGION-GUIDE.md](48-PROVIDER-NATIVE-CACHE-CROSS-REGION-GUIDE.md) | Provider-native prompt cache and cross-region routing |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.42-beta** adds model-specific routing and prompt cache — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.43-beta** adds provider-native prompt cache and cross-region routing — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

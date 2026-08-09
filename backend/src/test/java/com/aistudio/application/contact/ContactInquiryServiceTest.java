@@ -129,4 +129,11 @@ class ContactInquiryServiceTest {
         when(contactInquiryRepository.countByReadAtIsNull()).thenReturn(3L);
         assertThat(service.unreadCountForStaff("staff@deshmukh.tech")).isEqualTo(3L);
     }
+
+    @Test
+    void markAllReadUpdatesUnreadRows() {
+        when(contactInquiryRepository.markAllUnreadAsRead(any())).thenReturn(4);
+        assertThat(service.markAllRead("staff@deshmukh.tech")).isEqualTo(4);
+        verify(contactInquiryRepository).markAllUnreadAsRead(any());
+    }
 }

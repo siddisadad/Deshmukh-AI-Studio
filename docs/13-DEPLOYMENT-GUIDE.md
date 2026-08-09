@@ -397,7 +397,7 @@ Test restore on staging quarterly.
 
 ## 16. Official site (deshmukh.tech)
 
-The React SPA serves both the **Deshmukh Technology marketing site** (`/`, `/about`, `/services`, `/contact`, `/privacy`) and the authenticated AI Studio app (`/dashboard`, …) behind the same Nginx edge.
+The React SPA serves both the **Deshmukh Technology marketing site** (`/`, `/about`, `/services`, `/contact`, `/privacy`, `/terms`) and the authenticated AI Studio app (`/dashboard`, …) behind the same Nginx edge.
 
 ### DNS + TLS
 1. Point `deshmukh.tech` and `www.deshmukh.tech` A/AAAA records at the VM.

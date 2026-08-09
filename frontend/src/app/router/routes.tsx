@@ -11,6 +11,7 @@ import { ContactPage } from '../../features/marketing/pages/ContactPage';
 import { HomePage } from '../../features/marketing/pages/HomePage';
 import { PrivacyPage } from '../../features/marketing/pages/PrivacyPage';
 import { ServicesPage } from '../../features/marketing/pages/ServicesPage';
+import { TermsPage } from '../../features/marketing/pages/TermsPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
 import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
 import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
   { path: '/services', element: <ServicesPage /> },
   { path: '/contact', element: <ContactPage /> },
   { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/terms', element: <TermsPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {

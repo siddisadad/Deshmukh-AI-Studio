@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+### Added
+
+- Official Deshmukh Technology marketing site (`/`, `/about`, `/services`, `/contact`, `/privacy`, `/terms`)
+- Public contact API `POST /api/v1/contact/inquiries` with Flyway storage (V30/V31) and notify email
+- Staff contact inbox (`CONTACT_STAFF_EMAILS`) — list, mark read / mark all read, unread badge
+- `VITE_PUBLIC_SITE_URL`, `robots.txt` / `sitemap.xml`, nginx `deshmukh.tech` TLS example
+- Playwright smoke for marketing routes (`e2e/tests/marketing.spec.ts`)
+- Deployment guide §16 for official site DNS, SMTP notify, and staff inbox
+
 ## [0.2.52-beta] — 2026-08-09
 
 ### Added

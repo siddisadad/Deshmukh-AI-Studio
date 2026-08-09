@@ -4,6 +4,7 @@ import com.aistudio.api.contact.dto.ContactInboxAccessResponse;
 import com.aistudio.api.contact.dto.ContactInquiryListItemResponse;
 import com.aistudio.api.contact.dto.ContactInquiryResponse;
 import com.aistudio.api.contact.dto.CreateContactInquiryRequest;
+import com.aistudio.api.contact.dto.MarkAllReadResponse;
 import com.aistudio.application.contact.ContactInquiryService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -74,6 +75,13 @@ public class ContactController {
             @PathVariable UUID id
     ) {
         return contactInquiryService.markRead(user.getUsername(), id);
+    }
+
+    @PostMapping("/inquiries/read-all")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Mark all contact inquiries as read (Deshmukh Technology staff)")
+    public MarkAllReadResponse markAllRead(@AuthenticationPrincipal AuthenticatedUser user) {
+        return new MarkAllReadResponse(contactInquiryService.markAllRead(user.getUsername()));
     }
 
     private static String clientIp(HttpServletRequest request) {

@@ -34,4 +34,6 @@ export const contactInboxApi = {
   list: () => http.get<ContactInquiryItem[]>('/contact/inquiries').then((r) => r.data),
   markRead: (id: string) =>
     http.post<ContactInquiryItem>(`/contact/inquiries/${id}/read`).then((r) => r.data),
+  markAllRead: () =>
+    http.post<{ updated: number }>('/contact/inquiries/read-all').then((r) => r.data),
 };

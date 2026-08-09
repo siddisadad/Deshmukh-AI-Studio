@@ -17,6 +17,7 @@ vi.mock('../api/contactInboxApi', async (importOriginal) => {
       access: vi.fn(),
       list: vi.fn(),
       markRead: vi.fn(),
+      markAllRead: vi.fn(),
     },
   };
 });
@@ -42,6 +43,7 @@ describe('ContactInboxSettingsPage', () => {
     vi.mocked(contactInboxApi.access).mockReset();
     vi.mocked(contactInboxApi.list).mockReset();
     vi.mocked(contactInboxApi.markRead).mockReset();
+    vi.mocked(contactInboxApi.markAllRead).mockReset();
   });
 
   it('redirects non-staff users away', async () => {
@@ -87,6 +89,12 @@ describe('ContactInboxSettingsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Mark read' }));
     await waitFor(() => {
       expect(contactInboxApi.markRead).toHaveBeenCalledWith('inq-1');
+    });
+
+    vi.mocked(contactInboxApi.markAllRead).mockResolvedValue({ updated: 1 });
+    await user.click(screen.getByTestId('contact-mark-all-read'));
+    await waitFor(() => {
+      expect(contactInboxApi.markAllRead).toHaveBeenCalled();
     });
   });
 });

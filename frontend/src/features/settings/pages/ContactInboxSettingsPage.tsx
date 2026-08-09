@@ -36,14 +36,21 @@ export function ContactInboxSettingsPage() {
     enabled: accessQuery.data?.canAccessInbox === true,
   });
 
+  async function invalidateInbox() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['contact-inbox'] }),
+      queryClient.invalidateQueries({ queryKey: ['contact-inbox-access'] }),
+    ]);
+  }
+
   const markRead = useMutation({
     mutationFn: (id: string) => contactInboxApi.markRead(id),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['contact-inbox'] }),
-        queryClient.invalidateQueries({ queryKey: ['contact-inbox-access'] }),
-      ]);
-    },
+    onSuccess: () => void invalidateInbox(),
+  });
+
+  const markAllRead = useMutation({
+    mutationFn: () => contactInboxApi.markAllRead(),
+    onSuccess: () => void invalidateInbox(),
   });
 
   if (accessQuery.isLoading) {
@@ -90,16 +97,26 @@ export function ContactInboxSettingsPage() {
             {unread > 0 ? ` · ${unread} unread` : ''}
           </Typography>
         </Box>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={unreadOnly}
-              onChange={(_, checked) => setUnreadOnly(checked)}
-              slotProps={{ input: { 'aria-label': 'Show unread only' } }}
-            />
-          }
-          label="Unread only"
-        />
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={unreadOnly}
+                onChange={(_, checked) => setUnreadOnly(checked)}
+                slotProps={{ input: { 'aria-label': 'Show unread only' } }}
+              />
+            }
+            label="Unread only"
+          />
+          <Button
+            variant="outlined"
+            disabled={unread < 1 || markAllRead.isPending}
+            onClick={() => markAllRead.mutate()}
+            data-testid="contact-mark-all-read"
+          >
+            Mark all read
+          </Button>
+        </Stack>
       </Box>
 
       {listQuery.isError && (

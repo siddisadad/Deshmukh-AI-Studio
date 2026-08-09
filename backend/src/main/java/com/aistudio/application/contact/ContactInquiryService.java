@@ -118,6 +118,12 @@ public class ContactInquiryService {
         return toListItem(entity);
     }
 
+    @Transactional
+    public int markAllRead(String actorEmail) {
+        contactStaffAccess.requireStaff(actorEmail);
+        return contactInquiryRepository.markAllUnreadAsRead(Instant.now());
+    }
+
     private ContactInquiryListItemResponse toListItem(ContactInquiryEntity entity) {
         return new ContactInquiryListItemResponse(
                 entity.getId(),

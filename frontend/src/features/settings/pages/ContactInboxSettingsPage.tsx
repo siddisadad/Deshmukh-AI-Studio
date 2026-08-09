@@ -4,8 +4,10 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControlLabel,
   Paper,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -14,12 +16,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
-import { contactInboxApi } from '../api/contactInboxApi';
+import { buildInquiryReplyMailto, contactInboxApi } from '../api/contactInboxApi';
 
 export function ContactInboxSettingsPage() {
   const queryClient = useQueryClient();
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   const accessQuery = useQuery({
     queryKey: ['contact-inbox-access'],
@@ -35,7 +39,10 @@ export function ContactInboxSettingsPage() {
   const markRead = useMutation({
     mutationFn: (id: string) => contactInboxApi.markRead(id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['contact-inbox'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['contact-inbox'] }),
+        queryClient.invalidateQueries({ queryKey: ['contact-inbox-access'] }),
+      ]);
     },
   });
 
@@ -63,15 +70,36 @@ export function ContactInboxSettingsPage() {
 
   const items = listQuery.data ?? [];
   const unread = items.filter((item) => !item.readAt).length;
+  const visible = unreadOnly ? items.filter((item) => !item.readAt) : items;
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4">Contact inbox</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Official site inquiries for Deshmukh Technology
-          {unread > 0 ? ` · ${unread} unread` : ''}
-        </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 2,
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box>
+          <Typography variant="h4">Contact inbox</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Official site inquiries for Deshmukh Technology
+            {unread > 0 ? ` · ${unread} unread` : ''}
+          </Typography>
+        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={unreadOnly}
+              onChange={(_, checked) => setUnreadOnly(checked)}
+              slotProps={{ input: { 'aria-label': 'Show unread only' } }}
+            />
+          }
+          label="Unread only"
+        />
       </Box>
 
       {listQuery.isError && (
@@ -82,9 +110,11 @@ export function ContactInboxSettingsPage() {
 
       {listQuery.isLoading ? (
         <CircularProgress aria-label="Loading inquiries" />
-      ) : items.length === 0 ? (
+      ) : visible.length === 0 ? (
         <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography color="text.secondary">No contact inquiries yet.</Typography>
+          <Typography color="text.secondary">
+            {unreadOnly ? 'No unread inquiries.' : 'No contact inquiries yet.'}
+          </Typography>
         </Paper>
       ) : (
         <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
@@ -96,11 +126,11 @@ export function ContactInboxSettingsPage() {
                 <TableCell>Topic</TableCell>
                 <TableCell>Message</TableCell>
                 <TableCell>Received</TableCell>
-                <TableCell align="right">Action</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {items.map((item) => (
+              {visible.map((item) => (
                 <TableRow key={item.id} selected={!item.readAt}>
                   <TableCell>
                     <Chip
@@ -122,15 +152,25 @@ export function ContactInboxSettingsPage() {
                   <TableCell sx={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{item.message}</TableCell>
                   <TableCell>{new Date(item.createdAt).toLocaleString()}</TableCell>
                   <TableCell align="right">
-                    {!item.readAt && (
+                    <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
                       <Button
                         size="small"
-                        disabled={markRead.isPending}
-                        onClick={() => markRead.mutate(item.id)}
+                        component="a"
+                        href={buildInquiryReplyMailto(item)}
+                        data-testid={`contact-reply-${item.id}`}
                       >
-                        Mark read
+                        Reply
                       </Button>
-                    )}
+                      {!item.readAt && (
+                        <Button
+                          size="small"
+                          disabled={markRead.isPending}
+                          onClick={() => markRead.mutate(item.id)}
+                        >
+                          Mark read
+                        </Button>
+                      )}
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}

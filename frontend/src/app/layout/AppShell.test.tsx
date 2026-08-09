@@ -10,7 +10,7 @@ vi.mock('../../features/auth/api/authApi', () => ({
 
 vi.mock('../../features/settings/api/contactInboxApi', () => ({
   contactInboxApi: {
-    access: vi.fn().mockResolvedValue({ canAccessInbox: false }),
+    access: vi.fn().mockResolvedValue({ canAccessInbox: false, unreadCount: 0 }),
   },
 }));
 

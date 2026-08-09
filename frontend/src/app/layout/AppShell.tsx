@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Badge,
   Box,
   Button,
   Container,
@@ -25,9 +26,11 @@ export function AppShell() {
     queryKey: ['contact-inbox-access'],
     queryFn: () => contactInboxApi.access(),
     enabled: Boolean(accessToken),
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
   const canOpenContactInbox = contactAccessQuery.data?.canAccessInbox === true;
+  const unreadCount = contactAccessQuery.data?.unreadCount ?? 0;
 
   async function logout() {
     try {
@@ -72,10 +75,18 @@ export function AppShell() {
             {canOpenContactInbox && (
               <Button
                 onClick={() => navigate('/settings/contact-inbox')}
-                aria-label="Contact inbox"
+                aria-label={unreadCount > 0 ? `Contact inbox, ${unreadCount} unread` : 'Contact inbox'}
                 data-testid="nav-contact-inbox"
               >
-                Inbox
+                <Badge
+                  color="primary"
+                  badgeContent={unreadCount}
+                  invisible={unreadCount < 1}
+                  max={99}
+                  sx={{ '& .MuiBadge-badge': { right: -10, top: 2 } }}
+                >
+                  Inbox
+                </Badge>
               </Button>
             )}
             <Button onClick={() => navigate('/settings/members')} aria-label="Organization members">

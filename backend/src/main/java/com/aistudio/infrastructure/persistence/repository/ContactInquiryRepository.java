@@ -10,4 +10,6 @@ public interface ContactInquiryRepository extends JpaRepository<ContactInquiryEn
     long countByEmailIgnoreCaseAndCreatedAtAfter(String email, Instant createdAt);
 
     List<ContactInquiryEntity> findAllByOrderByCreatedAtDesc();
+
+    long countByReadAtIsNull();
 }

@@ -43,6 +43,14 @@ public class ContactInquiryService {
         return contactStaffAccess.canAccessInbox(actorEmail);
     }
 
+    @Transactional(readOnly = true)
+    public long unreadCountForStaff(String actorEmail) {
+        if (!contactStaffAccess.canAccessInbox(actorEmail)) {
+            return 0L;
+        }
+        return contactInquiryRepository.countByReadAtIsNull();
+    }
+
     @Transactional
     public UUID submit(String name, String email, String topic, String message, String sourceIp) {
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);

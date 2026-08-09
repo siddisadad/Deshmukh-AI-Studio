@@ -20,11 +20,11 @@ export function MarketingShell({
   return (
     <div className="dt-site">
       <SkipToContent />
-      <header className={navClassName} aria-label="Primary">
+      <header className={navClassName}>
         <Link className="dt-nav__brand" to="/">
           Deshmukh Technology
         </Link>
-        <nav>
+        <nav aria-label="Primary">
           <ul className="dt-nav__links">
             <li>
               {homeAnchors ? (

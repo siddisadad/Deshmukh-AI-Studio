@@ -9,13 +9,17 @@ import { ContactInboxSettingsPage } from './ContactInboxSettingsPage';
 
 void React;
 
-vi.mock('../api/contactInboxApi', () => ({
-  contactInboxApi: {
-    access: vi.fn(),
-    list: vi.fn(),
-    markRead: vi.fn(),
-  },
-}));
+vi.mock('../api/contactInboxApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/contactInboxApi')>();
+  return {
+    ...actual,
+    contactInboxApi: {
+      access: vi.fn(),
+      list: vi.fn(),
+      markRead: vi.fn(),
+    },
+  };
+});
 
 function renderPage() {
   const client = new QueryClient({
@@ -41,14 +45,14 @@ describe('ContactInboxSettingsPage', () => {
   });
 
   it('redirects non-staff users away', async () => {
-    vi.mocked(contactInboxApi.access).mockResolvedValue({ canAccessInbox: false });
+    vi.mocked(contactInboxApi.access).mockResolvedValue({ canAccessInbox: false, unreadCount: 0 });
     renderPage();
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
   });
 
   it('lists inquiries and marks one read', async () => {
     const user = userEvent.setup();
-    vi.mocked(contactInboxApi.access).mockResolvedValue({ canAccessInbox: true });
+    vi.mocked(contactInboxApi.access).mockResolvedValue({ canAccessInbox: true, unreadCount: 1 });
     vi.mocked(contactInboxApi.list).mockResolvedValue([
       {
         id: 'inq-1',
@@ -76,6 +80,10 @@ describe('ContactInboxSettingsPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Contact inbox' })).toBeInTheDocument();
     expect(await screen.findByText('Ada')).toBeInTheDocument();
+    expect(screen.getByTestId('contact-reply-inq-1')).toHaveAttribute(
+      'href',
+      expect.stringContaining('mailto:'),
+    );
     await user.click(screen.getByRole('button', { name: 'Mark read' }));
     await waitFor(() => {
       expect(contactInboxApi.markRead).toHaveBeenCalledWith('inq-1');

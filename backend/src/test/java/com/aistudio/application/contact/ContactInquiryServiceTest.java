@@ -117,4 +117,16 @@ class ContactInquiryServiceTest {
         assertThat(items).hasSize(1);
         assertThat(items.getFirst().email()).isEqualTo("ada@example.com");
     }
+
+    @Test
+    void unreadCountForStaffReturnsZeroForNonStaff() {
+        assertThat(service.unreadCountForStaff("stranger@example.com")).isZero();
+        verify(contactInquiryRepository, never()).countByReadAtIsNull();
+    }
+
+    @Test
+    void unreadCountForStaffUsesRepository() {
+        when(contactInquiryRepository.countByReadAtIsNull()).thenReturn(3L);
+        assertThat(service.unreadCountForStaff("staff@deshmukh.tech")).isEqualTo(3L);
+    }
 }

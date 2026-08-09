@@ -1,4 +1,4 @@
 package com.aistudio.api.contact.dto;
 
-public record ContactInboxAccessResponse(boolean canAccessInbox) {
+public record ContactInboxAccessResponse(boolean canAccessInbox, long unreadCount) {
 }

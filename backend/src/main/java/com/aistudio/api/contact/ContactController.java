@@ -54,7 +54,9 @@ public class ContactController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Whether the current user can open the staff contact inbox")
     public ContactInboxAccessResponse access(@AuthenticationPrincipal AuthenticatedUser user) {
-        return new ContactInboxAccessResponse(contactInquiryService.canAccessInbox(user.getUsername()));
+        boolean canAccess = contactInquiryService.canAccessInbox(user.getUsername());
+        long unread = canAccess ? contactInquiryService.unreadCountForStaff(user.getUsername()) : 0L;
+        return new ContactInboxAccessResponse(canAccess, unread);
     }
 
     @GetMapping("/inquiries")

@@ -1,8 +1,11 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.aistudio.application.job.BackgroundJobService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
@@ -34,19 +37,22 @@ public class OrgGitSyncOverviewService {
     private final ProjectAuthorizationService authorizationService;
     private final BackgroundJobService backgroundJobService;
     private final BackgroundJobRepository backgroundJobRepository;
+    private final ObjectMapper objectMapper;
 
     public OrgGitSyncOverviewService(
             ProjectRepository projectRepository,
             ProjectGitLinkRepository gitLinkRepository,
             ProjectAuthorizationService authorizationService,
             BackgroundJobService backgroundJobService,
-            BackgroundJobRepository backgroundJobRepository
+            BackgroundJobRepository backgroundJobRepository,
+            ObjectMapper objectMapper
     ) {
         this.projectRepository = projectRepository;
         this.gitLinkRepository = gitLinkRepository;
         this.authorizationService = authorizationService;
         this.backgroundJobService = backgroundJobService;
         this.backgroundJobRepository = backgroundJobRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -149,6 +155,24 @@ public class OrgGitSyncOverviewService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public OrgGitSyncOverviewExport exportOverview(
+            UUID organizationId,
+            UUID userId,
+            String format,
+            Boolean linked,
+            String provider,
+            String lastSyncStatus
+    ) {
+        OrgGitSyncOverviewResponse overview = getOverview(
+                organizationId, userId, linked, provider, lastSyncStatus);
+        String normalizedFormat = normalizeExportFormat(format);
+        if ("json".equals(normalizedFormat)) {
+            return exportAsJson(overview);
+        }
+        return exportAsCsv(overview);
+    }
+
     private boolean matchesFilters(
             OrgGitSyncOverviewItemResponse item,
             Boolean linked,
@@ -195,6 +219,69 @@ public class OrgGitSyncOverviewService {
             throw new DomainException("VALIDATION_ERROR", "lastSyncStatus filter must be success, failed, or never");
         }
         return normalized;
+    }
+
+    private String normalizeExportFormat(String format) {
+        if (format == null || format.isBlank()) {
+            return "csv";
+        }
+        String normalized = format.trim().toLowerCase(Locale.ROOT);
+        if (!"csv".equals(normalized) && !"json".equals(normalized)) {
+            throw new DomainException("VALIDATION_ERROR", "format must be csv or json");
+        }
+        return normalized;
+    }
+
+    private OrgGitSyncOverviewExport exportAsJson(OrgGitSyncOverviewResponse overview) {
+        try {
+            byte[] body = objectMapper.copy()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .writeValueAsBytes(overview);
+            return new OrgGitSyncOverviewExport(
+                    body,
+                    "application/json; charset=UTF-8",
+                    "git-sync-overview-" + overview.organizationId() + ".json"
+            );
+        } catch (Exception ex) {
+            throw new DomainException("INTERNAL_ERROR", "Failed to export git sync overview as JSON");
+        }
+    }
+
+    private OrgGitSyncOverviewExport exportAsCsv(OrgGitSyncOverviewResponse overview) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("projectId,projectName,projectKey,linked,provider,repository,branch,enabled,scheduledSyncEnabled,lastSyncedAt,lastSyncStatus,lastSyncError,scheduledSyncIntervalMinutes\n");
+        for (OrgGitSyncOverviewItemResponse item : overview.items()) {
+            csv.append(csvCell(item.projectId()))
+                    .append(',').append(csvCell(item.projectName()))
+                    .append(',').append(csvCell(item.projectKey()))
+                    .append(',').append(item.linked())
+                    .append(',').append(csvCell(item.provider()))
+                    .append(',').append(csvCell(item.repository()))
+                    .append(',').append(csvCell(item.branch()))
+                    .append(',').append(item.enabled())
+                    .append(',').append(item.scheduledSyncEnabled())
+                    .append(',').append(csvCell(item.lastSyncedAt()))
+                    .append(',').append(csvCell(item.lastSyncStatus()))
+                    .append(',').append(csvCell(item.lastSyncError()))
+                    .append(',').append(csvCell(item.scheduledSyncIntervalMinutes()))
+                    .append('\n');
+        }
+        return new OrgGitSyncOverviewExport(
+                csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                "text/csv; charset=UTF-8",
+                "git-sync-overview-" + overview.organizationId() + ".csv"
+        );
+    }
+
+    private String csvCell(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = value.toString();
+        if (text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")) {
+            return "\"" + text.replace("\"", "\"\"") + "\"";
+        }
+        return text;
     }
 
     private OrgGitSyncOverviewItemResponse toItem(ProjectEntity project, ProjectGitLinkEntity link) {

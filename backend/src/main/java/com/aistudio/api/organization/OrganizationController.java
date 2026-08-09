@@ -27,6 +27,7 @@ import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.aistudio.application.organization.OrgSsoIdpService;
@@ -39,7 +40,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -404,6 +408,25 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.getOverview(orgId, user.getId(), linked, provider, lastSyncStatus);
+    }
+
+    @GetMapping("/{orgId}/git-sync-overview/export")
+    @Operation(summary = "Export organization git sync overview as CSV or JSON")
+    public ResponseEntity<byte[]> exportGitSyncOverview(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "csv") String format,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        OrgGitSyncOverviewExport exported = orgGitSyncOverviewService.exportOverview(
+                orgId, user.getId(), format, linked, provider, lastSyncStatus);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + exported.filename() + "\"")
+                .contentType(MediaType.parseMediaType(exported.contentType()))
+                .body(exported.body());
     }
 
     @PostMapping("/{orgId}/git-sync-overview/retry-failed")

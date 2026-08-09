@@ -35,6 +35,7 @@ export function GitCredentialsSettingsPage() {
   const [overviewLinkedFilter, setOverviewLinkedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
   const [overviewProviderFilter, setOverviewProviderFilter] = useState<'all' | 'github' | 'gitlab' | 'bitbucket'>('all');
   const [overviewStatusFilter, setOverviewStatusFilter] = useState<'all' | 'success' | 'failed' | 'never'>('all');
+  const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -86,6 +87,24 @@ export function GitCredentialsSettingsPage() {
           lastSyncStatus: status === 'all' ? undefined : status,
         }),
     });
+  }
+
+  async function exportSyncOverview(format: 'csv' | 'json') {
+    if (!org?.id) return;
+    setOverviewExporting(format);
+    setError(null);
+    try {
+      await gitCredentialsApi.downloadSyncOverviewExport(org.id, format, {
+        linked: overviewLinkedFilter === 'all' ? undefined : overviewLinkedFilter === 'linked',
+        provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
+        lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
+      });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to export overview');
+    } finally {
+      setOverviewExporting(null);
+    }
   }
 
   const isOwner = orgQuery.data?.role === 'OWNER';
@@ -251,6 +270,24 @@ export function GitCredentialsSettingsPage() {
               data-testid="git-sync-overview-refresh"
             >
               Refresh
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={overviewExporting !== null}
+              onClick={() => void exportSyncOverview('csv')}
+              data-testid="git-sync-overview-export-csv"
+            >
+              {overviewExporting === 'csv' ? 'Exporting…' : 'Export CSV'}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={overviewExporting !== null}
+              onClick={() => void exportSyncOverview('json')}
+              data-testid="git-sync-overview-export-json"
+            >
+              {overviewExporting === 'json' ? 'Exporting…' : 'Export JSON'}
             </Button>
             {canRetryFailedSyncs && syncOverviewQuery.data.failedLastSync > 0 && (
               <Button

@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.81-beta] — 2026-08-09
+
+### Added
+
+- Org git sync run project filter UI — project dropdown on org-wide sync runs (list, load more, export)
+- `docs/86-ORG-GIT-SYNC-RUN-PROJECT-FILTER-GUIDE.md`, Phase 18 roadmap
+
 ## [0.2.80-beta] — 2026-08-09
 
 ### Added

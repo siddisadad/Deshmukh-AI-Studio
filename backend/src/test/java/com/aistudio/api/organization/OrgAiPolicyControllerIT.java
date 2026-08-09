@@ -45,12 +45,13 @@ class OrgAiPolicyControllerIT {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"providerChain":"mock","dailyTokenBudget":50000}
+                                {"providerChain":"mock","dailyTokenBudget":50000,"deployRegion":"eu-west"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.providerChain").value("mock"))
                 .andExpect(jsonPath("$.dailyTokenBudget").value(50000))
-                .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(50000));
+                .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(50000))
+                .andExpect(jsonPath("$.deployRegion").value("eu-west"));
     }
 
     private JsonNode register(String email) throws Exception {

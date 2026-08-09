@@ -9,6 +9,7 @@ public final class OrgAiRoutingContext {
 
     private static final ThreadLocal<UUID> ORGANIZATION_ID = new ThreadLocal<>();
     private static final ThreadLocal<AiModelRoute> MODEL_ROUTE = new ThreadLocal<>();
+    private static final ThreadLocal<String> DEPLOY_REGION = new ThreadLocal<>();
 
     private OrgAiRoutingContext() {
     }
@@ -29,8 +30,21 @@ public final class OrgAiRoutingContext {
         return MODEL_ROUTE.get();
     }
 
+    public static void setDeployRegion(String deployRegion) {
+        if (deployRegion == null || deployRegion.isBlank()) {
+            DEPLOY_REGION.remove();
+        } else {
+            DEPLOY_REGION.set(deployRegion.trim().toLowerCase());
+        }
+    }
+
+    public static String deployRegion() {
+        return DEPLOY_REGION.get();
+    }
+
     public static void clear() {
         ORGANIZATION_ID.remove();
         MODEL_ROUTE.remove();
+        DEPLOY_REGION.remove();
     }
 }

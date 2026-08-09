@@ -5,6 +5,7 @@ import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
+import com.aistudio.infrastructure.ai.AiProviderCrossRegionRegistry;
 import com.aistudio.infrastructure.billing.AiUsageJdbcRepository;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
 import com.aistudio.infrastructure.persistence.entity.PlanEntity;
@@ -24,19 +25,22 @@ public class OrgAiPolicyService {
     private final PlanRepository planRepository;
     private final AiUsageJdbcRepository usageRepository;
     private final BillingService billingService;
+    private final AiProviderCrossRegionRegistry crossRegionRegistry;
 
     public OrgAiPolicyService(
             ProjectAuthorizationService authorizationService,
             OrganizationSubscriptionRepository subscriptionRepository,
             PlanRepository planRepository,
             AiUsageJdbcRepository usageRepository,
-            BillingService billingService
+            BillingService billingService,
+            AiProviderCrossRegionRegistry crossRegionRegistry
     ) {
         this.authorizationService = authorizationService;
         this.subscriptionRepository = subscriptionRepository;
         this.planRepository = planRepository;
         this.usageRepository = usageRepository;
         this.billingService = billingService;
+        this.crossRegionRegistry = crossRegionRegistry;
     }
 
     @Transactional(readOnly = true)
@@ -54,11 +58,15 @@ public class OrgAiPolicyService {
         if (request.modelMap() != null) {
             validateModelMap(request.modelMap());
         }
+        if (request.deployRegion() != null) {
+            validateDeployRegion(request.deployRegion());
+        }
         OrganizationSubscriptionEntity updated = billingService.updateAiPolicy(
                 organizationId,
                 request.providerChain(),
                 request.dailyTokenBudget(),
-                request.modelMap());
+                request.modelMap(),
+                request.deployRegion());
         return toResponse(updated);
     }
 
@@ -69,13 +77,17 @@ public class OrgAiPolicyService {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         long used = usageRepository.getTokenCount(sub.getOrganizationId(), today);
         Long remaining = effectiveBudget > 0 ? Math.max(0L, effectiveBudget - used) : null;
+        String deployRegion = sub.getAiDeployRegion();
+        String effectiveDeployRegion = crossRegionRegistry.effectiveRegion(deployRegion);
         return new OrgAiPolicyResponse(
                 sub.getAiProviderChain(),
                 sub.getDailyTokenBudget(),
                 effectiveBudget,
                 used,
                 remaining,
-                sub.getAiModelMap()
+                sub.getAiModelMap(),
+                deployRegion,
+                effectiveDeployRegion
         );
     }
 
@@ -117,6 +129,18 @@ public class OrgAiPolicyService {
                         "VALIDATION_ERROR",
                         "modelMap entries must be ASSISTANT_ROLE=provider:model");
             }
+        }
+    }
+
+    private static void validateDeployRegion(String region) {
+        if (region.isBlank()) {
+            return;
+        }
+        String normalized = region.trim().toLowerCase();
+        if (!normalized.matches("[a-z0-9-]+")) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "deployRegion must be lowercase letters, numbers, and hyphens (e.g. us-east, eu-west)");
         }
     }
 }

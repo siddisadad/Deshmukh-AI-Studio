@@ -333,7 +333,8 @@ public class BillingService {
             UUID organizationId,
             String providerChain,
             Long dailyTokenBudget,
-            String modelMap
+            String modelMap,
+            String deployRegion
     ) {
         OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
         if (providerChain != null) {
@@ -346,6 +347,10 @@ public class BillingService {
         if (modelMap != null) {
             String normalized = modelMap.trim();
             sub.setAiModelMap(normalized.isEmpty() ? null : normalized);
+        }
+        if (deployRegion != null) {
+            String normalized = deployRegion.trim().toLowerCase();
+            sub.setAiDeployRegion(normalized.isEmpty() ? null : normalized);
         }
         return subscriptionRepository.save(sub);
     }

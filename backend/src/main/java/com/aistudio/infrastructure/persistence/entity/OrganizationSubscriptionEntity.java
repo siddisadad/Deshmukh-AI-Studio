@@ -65,6 +65,9 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "ai_model_map", length = 512)
     private String aiModelMap;
 
+    @Column(name = "ai_deploy_region", length = 64)
+    private String aiDeployRegion;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

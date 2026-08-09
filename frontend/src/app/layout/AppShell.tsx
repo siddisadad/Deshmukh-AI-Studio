@@ -70,6 +70,13 @@ export function AppShell() {
               Billing
             </Button>
             <Button
+              onClick={() => navigate('/settings/ai-routing')}
+              aria-label="AI routing policy"
+              data-testid="nav-ai-routing"
+            >
+              AI routing
+            </Button>
+            <Button
               onClick={() => navigate('/settings/plugins')}
               aria-label="Plugins and assistants"
               data-testid="nav-plugins"

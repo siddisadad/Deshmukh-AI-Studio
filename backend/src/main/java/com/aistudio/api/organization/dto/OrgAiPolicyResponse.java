@@ -6,6 +6,8 @@ public record OrgAiPolicyResponse(
         long effectiveDailyTokenBudget,
         long tokensUsedToday,
         Long tokenBudgetRemaining,
-        String modelMap
+        String modelMap,
+        String deployRegion,
+        String effectiveDeployRegion
 ) {
 }

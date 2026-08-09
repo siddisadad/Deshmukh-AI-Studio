@@ -218,7 +218,7 @@ public class RoutingAiProvider implements AiProviderPort {
 
     private List<String> effectiveChain() {
         List<String> platformChain = crossRegionRegistry != null && crossRegionRegistry.enabled()
-                ? crossRegionRegistry.resolveChain(chain)
+                ? crossRegionRegistry.resolveChain(chain, OrgAiRoutingContext.deployRegion())
                 : chain;
         List<String> base;
         UUID orgId = OrgAiRoutingContext.organizationId();

@@ -98,6 +98,7 @@ class AnthropicProviderStreamTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }

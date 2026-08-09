@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.42-beta] — 2026-08-09
+
+### Added
+
+- Model-specific routing — `AI_ASSISTANT_MODEL_MAP` maps assistant roles to `provider:model`
+- Org model map override — `ai_model_map` on subscriptions + `modelMap` on ai-policy API
+- `RoutingAiProvider` prefers mapped provider; OpenAI/Anthropic honor metadata `model`
+- Prompt cache — `AI_PROMPT_CACHE_ENABLED` TTL cache for project context and system prompt assembly
+- `AiModelRoutingRegistry`, `AiModelRoutingService`, `AiPromptCache`
+- `docs/47-MODEL-ROUTING-PROMPT-CACHE-GUIDE.md`
+
 ## [0.2.41-beta] — 2026-08-09
 
 ### Added

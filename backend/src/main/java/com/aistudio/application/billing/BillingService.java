@@ -332,7 +332,8 @@ public class BillingService {
     public OrganizationSubscriptionEntity updateAiPolicy(
             UUID organizationId,
             String providerChain,
-            Long dailyTokenBudget
+            Long dailyTokenBudget,
+            String modelMap
     ) {
         OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
         if (providerChain != null) {
@@ -341,6 +342,10 @@ public class BillingService {
         }
         if (dailyTokenBudget != null) {
             sub.setDailyTokenBudget(dailyTokenBudget <= 0 ? null : dailyTokenBudget);
+        }
+        if (modelMap != null) {
+            String normalized = modelMap.trim();
+            sub.setAiModelMap(normalized.isEmpty() ? null : normalized);
         }
         return subscriptionRepository.save(sub);
     }

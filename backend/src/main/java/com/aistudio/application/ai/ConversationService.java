@@ -77,6 +77,8 @@ public class ConversationService {
     private final boolean exportDlpBlockOnMatch;
     private final String exportDlpWebhookUrl;
     private final ThreadExportDlpNotifier exportDlpNotifier;
+    private final AiModelRoutingService modelRoutingService;
+    private final AiPromptCache promptCache;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -100,7 +102,9 @@ public class ConversationService {
             @Value("${aistudio.ai.conversation.export-dlp-enabled:false}") boolean exportDlpEnabled,
             @Value("${aistudio.ai.conversation.export-dlp-block-on-match:true}") boolean exportDlpBlockOnMatch,
             @Value("${aistudio.ai.conversation.export-dlp-webhook-url:}") String exportDlpWebhookUrl,
-            ThreadExportDlpNotifier exportDlpNotifier
+            ThreadExportDlpNotifier exportDlpNotifier,
+            AiModelRoutingService modelRoutingService,
+            AiPromptCache promptCache
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -126,6 +130,8 @@ public class ConversationService {
         this.exportDlpBlockOnMatch = exportDlpBlockOnMatch;
         this.exportDlpWebhookUrl = exportDlpWebhookUrl;
         this.exportDlpNotifier = exportDlpNotifier;
+        this.modelRoutingService = modelRoutingService;
+        this.promptCache = promptCache;
     }
 
     @Transactional(readOnly = true)
@@ -466,6 +472,8 @@ public class ConversationService {
         ProjectEntity project = projectRepository.findById(conversation.getProjectId())
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
         OrgAiRoutingContext.setOrganizationId(project.getOrganizationId());
+        modelRoutingService.resolve(conversation.getAssistantRole(), project.getOrganizationId())
+                .ifPresent(OrgAiRoutingContext::setModelRoute);
         billingService.requireAndConsumeAiActionForProject(conversation.getProjectId());
         AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(conversation.getAssistantRole());
 
@@ -478,9 +486,14 @@ public class ConversationService {
 
         maybeAutoTitle(conversation, userMessage.getContent());
 
-        String context = contextBuilder.buildForProject(conversation.getProjectId(), content.trim());
-        String systemPrompt = promptTemplateManager.systemPrompt(assistant.promptKey())
-                + "\n\n## Shared project context\n" + context;
+        String trimmedContent = content.trim();
+        String contextKey = "ctx:" + conversation.getProjectId() + ":" + trimmedContent.hashCode();
+        String context = promptCache.getOrCompute(
+                contextKey, () -> contextBuilder.buildForProject(conversation.getProjectId(), trimmedContent));
+        String baseSystem = promptTemplateManager.systemPrompt(assistant.promptKey());
+        String systemPromptKey = "sys:" + assistant.promptKey() + ":" + conversation.getProjectId() + ":" + context.hashCode();
+        String systemPrompt = promptCache.getOrCompute(
+                systemPromptKey, () -> baseSystem + "\n\n## Shared project context\n" + context);
         String promptVersion = promptTemplateManager.systemPromptVersion(assistant.promptKey());
 
         List<MessageEntity> recentDesc = messageRepository.findByConversationIdOrderByCreatedAtDesc(
@@ -495,18 +508,22 @@ public class ConversationService {
                 ))
                 .toList();
 
+        Map<String, String> metadata = new LinkedHashMap<>();
+        metadata.put("assistantRole", conversation.getAssistantRole().name());
+        metadata.put("promptVersion", promptVersion);
+        AiModelRoute modelRoute = OrgAiRoutingContext.modelRoute();
+        if (modelRoute != null && modelRoute.model() != null && !modelRoute.model().isBlank()) {
+            metadata.put("model", modelRoute.model());
+        }
         AiProviderPort.AiGenerationRequest request = new AiProviderPort.AiGenerationRequest(
                 systemPrompt,
                 aiMessages,
                 0.3,
                 2000,
-                Map.of(
-                        "assistantRole", conversation.getAssistantRole().name(),
-                        "promptVersion", promptVersion
-                )
+                metadata
         );
         billingService.requireTokenBudgetForProject(
-                conversation.getProjectId(), estimateTokens(content.trim(), 2000));
+                conversation.getProjectId(), estimateTokens(trimmedContent, 2000));
         return new PreparedChat(conversation, userMessage, request, promptVersion);
     }
 

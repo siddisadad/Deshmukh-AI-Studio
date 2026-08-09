@@ -5,6 +5,7 @@ public record OrgAiPolicyResponse(
         Long dailyTokenBudget,
         long effectiveDailyTokenBudget,
         long tokensUsedToday,
-        Long tokenBudgetRemaining
+        Long tokenBudgetRemaining,
+        String modelMap
 ) {
 }

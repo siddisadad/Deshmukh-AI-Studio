@@ -62,6 +62,9 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "ai_provider_chain", length = 255)
     private String aiProviderChain;
 
+    @Column(name = "ai_model_map", length = 512)
+    private String aiModelMap;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

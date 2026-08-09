@@ -7,6 +7,10 @@ public record GitProperties(
         String provider,
         String apiToken,
         String apiBaseUrl,
-        String publicApiBaseUrl
+        String publicApiBaseUrl,
+        String gitlabApiToken,
+        String gitlabApiBaseUrl,
+        String bitbucketApiToken,
+        String bitbucketApiBaseUrl
 ) {
 }

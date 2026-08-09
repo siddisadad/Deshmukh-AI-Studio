@@ -6,6 +6,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.60-beta] — 2026-08-09
+
+### Added
+
+- GitLab and Bitbucket code metadata sync connectors
+- `GitMetadataRegistry` — routes sync by project `provider`
+- `GitlabGitMetadataProvider` and `BitbucketGitMetadataProvider` (REST tree fetch)
+- V37 migration — `gitlab` / `bitbucket` provider values on `project_git_links`
+- `POST /api/v1/git/webhook/gitlab/{projectId}` — `X-Gitlab-Token` verification
+- `POST /api/v1/git/webhook/bitbucket/{projectId}` — HMAC signature verification
+- `PUT git-link` optional `provider` field (`github`, `gitlab`, `bitbucket`)
+- Project settings UI — Git provider selector
+- `docs/65-GITLAB-BITBUCKET-SYNC-GUIDE.md`
+
 ## [0.2.59-beta] — 2026-08-09
 
 ### Added

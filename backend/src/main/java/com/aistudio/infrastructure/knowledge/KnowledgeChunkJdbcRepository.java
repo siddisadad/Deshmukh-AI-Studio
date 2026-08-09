@@ -34,6 +34,14 @@ public class KnowledgeChunkJdbcRepository {
         );
     }
 
+    public void deleteBySourceType(UUID projectId, KnowledgeSourceType sourceType) {
+        jdbcTemplate.update(
+                "DELETE FROM knowledge_chunks WHERE project_id = ? AND source_type = ?",
+                projectId,
+                sourceType.name()
+        );
+    }
+
     public int countByProjectId(UUID projectId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM knowledge_chunks WHERE project_id = ?",

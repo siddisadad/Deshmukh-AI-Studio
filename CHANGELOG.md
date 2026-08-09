@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.58-beta] — 2026-08-09
+
+### Added
+
+- Code metadata RAG — V34 `project_code_files` table and `CODE_FILE` knowledge source type
+- `GET/PUT /api/v1/projects/{id}/code-metadata` — manifest replace with automatic RAG reindex
+- `RAG_MAX_CODE_FILES_PER_PROJECT` (default 500)
+- Project settings UI — code metadata manifest JSON upload
+- `docs/63-CODE-METADATA-RAG-GUIDE.md`
+
 ## [0.2.57-beta] — 2026-08-09
 
 ### Added

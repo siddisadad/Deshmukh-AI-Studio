@@ -97,6 +97,7 @@ aistudio:
       chunk-size: ${RAG_CHUNK_SIZE:900}
       chunk-overlap: ${RAG_CHUNK_OVERLAP:120}
       search-max-k: ${RAG_SEARCH_MAX_K:32}
+      max-code-files-per-project: ${RAG_MAX_CODE_FILES_PER_PROJECT:500}
     circuit-breaker:
       enabled: ${AI_CIRCUIT_BREAKER_ENABLED:true}
       failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}

@@ -4,5 +4,6 @@ public enum KnowledgeSourceType {
     REQUIREMENT,
     DOCUMENT,
     CONTEXT_ASSET,
-    TASK
+    TASK,
+    CODE_FILE
 }

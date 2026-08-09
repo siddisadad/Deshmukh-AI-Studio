@@ -43,7 +43,8 @@ public record AiProperties(
             int maxChunksPerProject,
             int chunkSize,
             int chunkOverlap,
-            int searchMaxK
+            int searchMaxK,
+            int maxCodeFilesPerProject
     ) {
     }
 

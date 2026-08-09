@@ -24,6 +24,7 @@ import {
 } from '../api/knowledgeApi';
 import { jobsApi, type BackgroundJob } from '../api/jobsApi';
 import { chatApi } from '../../chat/api/chatApi';
+import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
@@ -48,6 +49,8 @@ export function ProjectSettingsPage() {
   const [knowledgeQuery, setKnowledgeQuery] = useState('');
   const [knowledgeHits, setKnowledgeHits] = useState<KnowledgeHit[]>([]);
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
+  const [codeMetadata, setCodeMetadata] = useState<CodeMetadataSummary | null>(null);
+  const [codeManifestJson, setCodeManifestJson] = useState('');
 
   useEffect(() => {
     if (!projectId) return;
@@ -57,8 +60,9 @@ export function ProjectSettingsPage() {
       contextAssetsApi.list(projectId),
       knowledgeApi.status(projectId),
       jobsApi.list(projectId, 10),
+      codeMetadataApi.summary(projectId),
     ])
-      .then(([p, listed, status, listedJobs]) => {
+      .then(([p, listed, status, listedJobs, codeSummary]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
@@ -69,6 +73,7 @@ export function ProjectSettingsPage() {
         setAssets(listed);
         setKnowledge(status);
         setJobs(listedJobs);
+        setCodeMetadata(codeSummary);
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
           setAssetType(current.assetType);
@@ -112,6 +117,33 @@ export function ProjectSettingsPage() {
       setMessage('Project updated');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSaveCodeManifest(e: FormEvent) {
+    e.preventDefault();
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const parsed = JSON.parse(codeManifestJson) as Array<{
+        path: string;
+        language?: string;
+        snippet?: string;
+        sizeBytes?: number;
+      }>;
+      if (!Array.isArray(parsed)) {
+        throw new Error('Manifest must be a JSON array');
+      }
+      const summary = await codeMetadataApi.replace(projectId, parsed);
+      setCodeMetadata(summary);
+      setKnowledge(await knowledgeApi.status(projectId));
+      setMessage(`Code metadata saved · ${summary.fileCount} files indexed for RAG`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Invalid manifest');
     } finally {
       setSaving(false);
     }
@@ -329,6 +361,36 @@ export function ProjectSettingsPage() {
             data-testid="context-asset-save"
           >
             Save context asset
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper component="form" onSubmit={onSaveCodeManifest} variant="outlined" sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6">Code metadata (RAG)</Typography>
+          <Typography color="text.secondary">
+            Upload a manifest of repository paths and optional snippets for semantic search.{' '}
+            {codeMetadata?.fileCount ?? 0} / {codeMetadata?.maxFilesPerProject ?? 500} files stored.
+          </Typography>
+          <TextField
+            label="Manifest JSON"
+            multiline
+            minRows={6}
+            value={codeManifestJson}
+            onChange={(e) => setCodeManifestJson(e.target.value)}
+            placeholder={`[
+  {"path":"src/auth/LoginService.java","language":"java","snippet":"class LoginService { ... }","sizeBytes":1200}
+]`}
+            helperText="Array of path, language, snippet, and sizeBytes. Replaces the full manifest and reindexes."
+            slotProps={{ htmlInput: { 'data-testid': 'code-metadata-manifest' } }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || !codeManifestJson.trim()}
+            data-testid="code-metadata-save"
+          >
+            Save manifest & reindex
           </Button>
         </Stack>
       </Paper>

@@ -65,7 +65,7 @@ class OrgAiPolicyCanaryIT {
 
         mockMvc.perform(delete("/api/v1/organizations/" + orgId + "/ai-policy/canary")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     private JsonNode register(String email) throws Exception {

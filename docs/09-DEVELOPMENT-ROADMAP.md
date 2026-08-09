@@ -190,6 +190,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 17. Phase 14 — Org git sync operations (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Retry failed | Bulk enqueue sync for failed last-sync links ([82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md](82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

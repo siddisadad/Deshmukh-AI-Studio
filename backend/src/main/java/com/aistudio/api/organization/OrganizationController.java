@@ -28,6 +28,7 @@ import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -403,5 +404,14 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.getOverview(orgId, user.getId(), linked, provider, lastSyncStatus);
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/retry-failed")
+    @Operation(summary = "Enqueue background sync for projects with failed last git sync (OWNER/ADMIN)")
+    public OrgGitSyncRetryFailedResponse retryFailedGitSyncs(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.retryFailedSyncs(orgId, user.getId());
     }
 }

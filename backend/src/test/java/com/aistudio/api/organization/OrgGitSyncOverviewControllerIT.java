@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
+import com.aistudio.infrastructure.persistence.repository.ProjectGitLinkRepository;
 import com.aistudio.support.IntegrationTestProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +28,7 @@ class OrgGitSyncOverviewControllerIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired ProjectGitLinkRepository gitLinkRepository;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
@@ -113,6 +116,51 @@ class OrgGitSyncOverviewControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(2));
+    }
+
+    @Test
+    void orgOwnerCanRetryFailedGitSyncs() throws Exception {
+        JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID failedProjectId = createProject(token, orgId, "Failed Proj", "FD");
+        UUID okProjectId = createProject(token, orgId, "Ok Proj", "OK");
+
+        mockMvc.perform(put("/api/v1/projects/" + failedProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/failed","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + okProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/ok","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        ProjectGitLinkEntity failedLink = gitLinkRepository.findByProjectId(failedProjectId).orElseThrow();
+        failedLink.setLastSyncStatus("failed");
+        failedLink.setLastSyncError("mock failure");
+        gitLinkRepository.save(failedLink);
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-failed")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.enqueued").value(1))
+                .andExpect(jsonPath("$.skippedPending").value(0))
+                .andExpect(jsonPath("$.enqueuedProjectIds[0]").value(failedProjectId.toString()));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-failed")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.enqueued").value(0))
+                .andExpect(jsonPath("$.skippedPending").value(1));
     }
 
     private UUID createProject(String token, UUID orgId, String name, String key) throws Exception {

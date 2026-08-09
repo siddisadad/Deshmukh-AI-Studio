@@ -86,8 +86,9 @@ Read in order; each document builds on the previous.
 | 79 | [79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md](79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md) | Organization git sync overview dashboard |
 | 80 | [80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md](80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md) | Org git sync overview filters |
 | 81 | [81-GIT-SYNC-RUN-PAGINATION-GUIDE.md](81-GIT-SYNC-RUN-PAGINATION-GUIDE.md) | Git sync run offset pagination |
+| 82 | [82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md](82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md) | Org bulk retry failed git syncs |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.76-beta** adds git sync run pagination — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.77-beta** adds org bulk retry failed git syncs — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

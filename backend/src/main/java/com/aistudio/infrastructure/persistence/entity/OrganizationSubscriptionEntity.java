@@ -74,6 +74,27 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "ai_canary_percent")
     private Integer aiCanaryPercent;
 
+    @Column(name = "ai_canary_auto_promote_enabled", nullable = false)
+    private boolean aiCanaryAutoPromoteEnabled = false;
+
+    @Column(name = "ai_canary_auto_abort_enabled", nullable = false)
+    private boolean aiCanaryAutoAbortEnabled = false;
+
+    @Column(name = "ai_canary_hook_webhook_url", length = 512)
+    private String aiCanaryHookWebhookUrl;
+
+    @Column(name = "ai_canary_min_samples", nullable = false)
+    private int aiCanaryMinSamples = 20;
+
+    @Column(name = "ai_canary_abort_error_rate_percent", nullable = false)
+    private int aiCanaryAbortErrorRatePercent = 25;
+
+    @Column(name = "ai_canary_promote_min_samples", nullable = false)
+    private int aiCanaryPromoteMinSamples = 50;
+
+    @Column(name = "ai_canary_promote_max_error_rate_percent", nullable = false)
+    private int aiCanaryPromoteMaxErrorRatePercent = 5;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

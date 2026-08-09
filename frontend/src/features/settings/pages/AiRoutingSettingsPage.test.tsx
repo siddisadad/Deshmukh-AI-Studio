@@ -26,6 +26,8 @@ vi.mock('../api/aiPolicyApi', () => ({
     updateCanary: vi.fn(),
     promoteCanary: vi.fn(),
     abortCanary: vi.fn(),
+    updateCanaryHooks: vi.fn(),
+    evaluateCanaryHooks: vi.fn(),
   },
 }));
 
@@ -40,6 +42,37 @@ function renderPage() {
   );
 }
 
+function defaultPolicy(): Awaited<ReturnType<typeof aiPolicyApi.get>> {
+  return {
+    providerChain: 'mock',
+    dailyTokenBudget: 50000,
+    effectiveDailyTokenBudget: 50000,
+    tokensUsedToday: 1200,
+    tokenBudgetRemaining: 48800,
+    modelMap: null,
+    deployRegion: 'eu-west',
+    effectiveDeployRegion: 'eu-west',
+    changeApprovalRequired: false,
+    simulationGateEnabled: false,
+    canaryProviderChain: null,
+    canaryPercent: null,
+    canaryAutoPromoteEnabled: false,
+    canaryAutoAbortEnabled: false,
+    canaryHookWebhookUrl: null,
+    canaryMinSamples: 20,
+    canaryAbortErrorRatePercent: 25,
+    canaryPromoteMinSamples: 50,
+    canaryPromoteMaxErrorRatePercent: 5,
+    canaryMetrics: {
+      canarySuccessCount: 0,
+      canaryFailureCount: 0,
+      stableSuccessCount: 0,
+      stableFailureCount: 0,
+    },
+    pendingChange: null,
+  };
+}
+
 describe('AiRoutingSettingsPage', () => {
   beforeEach(() => {
     vi.mocked(organizationsApi.get).mockResolvedValue({
@@ -49,21 +82,7 @@ describe('AiRoutingSettingsPage', () => {
       role: 'OWNER',
       createdAt: '2026-01-01T00:00:00Z',
     });
-    vi.mocked(aiPolicyApi.get).mockResolvedValue({
-      providerChain: 'mock',
-      dailyTokenBudget: 50000,
-      effectiveDailyTokenBudget: 50000,
-      tokensUsedToday: 1200,
-      tokenBudgetRemaining: 48800,
-      modelMap: null,
-      deployRegion: 'eu-west',
-      effectiveDeployRegion: 'eu-west',
-      changeApprovalRequired: false,
-      simulationGateEnabled: false,
-      canaryProviderChain: null,
-      canaryPercent: null,
-      pendingChange: null,
-    });
+    vi.mocked(aiPolicyApi.get).mockResolvedValue(defaultPolicy());
     vi.mocked(aiPolicyApi.listChanges).mockResolvedValue([]);
     vi.mocked(aiPolicyApi.listSimulations).mockResolvedValue([]);
     useAuthStore.setState({
@@ -84,19 +103,14 @@ describe('AiRoutingSettingsPage', () => {
 
   it('saves policy updates', async () => {
     vi.mocked(aiPolicyApi.update).mockResolvedValue({
+      ...defaultPolicy(),
       providerChain: 'mock,openai',
       dailyTokenBudget: 60000,
       effectiveDailyTokenBudget: 60000,
-      tokensUsedToday: 1200,
       tokenBudgetRemaining: 58800,
       modelMap: 'DEVELOPER=mock:mock-1',
       deployRegion: 'us-east',
       effectiveDeployRegion: 'us-east',
-      changeApprovalRequired: false,
-      simulationGateEnabled: false,
-      canaryProviderChain: null,
-      canaryPercent: null,
-      pendingChange: null,
     });
 
     renderPage();
@@ -163,15 +177,7 @@ describe('AiRoutingSettingsPage', () => {
 
   it('blocks save when simulation gate is enabled without passing preview', async () => {
     vi.mocked(aiPolicyApi.get).mockResolvedValue({
-      providerChain: 'mock',
-      dailyTokenBudget: 50000,
-      effectiveDailyTokenBudget: 50000,
-      tokensUsedToday: 1200,
-      tokenBudgetRemaining: 48800,
-      modelMap: null,
-      deployRegion: 'eu-west',
-      effectiveDeployRegion: 'eu-west',
-      changeApprovalRequired: false,
+      ...defaultPolicy(),
       simulationGateEnabled: true,
       pendingChange: null,
     });

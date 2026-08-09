@@ -80,6 +80,7 @@ public class ConversationService {
     private final AiModelRoutingService modelRoutingService;
     private final AiPromptCache promptCache;
     private final OrgAiRoutingPolicyService routingPolicyService;
+    private final OrgAiCanaryOutcomeService canaryOutcomeService;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -106,7 +107,8 @@ public class ConversationService {
             ThreadExportDlpNotifier exportDlpNotifier,
             AiModelRoutingService modelRoutingService,
             AiPromptCache promptCache,
-            OrgAiRoutingPolicyService routingPolicyService
+            OrgAiRoutingPolicyService routingPolicyService,
+            OrgAiCanaryOutcomeService canaryOutcomeService
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -135,6 +137,7 @@ public class ConversationService {
         this.modelRoutingService = modelRoutingService;
         this.promptCache = promptCache;
         this.routingPolicyService = routingPolicyService;
+        this.canaryOutcomeService = canaryOutcomeService;
     }
 
     @Transactional(readOnly = true)
@@ -388,22 +391,30 @@ public class ConversationService {
     public ChatMessageResponse sendMessage(UUID conversationId, UUID userId, String content) {
         try {
             PreparedChat prepared = prepareChat(conversationId, userId, content);
-            AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
-            billingService.recordTokenUsageForProject(
-                    prepared.conversation().getProjectId(), tokenTotal(result));
-            MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result, prepared.promptVersion());
-            return new ChatMessageResponse(
-                    toChatDto(prepared.userMessage()),
-                    toChatDto(assistantMessage),
-                    aiProviderPort.providerId(),
-                    result.model()
-            );
+            try {
+                AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
+                billingService.recordTokenUsageForProject(
+                        prepared.conversation().getProjectId(), tokenTotal(result));
+                MessageEntity assistantMessage = persistAssistant(
+                        prepared.conversation(), result, prepared.promptVersion());
+                recordCanaryOutcomeIfApplicable(true);
+                return new ChatMessageResponse(
+                        toChatDto(prepared.userMessage()),
+                        toChatDto(assistantMessage),
+                        aiProviderPort.providerId(),
+                        result.model()
+                );
+            } catch (Exception ex) {
+                recordCanaryOutcomeIfApplicable(false);
+                throw ex;
+            }
         } finally {
             OrgAiRoutingContext.clear();
         }
     }
 
     public void streamMessage(UUID conversationId, UUID userId, String content, SseEmitter emitter) {
+        boolean recordedOutcome = false;
         try {
             PreparedChat prepared = transactionTemplate.execute(status ->
                     prepareChat(conversationId, userId, content));
@@ -417,42 +428,51 @@ public class ConversationService {
 
             AtomicBoolean clientDisconnected = new AtomicBoolean(false);
             int[] streamStats = new int[2]; // [chars, deltaCount]
-            AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
-                if (clientDisconnected.get()) {
-                    return;
+            try {
+                AiProviderPort.AiGenerationResult result = aiProviderPort.stream(prepared.request(), delta -> {
+                    if (clientDisconnected.get()) {
+                        return;
+                    }
+                    streamStats[0] += delta.length();
+                    streamStats[1] += 1;
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("delta")
+                                .data(Map.of("text", delta), MediaType.APPLICATION_JSON));
+                    } catch (IOException ex) {
+                        clientDisconnected.set(true);
+                        log.warn("SSE client disconnected during stream for conversation {}", conversationId);
+                    }
+                });
+
+                MessageEntity assistantMessage = transactionTemplate.execute(status ->
+                        persistAssistant(prepared.conversation(), result, prepared.promptVersion()));
+                if (assistantMessage == null) {
+                    throw new IllegalStateException("Failed to persist assistant message");
                 }
-                streamStats[0] += delta.length();
-                streamStats[1] += 1;
-                try {
+                billingService.recordTokenUsageForProject(
+                        prepared.conversation().getProjectId(), tokenTotal(result));
+                recordCanaryOutcomeIfApplicable(true);
+                recordedOutcome = true;
+
+                Map<String, Object> done = new LinkedHashMap<>();
+                done.put("assistantMessage", toChatDto(assistantMessage));
+                done.put("provider", aiProviderPort.providerId());
+                done.put("model", result.model());
+                done.put("usage", streamUsageMap(result, streamStats[0], streamStats[1]));
+                if (!clientDisconnected.get()) {
                     emitter.send(SseEmitter.event()
-                            .name("delta")
-                            .data(Map.of("text", delta), MediaType.APPLICATION_JSON));
-                } catch (IOException ex) {
-                    clientDisconnected.set(true);
-                    log.warn("SSE client disconnected during stream for conversation {}", conversationId);
+                            .name("done")
+                            .data(done, MediaType.APPLICATION_JSON));
+                    emitter.complete();
+                } else {
+                    emitter.complete();
                 }
-            });
-
-            MessageEntity assistantMessage = transactionTemplate.execute(status ->
-                    persistAssistant(prepared.conversation(), result, prepared.promptVersion()));
-            if (assistantMessage == null) {
-                throw new IllegalStateException("Failed to persist assistant message");
-            }
-            billingService.recordTokenUsageForProject(
-                    prepared.conversation().getProjectId(), tokenTotal(result));
-
-            Map<String, Object> done = new LinkedHashMap<>();
-            done.put("assistantMessage", toChatDto(assistantMessage));
-            done.put("provider", aiProviderPort.providerId());
-            done.put("model", result.model());
-            done.put("usage", streamUsageMap(result, streamStats[0], streamStats[1]));
-            if (!clientDisconnected.get()) {
-                emitter.send(SseEmitter.event()
-                        .name("done")
-                        .data(done, MediaType.APPLICATION_JSON));
-                emitter.complete();
-            } else {
-                emitter.complete();
+            } catch (Exception ex) {
+                if (!recordedOutcome) {
+                    recordCanaryOutcomeIfApplicable(false);
+                }
+                throw ex;
             }
         } catch (Exception ex) {
             try {
@@ -468,6 +488,14 @@ public class ConversationService {
         } finally {
             OrgAiRoutingContext.clear();
         }
+    }
+
+    private void recordCanaryOutcomeIfApplicable(boolean success) {
+        UUID organizationId = OrgAiRoutingContext.organizationId();
+        if (organizationId == null) {
+            return;
+        }
+        canaryOutcomeService.record(organizationId, OrgAiRoutingContext.canaryRoute(), success);
     }
 
     private PreparedChat prepareChat(UUID conversationId, UUID userId, String content) {

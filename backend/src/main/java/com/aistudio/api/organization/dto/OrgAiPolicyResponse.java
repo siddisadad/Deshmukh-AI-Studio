@@ -13,6 +13,14 @@ public record OrgAiPolicyResponse(
         boolean simulationGateEnabled,
         String canaryProviderChain,
         Integer canaryPercent,
+        boolean canaryAutoPromoteEnabled,
+        boolean canaryAutoAbortEnabled,
+        String canaryHookWebhookUrl,
+        int canaryMinSamples,
+        int canaryAbortErrorRatePercent,
+        int canaryPromoteMinSamples,
+        int canaryPromoteMaxErrorRatePercent,
+        OrgAiCanaryMetricsDto canaryMetrics,
         OrgAiPolicyChangeResponse pendingChange
 ) {
 }

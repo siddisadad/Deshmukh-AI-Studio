@@ -50,6 +50,19 @@ export interface OrgAiPolicySimulationRecord {
   createdAt: string;
 }
 
+export interface OrgAiCanaryMetrics {
+  canarySuccessCount: number;
+  canaryFailureCount: number;
+  stableSuccessCount: number;
+  stableFailureCount: number;
+}
+
+export interface OrgAiCanaryEvaluation {
+  action: string;
+  reason: string;
+  metrics: OrgAiCanaryMetrics;
+}
+
 export interface OrgAiPolicy {
   providerChain: string | null;
   dailyTokenBudget: number | null;
@@ -63,7 +76,25 @@ export interface OrgAiPolicy {
   simulationGateEnabled: boolean;
   canaryProviderChain: string | null;
   canaryPercent: number | null;
+  canaryAutoPromoteEnabled: boolean;
+  canaryAutoAbortEnabled: boolean;
+  canaryHookWebhookUrl: string | null;
+  canaryMinSamples: number;
+  canaryAbortErrorRatePercent: number;
+  canaryPromoteMinSamples: number;
+  canaryPromoteMaxErrorRatePercent: number;
+  canaryMetrics: OrgAiCanaryMetrics;
   pendingChange: OrgAiPolicyChange | null;
+}
+
+export interface UpdateOrgAiCanaryHooksRequest {
+  autoPromoteEnabled: boolean;
+  autoAbortEnabled: boolean;
+  hookWebhookUrl: string | null;
+  minSamples: number;
+  abortErrorRatePercent: number;
+  promoteMinSamples: number;
+  promoteMaxErrorRatePercent: number;
 }
 
 export interface UpdateOrgAiCanaryRequest {
@@ -114,4 +145,12 @@ export const aiPolicyApi = {
     http.post<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary/promote`).then((r) => r.data),
   abortCanary: (orgId: string) =>
     http.delete<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary`).then((r) => r.data),
+  updateCanaryHooks: (orgId: string, body: UpdateOrgAiCanaryHooksRequest) =>
+    http
+      .put<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary/hooks`, body)
+      .then((r) => r.data),
+  evaluateCanaryHooks: (orgId: string) =>
+    http
+      .post<OrgAiCanaryEvaluation>(`/organizations/${orgId}/ai-policy/canary/evaluate`)
+      .then((r) => r.data),
 };

@@ -9,6 +9,7 @@ public final class OrgAiRoutingContext {
 
     private static final ThreadLocal<UUID> ORGANIZATION_ID = new ThreadLocal<>();
     private static final ThreadLocal<UUID> CONVERSATION_ID = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> CANARY_ROUTE = new ThreadLocal<>();
     private static final ThreadLocal<AiModelRoute> MODEL_ROUTE = new ThreadLocal<>();
     private static final ThreadLocal<String> DEPLOY_REGION = new ThreadLocal<>();
 
@@ -35,6 +36,14 @@ public final class OrgAiRoutingContext {
         return CONVERSATION_ID.get();
     }
 
+    public static void setCanaryRoute(boolean canaryRoute) {
+        CANARY_ROUTE.set(canaryRoute);
+    }
+
+    public static boolean canaryRoute() {
+        return Boolean.TRUE.equals(CANARY_ROUTE.get());
+    }
+
     public static void setModelRoute(AiModelRoute modelRoute) {
         MODEL_ROUTE.set(modelRoute);
     }
@@ -58,6 +67,7 @@ public final class OrgAiRoutingContext {
     public static void clear() {
         ORGANIZATION_ID.remove();
         CONVERSATION_ID.remove();
+        CANARY_ROUTE.remove();
         MODEL_ROUTE.remove();
         DEPLOY_REGION.remove();
     }

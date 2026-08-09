@@ -105,6 +105,8 @@ aistudio:
     policy-change-approval-enabled: ${AI_POLICY_CHANGE_APPROVAL_ENABLED:false}
     policy-simulation-gate-enabled: ${AI_POLICY_SIMULATION_GATE_ENABLED:false}
     policy-simulation-gate-ttl-minutes: ${AI_POLICY_SIMULATION_GATE_TTL_MINUTES:30}
+    canary-hook-eval-enabled: ${AI_CANARY_HOOK_EVAL_ENABLED:false}
+    canary-hook-eval-interval-ms: ${AI_CANARY_HOOK_EVAL_INTERVAL_MS:300000}
     cross-region-routing:
       enabled: ${AI_CROSS_REGION_ROUTING_ENABLED:false}
       deploy-region: ${AISTUDIO_DEPLOY_REGION:}

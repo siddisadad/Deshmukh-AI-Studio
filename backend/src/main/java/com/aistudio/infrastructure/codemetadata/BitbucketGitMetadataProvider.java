@@ -8,12 +8,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-@ConditionalOnProperty(name = "aistudio.git.bitbucket-api-token")
+@ConditionalOnExpression("!'${aistudio.git.bitbucket-api-token:}'.isBlank()")
 public class BitbucketGitMetadataProvider implements GitMetadataPort {
 
     private static final int MAX_FILES = 500;

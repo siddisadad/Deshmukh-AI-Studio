@@ -10,12 +10,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-@ConditionalOnProperty(name = "aistudio.git.gitlab-api-token")
+@ConditionalOnExpression("!'${aistudio.git.gitlab-api-token:}'.isBlank()")
 public class GitlabGitMetadataProvider implements GitMetadataPort {
 
     private static final int MAX_FILES = 500;

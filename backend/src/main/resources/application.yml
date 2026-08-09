@@ -70,6 +70,11 @@ aistudio:
       share-ttl-seconds: ${CONVERSATION_SHARE_TTL_SECONDS:604800}
       export-redaction-policy: ${CHAT_EXPORT_REDACTION_POLICY:none}
       compliance-export-redaction-policy: ${CHAT_EXPORT_COMPLIANCE_REDACTION_POLICY:none}
+      export-watermark-enabled: ${CHAT_EXPORT_WATERMARK_ENABLED:false}
+      export-watermark-notice: ${CHAT_EXPORT_WATERMARK_NOTICE:Confidential — AI Studio export. Do not redistribute.}
+      export-dlp-enabled: ${CHAT_EXPORT_DLP_ENABLED:false}
+      export-dlp-block-on-match: ${CHAT_EXPORT_DLP_BLOCK_ON_MATCH:true}
+      export-dlp-webhook-url: ${CHAT_EXPORT_DLP_WEBHOOK_URL:}
     rate-limit:
       ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
     embedding:

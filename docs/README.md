@@ -48,6 +48,7 @@ Read in order; each document builds on the previous.
 | 41 | [41-BILLING-ANOMALY-FORECAST-GUIDE.md](41-BILLING-ANOMALY-FORECAST-GUIDE.md) | Billing anomaly alerts and cost forecasting |
 | 42 | [42-SLO-ERROR-BUDGET-GUIDE.md](42-SLO-ERROR-BUDGET-GUIDE.md) | SLO dashboards and error budget alerts |
 | 43 | [43-STAGING-SIGNOFF-MATRIX-GUIDE.md](43-STAGING-SIGNOFF-MATRIX-GUIDE.md) | Multi-environment sign-off matrix |
+| 44 | [44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md](44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md) | Export watermarking and DLP scanning |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.38-beta** adds multi-environment sign-off matrix — see [CHANGELOG.md](../CHANGELOG.md).
 

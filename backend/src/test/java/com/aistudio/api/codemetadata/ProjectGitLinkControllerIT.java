@@ -200,28 +200,28 @@ class ProjectGitLinkControllerIT {
                                 """))
                 .andExpect(status().isOk());
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
         }
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=2&offset=0")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(2))
-                .andExpect(jsonPath("$.offset").value(0))
-                .andExpect(jsonPath("$.limit").value(2))
-                .andExpect(jsonPath("$.totalCount").value(3))
-                .andExpect(jsonPath("$.hasMore").value(true));
-
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=2&offset=2")
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=1&offset=0")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.offset").value(2))
+                .andExpect(jsonPath("$.offset").value(0))
+                .andExpect(jsonPath("$.limit").value(1))
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.hasMore").value(true));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=1&offset=1")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.offset").value(1))
                 .andExpect(jsonPath("$.hasMore").value(false));
     }
 

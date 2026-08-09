@@ -33,4 +33,20 @@ class GitPathIgnoreMatcherTest {
         assertThat(filtered).hasSize(1);
         assertThat(filtered.get(0).path()).isEqualTo("src/App.java");
     }
+
+    @Test
+    void includePatternsLimitScopeWhenSet() {
+        List<String> include = GitPathIgnoreMatcher.normalizePatterns(List.of("src/**"));
+        assertThat(GitPathIgnoreMatcher.isIncluded("src/App.java", include)).isTrue();
+        assertThat(GitPathIgnoreMatcher.isIncluded("README.md", include)).isFalse();
+        List<GitFileEntry> filtered = GitPathIgnoreMatcher.filterIncludedFiles(
+                List.of(
+                        new GitFileEntry("README.md", "markdown", "readme", 10),
+                        new GitFileEntry("src/App.java", "java", "class App", 20)
+                ),
+                include
+        );
+        assertThat(filtered).hasSize(1);
+        assertThat(filtered.get(0).path()).isEqualTo("src/App.java");
+    }
 }

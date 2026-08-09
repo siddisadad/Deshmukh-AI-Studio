@@ -19,6 +19,7 @@ public record ProjectGitLinkResponse(
         String lastSyncError,
         Integer scheduledSyncIntervalMinutes,
         List<String> pathIgnorePatterns,
+        List<String> pathIncludePatterns,
         Instant updatedAt
 ) {
 }

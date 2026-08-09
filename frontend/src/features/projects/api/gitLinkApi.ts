@@ -16,6 +16,7 @@ export interface ProjectGitLink {
   lastSyncError: string | null;
   scheduledSyncIntervalMinutes: number | null;
   pathIgnorePatterns: string[];
+  pathIncludePatterns: string[];
   updatedAt: string | null;
 }
 
@@ -30,6 +31,8 @@ export interface UpsertProjectGitLinkBody {
   clearScheduledSyncInterval?: boolean;
   pathIgnorePatterns?: string[];
   clearPathIgnorePatterns?: boolean;
+  pathIncludePatterns?: string[];
+  clearPathIncludePatterns?: boolean;
 }
 
 export const gitLinkApi = {

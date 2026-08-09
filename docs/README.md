@@ -77,8 +77,9 @@ Read in order; each document builds on the previous.
 | 70 | [70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md) | Per-project scheduled sync toggle |
 | 71 | [71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md](71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md) | Git path ignore patterns |
 | 72 | [72-GIT-SYNC-FAILED-SCHEDULED-RETRY-GUIDE.md](72-GIT-SYNC-FAILED-SCHEDULED-RETRY-GUIDE.md) | Git sync failed scheduled retry |
+| 73 | [73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md](73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md) | Git path include patterns |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.67-beta** adds git sync failed scheduled retry — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.68-beta** adds git path include patterns — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.68-beta] — 2026-08-09
+
+### Added
+
+- Git path include patterns — per-project Ant-style globs to scope sync
+- Empty include list syncs all paths; include applied before ignore filters
+- `PUT git-link` — `pathIncludePatterns` and `clearPathIncludePatterns`
+- Project settings UI — path include patterns field
+- `docs/73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md`
+
 ## [0.2.67-beta] — 2026-08-09
 
 ### Added

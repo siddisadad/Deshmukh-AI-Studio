@@ -8,6 +8,7 @@ export interface ProjectGitLink {
   repository: string;
   branch: string;
   enabled: boolean;
+  scheduledSyncEnabled: boolean;
   webhookUrl: string;
   webhookSecret: string | null;
   lastSyncedAt: string | null;
@@ -22,6 +23,7 @@ export interface UpsertProjectGitLinkBody {
   repository: string;
   branch?: string;
   enabled?: boolean;
+  scheduledSyncEnabled?: boolean;
   regenerateWebhookSecret?: boolean;
   scheduledSyncIntervalMinutes?: number;
   clearScheduledSyncInterval?: boolean;

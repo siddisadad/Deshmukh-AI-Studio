@@ -38,6 +38,9 @@ public class ProjectGitLinkEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "scheduled_sync_enabled", nullable = false)
+    private boolean scheduledSyncEnabled = true;
+
     @Column(name = "last_synced_at")
     private Instant lastSyncedAt;
 

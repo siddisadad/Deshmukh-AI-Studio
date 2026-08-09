@@ -59,6 +59,7 @@ export function ProjectSettingsPage() {
   const [gitBranch, setGitBranch] = useState('main');
   const [gitProvider, setGitProvider] = useState<GitProvider>('github');
   const [gitEnabled, setGitEnabled] = useState(true);
+  const [gitScheduledSyncEnabled, setGitScheduledSyncEnabled] = useState(true);
   const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState('');
 
   useEffect(() => {
@@ -91,6 +92,7 @@ export function ProjectSettingsPage() {
           GIT_PROVIDERS.includes(link.provider as GitProvider) ? (link.provider as GitProvider) : 'github',
         );
         setGitEnabled(link.enabled);
+        setGitScheduledSyncEnabled(link.scheduledSyncEnabled ?? true);
         setGitSyncIntervalMinutes(
           link.scheduledSyncIntervalMinutes != null && link.scheduledSyncIntervalMinutes > 0
             ? String(link.scheduledSyncIntervalMinutes)
@@ -157,6 +159,7 @@ export function ProjectSettingsPage() {
         repository: gitRepository.trim(),
         branch: gitBranch.trim() || 'main',
         enabled: gitEnabled,
+        scheduledSyncEnabled: gitScheduledSyncEnabled,
         ...(intervalTrimmed
           ? { scheduledSyncIntervalMinutes: Number(intervalTrimmed) }
           : { clearScheduledSyncInterval: true }),
@@ -493,6 +496,17 @@ export function ProjectSettingsPage() {
             label="Enabled"
             value={gitEnabled ? 'yes' : 'no'}
             onChange={(e) => setGitEnabled(e.target.value === 'yes')}
+          >
+            <MenuItem value="yes">Enabled</MenuItem>
+            <MenuItem value="no">Disabled</MenuItem>
+          </TextField>
+          <TextField
+            select
+            label="Scheduled sync"
+            value={gitScheduledSyncEnabled ? 'yes' : 'no'}
+            onChange={(e) => setGitScheduledSyncEnabled(e.target.value === 'yes')}
+            helperText="When disabled, webhooks and manual sync still work."
+            slotProps={{ htmlInput: { 'data-testid': 'git-scheduled-sync' } }}
           >
             <MenuItem value="yes">Enabled</MenuItem>
             <MenuItem value="no">Disabled</MenuItem>

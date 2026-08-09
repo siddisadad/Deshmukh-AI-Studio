@@ -128,7 +128,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
-## 10. Phase 7 — Production depth (started)
+## 10. Phase 7 — Production depth (complete)
 
 | Item | Status on `main` | Next depth |
 |---|---|---|
@@ -136,7 +136,15 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
-## 11. Dependency Graph (simplified)
+## 11. Phase 8 — Git sync depth (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Scheduled sync controls | Per-project interval ([69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md)), per-project scheduled toggle ([70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md)) | — |
+
+---
+
+## 12. Dependency Graph (simplified)
 
 ```
 Foundations → Identity → Projects → Requirements/Tasks/Docs → AI → Hardening → Beta
@@ -146,7 +154,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 12. Staffing Suggestion
+## 13. Staffing Suggestion
 
 | Role | Focus |
 |---|---|
@@ -157,7 +165,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 13. Document Control
+## 14. Document Control
 
 | Version | Date | Notes |
 |---|---|---|

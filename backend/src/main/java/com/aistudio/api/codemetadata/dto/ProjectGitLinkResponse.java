@@ -10,6 +10,7 @@ public record ProjectGitLinkResponse(
         String repository,
         String branch,
         boolean enabled,
+        boolean scheduledSyncEnabled,
         String webhookUrl,
         String webhookSecret,
         Instant lastSyncedAt,

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.65-beta] — 2026-08-09
+
+### Added
+
+- Per-project scheduled git sync toggle — `scheduled_sync_enabled` on git links
+- Scheduler skips links with scheduled sync disabled; webhooks and manual sync unchanged
+- `PUT git-link` — optional `scheduledSyncEnabled`
+- Project settings UI — scheduled sync enable/disable
+- `docs/70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md`
+
 ## [0.2.64-beta] — 2026-08-09
 
 ### Added

@@ -49,6 +49,11 @@
   padding: 1.25rem 0;
 }
 
+.dt-nav--static {
+  position: relative;
+  inset: auto;
+}
+
 .dt-nav__brand {
   font-family: var(--dt-font-display);
   font-weight: 700;
@@ -76,8 +81,53 @@
 }
 
 .dt-nav__links a:hover,
-.dt-nav__links a:focus-visible {
+.dt-nav__links a:focus-visible,
+.dt-nav__links a.active {
   color: var(--dt-teal);
+}
+
+.dt-page-hero {
+  width: min(100% - 2rem, var(--dt-max));
+  margin: 0 auto;
+  padding: 2.75rem 0 2.5rem;
+  animation: dt-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dt-page-hero__title {
+  margin: 0 0 0.85rem;
+  max-width: 16ch;
+  font-family: var(--dt-font-display);
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.dt-service-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.75rem;
+}
+
+.dt-service-list li {
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--dt-teal-mist);
+}
+
+.dt-service-list h2 {
+  margin: 0 0 0.45rem;
+  font-family: var(--dt-font-display);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.dt-service-list p {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--dt-muted);
+  font-size: 1.05rem;
+  line-height: 1.55;
 }
 
 .dt-nav__cta {
@@ -363,7 +413,7 @@
   }
 
   .dt-nav__links a[href='#product'],
-  .dt-nav__links a[href='#approach'] {
+  .dt-nav__links a[href='/#product'] {
     display: none;
   }
 

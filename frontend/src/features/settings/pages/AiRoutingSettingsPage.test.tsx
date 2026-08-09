@@ -18,6 +18,9 @@ vi.mock('../api/aiPolicyApi', () => ({
   aiPolicyApi: {
     get: vi.fn(),
     update: vi.fn(),
+    listChanges: vi.fn(),
+    approvePending: vi.fn(),
+    rejectPending: vi.fn(),
   },
 }));
 
@@ -50,7 +53,10 @@ describe('AiRoutingSettingsPage', () => {
       modelMap: null,
       deployRegion: 'eu-west',
       effectiveDeployRegion: 'eu-west',
+      changeApprovalRequired: false,
+      pendingChange: null,
     });
+    vi.mocked(aiPolicyApi.listChanges).mockResolvedValue([]);
     useAuthStore.setState({
       organization: { id: 'org-1', name: 'Test Org', slug: 'test' },
     });
@@ -77,6 +83,8 @@ describe('AiRoutingSettingsPage', () => {
       modelMap: 'DEVELOPER=mock:mock-1',
       deployRegion: 'us-east',
       effectiveDeployRegion: 'us-east',
+      changeApprovalRequired: false,
+      pendingChange: null,
     });
 
     renderPage();

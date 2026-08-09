@@ -8,6 +8,8 @@ public record OrgAiPolicyResponse(
         Long tokenBudgetRemaining,
         String modelMap,
         String deployRegion,
-        String effectiveDeployRegion
+        String effectiveDeployRegion,
+        boolean changeApprovalRequired,
+        OrgAiPolicyChangeResponse pendingChange
 ) {
 }

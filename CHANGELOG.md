@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.45-beta] — 2026-08-09
+
+### Added
+
+- AI routing policy audit log — `org_ai_policy_changes` table + `GET /organizations/{id}/ai-policy/changes`
+- Change approvals — `AI_POLICY_CHANGE_APPROVAL_ENABLED` queues ADMIN proposals for OWNER approve/reject
+- `POST /organizations/{id}/ai-policy/pending/approve` and `pending/reject`
+- Settings UI — pending banner, approve/reject, change history on `/settings/ai-routing`
+- `docs/50-AI-POLICY-AUDIT-APPROVAL-GUIDE.md`
+
 ## [0.2.44-beta] — 2026-08-09
 
 ### Added

@@ -37,13 +37,21 @@ export function AiRoutingSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const changesQuery = useQuery({
+    queryKey: ['ai-policy-changes', org?.id],
+    queryFn: () => aiPolicyApi.listChanges(org!.id, 20),
+    enabled: !!org?.id,
+  });
+
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
     queryFn: () => organizationsApi.get(org!.id),
     enabled: !!org?.id,
   });
 
-  const isOwner = orgQuery.data?.role === 'OWNER';
+  const role = orgQuery.data?.role;
+  const isOwner = role === 'OWNER';
+  const canEdit = role === 'OWNER' || role === 'ADMIN';
 
   useEffect(() => {
     const policy = policyQuery.data;
@@ -58,6 +66,11 @@ export function AiRoutingSettingsPage() {
     setDeployRegion(policy.deployRegion ?? '');
   }, [policyQuery.data]);
 
+  async function refreshPolicy() {
+    await queryClient.invalidateQueries({ queryKey: ['ai-policy', org?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['ai-policy-changes', org?.id] });
+  }
+
   const save = useMutation({
     mutationFn: () =>
       aiPolicyApi.update(org!.id, {
@@ -70,8 +83,13 @@ export function AiRoutingSettingsPage() {
       }),
     onSuccess: async (policy) => {
       setError(null);
-      setMessage('AI routing policy saved');
+      if (policy.changeApprovalRequired && !isOwner && policy.pendingChange) {
+        setMessage('Change submitted for owner approval');
+      } else {
+        setMessage('AI routing policy saved');
+      }
       await queryClient.setQueryData(['ai-policy', org?.id], policy);
+      await queryClient.invalidateQueries({ queryKey: ['ai-policy-changes', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -79,7 +97,36 @@ export function AiRoutingSettingsPage() {
     },
   });
 
+  const approve = useMutation({
+    mutationFn: () => aiPolicyApi.approvePending(org!.id),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Pending AI routing policy approved');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+      await refreshPolicy();
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to approve policy change');
+    },
+  });
+
+  const reject = useMutation({
+    mutationFn: () => aiPolicyApi.rejectPending(org!.id),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Pending AI routing policy rejected');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+      await refreshPolicy();
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to reject policy change');
+    },
+  });
+
   const policy = policyQuery.data;
+  const pending = policy?.pendingChange;
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 720 }} data-testid="ai-routing-settings">
@@ -98,6 +145,35 @@ export function AiRoutingSettingsPage() {
           {policyQuery.error instanceof ApiError
             ? policyQuery.error.message
             : 'Failed to load AI routing policy'}
+        </Alert>
+      )}
+
+      {pending && (
+        <Alert severity="warning" data-testid="ai-policy-pending-banner">
+          Pending change: provider chain {pending.providerChain ?? '(unchanged)'}, budget{' '}
+          {pending.dailyTokenBudget ?? '(unchanged)'}, region {pending.deployRegion ?? '(unchanged)'}.
+          {isOwner && (
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => approve.mutate()}
+                disabled={approve.isPending}
+                data-testid="ai-policy-approve"
+              >
+                Approve
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => reject.mutate()}
+                disabled={reject.isPending}
+                data-testid="ai-policy-reject"
+              >
+                Reject
+              </Button>
+            </Stack>
+          )}
         </Alert>
       )}
 
@@ -122,6 +198,11 @@ export function AiRoutingSettingsPage() {
               Effective deploy region: {policy.effectiveDeployRegion}
             </Typography>
           )}
+          {policy.changeApprovalRequired && (
+            <Typography variant="caption" color="text.secondary">
+              Admin changes require owner approval before they apply.
+            </Typography>
+          )}
         </Stack>
       )}
 
@@ -131,7 +212,7 @@ export function AiRoutingSettingsPage() {
           placeholder="mock,openai,anthropic"
           value={providerChain}
           onChange={(e) => setProviderChain(e.target.value)}
-          disabled={!isOwner}
+          disabled={!canEdit}
           helperText="Comma-separated provider ids. Empty clears the org override."
           fullWidth
           slotProps={{ htmlInput: { 'data-testid': 'ai-policy-provider-chain' } }}
@@ -141,7 +222,7 @@ export function AiRoutingSettingsPage() {
           placeholder="500000"
           value={dailyTokenBudget}
           onChange={(e) => setDailyTokenBudget(e.target.value)}
-          disabled={!isOwner}
+          disabled={!canEdit}
           helperText="Optional org override. Empty uses plan default."
           fullWidth
           slotProps={{ htmlInput: { 'data-testid': 'ai-policy-token-budget' } }}
@@ -151,7 +232,7 @@ export function AiRoutingSettingsPage() {
           placeholder="DEVELOPER=openai:gpt-4o-mini,QA_ENGINEER=anthropic:claude-sonnet-4-20250514"
           value={modelMap}
           onChange={(e) => setModelMap(e.target.value)}
-          disabled={!isOwner}
+          disabled={!canEdit}
           helperText="ASSISTANT_ROLE=provider:model pairs, comma-separated."
           fullWidth
           slotProps={{ htmlInput: { 'data-testid': 'ai-policy-model-map' } }}
@@ -161,12 +242,12 @@ export function AiRoutingSettingsPage() {
           placeholder="eu-west"
           value={deployRegion}
           onChange={(e) => setDeployRegion(e.target.value)}
-          disabled={!isOwner}
+          disabled={!canEdit}
           helperText="Overrides platform AISTUDIO_DEPLOY_REGION for cross-region routing."
           fullWidth
           slotProps={{ htmlInput: { 'data-testid': 'ai-policy-deploy-region' } }}
         />
-        {isOwner ? (
+        {canEdit ? (
           <Button
             variant="contained"
             onClick={() => save.mutate()}
@@ -176,9 +257,26 @@ export function AiRoutingSettingsPage() {
             {save.isPending ? 'Saving…' : 'Save policy'}
           </Button>
         ) : (
-          <Alert severity="info">Only organization owners can edit AI routing policy.</Alert>
+          <Alert severity="info">Only organization owners and admins can edit AI routing policy.</Alert>
         )}
       </Stack>
+
+      {changesQuery.data && changesQuery.data.length > 0 && (
+        <Stack spacing={1} data-testid="ai-policy-change-history">
+          <Typography variant="h6">Change history</Typography>
+          {changesQuery.data.map((change) => (
+            <Box key={change.id} sx={{ py: 1, borderTop: 1, borderColor: 'divider' }}>
+              <Typography variant="body2">
+                {change.status} · {new Date(change.createdAt).toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                chain={change.providerChain ?? '—'} · budget={change.dailyTokenBudget ?? '—'} ·
+                region={change.deployRegion ?? '—'}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      )}
     </Stack>
   );
 }

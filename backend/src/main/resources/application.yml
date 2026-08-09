@@ -102,6 +102,7 @@ aistudio:
       ttl-seconds: ${AI_PROMPT_CACHE_TTL_SECONDS:300}
       max-entries: ${AI_PROMPT_CACHE_MAX_ENTRIES:500}
       native-enabled: ${AI_PROVIDER_NATIVE_PROMPT_CACHE_ENABLED:false}
+    policy-change-approval-enabled: ${AI_POLICY_CHANGE_APPROVAL_ENABLED:false}
     cross-region-routing:
       enabled: ${AI_CROSS_REGION_ROUTING_ENABLED:false}
       deploy-region: ${AISTUDIO_DEPLOY_REGION:}

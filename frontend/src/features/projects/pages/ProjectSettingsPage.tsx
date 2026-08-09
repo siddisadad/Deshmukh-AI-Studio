@@ -25,6 +25,7 @@ import {
 import { jobsApi, type BackgroundJob } from '../api/jobsApi';
 import { chatApi } from '../../chat/api/chatApi';
 import { gitLinkApi, type ProjectGitLink } from '../api/gitLinkApi';
+import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];

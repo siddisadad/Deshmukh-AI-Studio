@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.83-beta] — 2026-08-09
+
+### Added
+
+- Org overview failed sync actions — per-project retry API and overview row actions
+- Clickable failed count, **Retry sync**, and **View failed runs** on overview
+- `docs/88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md`, Phase 20 roadmap
+
 ## [0.2.82-beta] — 2026-08-09
 
 ### Added

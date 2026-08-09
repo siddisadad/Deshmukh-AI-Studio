@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.74-beta] — 2026-08-09
+
+### Added
+
+- Org git sync overview — `GET /organizations/{orgId}/git-sync-overview` with per-project link and last-sync status
+- Git settings — org-wide sync overview section with refresh and project settings links
+- `docs/79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md`, Phase 13 roadmap
+
 ## [0.2.73-beta] — 2026-08-09
 
 ### Added

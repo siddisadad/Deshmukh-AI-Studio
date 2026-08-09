@@ -15,6 +15,7 @@ public record ProjectGitLinkResponse(
         Instant lastSyncedAt,
         String lastSyncStatus,
         String lastSyncError,
+        Integer scheduledSyncIntervalMinutes,
         Instant updatedAt
 ) {
 }

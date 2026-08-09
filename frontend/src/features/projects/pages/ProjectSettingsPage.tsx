@@ -59,6 +59,7 @@ export function ProjectSettingsPage() {
   const [gitBranch, setGitBranch] = useState('main');
   const [gitProvider, setGitProvider] = useState<GitProvider>('github');
   const [gitEnabled, setGitEnabled] = useState(true);
+  const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState('');
 
   useEffect(() => {
     if (!projectId) return;
@@ -90,6 +91,11 @@ export function ProjectSettingsPage() {
           GIT_PROVIDERS.includes(link.provider as GitProvider) ? (link.provider as GitProvider) : 'github',
         );
         setGitEnabled(link.enabled);
+        setGitSyncIntervalMinutes(
+          link.scheduledSyncIntervalMinutes != null && link.scheduledSyncIntervalMinutes > 0
+            ? String(link.scheduledSyncIntervalMinutes)
+            : '',
+        );
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
           setAssetType(current.assetType);
@@ -145,11 +151,15 @@ export function ProjectSettingsPage() {
     setError(null);
     setMessage(null);
     try {
+      const intervalTrimmed = gitSyncIntervalMinutes.trim();
       const link = await gitLinkApi.upsert(projectId, {
         provider: gitProvider,
         repository: gitRepository.trim(),
         branch: gitBranch.trim() || 'main',
         enabled: gitEnabled,
+        ...(intervalTrimmed
+          ? { scheduledSyncIntervalMinutes: Number(intervalTrimmed) }
+          : { clearScheduledSyncInterval: true }),
       });
       setGitLink(link);
       setMessage(`Git link saved — configure ${gitProvider} webhook with the secret below`);
@@ -487,6 +497,14 @@ export function ProjectSettingsPage() {
             <MenuItem value="yes">Enabled</MenuItem>
             <MenuItem value="no">Disabled</MenuItem>
           </TextField>
+          <TextField
+            label="Scheduled sync interval (minutes)"
+            value={gitSyncIntervalMinutes}
+            onChange={(e) => setGitSyncIntervalMinutes(e.target.value)}
+            placeholder="Platform default (e.g. 60)"
+            helperText="Optional per-project override (15–10080). Leave blank for platform GIT_SYNC_SCHEDULED_INTERVAL_MS."
+            slotProps={{ htmlInput: { 'data-testid': 'git-sync-interval' } }}
+          />
           {gitLink?.webhookUrl && (
             <Typography variant="body2" color="text.secondary">
               Webhook URL: {gitLink.webhookUrl}

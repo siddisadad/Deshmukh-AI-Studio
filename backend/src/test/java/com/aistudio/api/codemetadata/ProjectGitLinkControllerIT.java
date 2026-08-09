@@ -5,15 +5,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aistudio.infrastructure.persistence.entity.ProjectGitSyncRunEntity;
+import com.aistudio.infrastructure.persistence.repository.ProjectGitSyncRunRepository;
+import com.aistudio.support.IntegrationTestProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import com.aistudio.support.IntegrationTestProperties;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +28,7 @@ class ProjectGitLinkControllerIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired ProjectGitSyncRunRepository syncRunRepository;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
@@ -164,15 +168,74 @@ class ProjectGitLinkControllerIT {
                         "/api/v1/projects/" + projectId + "/git-link/sync-runs?source=manual&status=success")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].source").value("manual"))
-                .andExpect(jsonPath("$[0].status").value("success"));
+                .andExpect(jsonPath("$.items[0].source").value("manual"))
+                .andExpect(jsonPath("$.items[0].status").value("success"))
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
                         "/api/v1/projects/" + projectId + "/git-link/sync-runs?status=failed")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalCount").value(0));
+    }
+
+    @Test
+    void listSyncRunsSupportsOffsetPagination() throws Exception {
+        JsonNode auth = register("git-page" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Page Proj","projectKey":"PG","description":"page"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        JsonNode linkJson = objectMapper.readTree(mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/history-service","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        UUID linkId = UUID.fromString(linkJson.get("id").asText());
+
+        Instant now = Instant.now();
+        for (int i = 0; i < 2; i++) {
+            ProjectGitSyncRunEntity run = new ProjectGitSyncRunEntity();
+            run.setProjectId(projectId);
+            run.setGitLinkId(linkId);
+            run.setSource("manual");
+            run.setStatus("success");
+            run.setFileCount(3);
+            run.setStartedAt(now.minusSeconds(120 - i));
+            run.setFinishedAt(now.minusSeconds(60 - i));
+            syncRunRepository.save(run);
+        }
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=1&offset=0")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.offset").value(0))
+                .andExpect(jsonPath("$.limit").value(1))
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.hasMore").value(true));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=1&offset=1")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.offset").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.aistudio.api.codemetadata;
 
 import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.codemetadata.dto.GitSyncRunPageResponse;
 import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
@@ -83,14 +84,15 @@ public class ProjectGitLinkController {
 
     @GetMapping("/api/v1/projects/{projectId}/git-link/sync-runs")
     @Operation(summary = "List recent git code metadata sync runs")
-    public List<GitSyncRunResponse> listSyncRuns(
+    public GitSyncRunPageResponse listSyncRuns(
             @PathVariable UUID projectId,
             @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset,
             @RequestParam(required = false) String source,
             @RequestParam(required = false) String status,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return gitSyncService.listSyncRuns(projectId, user.getId(), limit, source, status);
+        return gitSyncService.listSyncRuns(projectId, user.getId(), limit, offset, source, status);
     }
 
     @PostMapping("/api/v1/projects/{projectId}/git-link/test")

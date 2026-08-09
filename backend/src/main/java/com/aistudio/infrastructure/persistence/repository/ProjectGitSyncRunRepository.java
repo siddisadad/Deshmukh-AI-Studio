@@ -28,4 +28,12 @@ public interface ProjectGitSyncRunRepository extends JpaRepository<ProjectGitSyn
             String status,
             Pageable pageable
     );
+
+    long countByProjectId(UUID projectId);
+
+    long countByProjectIdAndSource(UUID projectId, String source);
+
+    long countByProjectIdAndStatus(UUID projectId, String status);
+
+    long countByProjectIdAndSourceAndStatus(UUID projectId, String source, String status);
 }

@@ -1,6 +1,7 @@
 package com.aistudio.application.codemetadata;
 
 import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.codemetadata.dto.GitSyncRunPageResponse;
 import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
@@ -162,19 +163,26 @@ public class ProjectGitSyncService {
     }
 
     @Transactional(readOnly = true)
-    public List<GitSyncRunResponse> listSyncRuns(
+    public GitSyncRunPageResponse listSyncRuns(
             UUID projectId,
             UUID userId,
             int limit,
+            int offset,
             String source,
             String status
     ) {
         authorizationService.requireProjectAccess(projectId, userId);
         int safeLimit = limit <= 0 ? 20 : Math.min(limit, 100);
+        int safeOffset = offset < 0 ? 0 : offset;
+        if (safeOffset % safeLimit != 0) {
+            throw new DomainException("VALIDATION_ERROR", "offset must be a multiple of limit");
+        }
         String normalizedSource = normalizeSyncRunFilter(source, "source");
         String normalizedStatus = normalizeSyncRunFilter(status, "status");
-        PageRequest page = PageRequest.of(0, safeLimit);
+        int pageNumber = safeOffset / safeLimit;
+        PageRequest page = PageRequest.of(pageNumber, safeLimit);
         List<ProjectGitSyncRunEntity> runs;
+        long totalCount;
         if (normalizedSource != null && normalizedStatus != null) {
             runs = syncRunRepository.findByProjectIdAndSourceAndStatusOrderByFinishedAtDesc(
                     projectId,
@@ -182,22 +190,32 @@ public class ProjectGitSyncService {
                     normalizedStatus,
                     page
             );
+            totalCount = syncRunRepository.countByProjectIdAndSourceAndStatus(
+                    projectId,
+                    normalizedSource,
+                    normalizedStatus
+            );
         } else if (normalizedSource != null) {
             runs = syncRunRepository.findByProjectIdAndSourceOrderByFinishedAtDesc(
                     projectId,
                     normalizedSource,
                     page
             );
+            totalCount = syncRunRepository.countByProjectIdAndSource(projectId, normalizedSource);
         } else if (normalizedStatus != null) {
             runs = syncRunRepository.findByProjectIdAndStatusOrderByFinishedAtDesc(
                     projectId,
                     normalizedStatus,
                     page
             );
+            totalCount = syncRunRepository.countByProjectIdAndStatus(projectId, normalizedStatus);
         } else {
             runs = syncRunRepository.findByProjectIdOrderByFinishedAtDesc(projectId, page);
+            totalCount = syncRunRepository.countByProjectId(projectId);
         }
-        return runs.stream().map(this::toSyncRunResponse).toList();
+        List<GitSyncRunResponse> items = runs.stream().map(this::toSyncRunResponse).toList();
+        boolean hasMore = safeOffset + items.size() < totalCount;
+        return new GitSyncRunPageResponse(items, safeOffset, safeLimit, totalCount, hasMore);
     }
 
     private static String normalizeSyncRunFilter(String value, String field) {

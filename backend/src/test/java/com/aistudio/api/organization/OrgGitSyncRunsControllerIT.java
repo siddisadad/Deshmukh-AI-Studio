@@ -67,8 +67,9 @@ class OrgGitSyncRunsControllerIT {
         UUID gitLinkB = UUID.fromString(
                 objectMapper.readTree(linkBResult.getResponse().getContentAsString()).get("id").asText());
 
-        seedRun(projectA, gitLinkA, "manual", "success", 3);
-        seedRun(projectB, gitLinkB, "scheduled", "failed", 0, "timeout");
+        Instant now = Instant.now();
+        seedRun(projectA, gitLinkA, "manual", "success", 3, null, now.minusSeconds(10));
+        seedRun(projectB, gitLinkB, "scheduled", "failed", 0, "timeout", now);
 
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs?limit=10&offset=0")
                         .header("Authorization", "Bearer " + token))
@@ -100,7 +101,7 @@ class OrgGitSyncRunsControllerIT {
             String status,
             int fileCount
     ) {
-        seedRun(projectId, gitLinkId, source, status, fileCount, null);
+        seedRun(projectId, gitLinkId, source, status, fileCount, null, Instant.now());
     }
 
     private void seedRun(
@@ -109,9 +110,9 @@ class OrgGitSyncRunsControllerIT {
             String source,
             String status,
             int fileCount,
-            String errorMessage
+            String errorMessage,
+            Instant finishedAt
     ) {
-        Instant now = Instant.now();
         ProjectGitSyncRunEntity run = new ProjectGitSyncRunEntity();
         run.setProjectId(projectId);
         run.setGitLinkId(gitLinkId);
@@ -119,8 +120,8 @@ class OrgGitSyncRunsControllerIT {
         run.setStatus(status);
         run.setFileCount(fileCount);
         run.setErrorMessage(errorMessage);
-        run.setStartedAt(now.minusSeconds(30));
-        run.setFinishedAt(now);
+        run.setStartedAt(finishedAt.minusSeconds(30));
+        run.setFinishedAt(finishedAt);
         syncRunRepository.save(run);
     }
 

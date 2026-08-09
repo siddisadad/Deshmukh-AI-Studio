@@ -99,6 +99,8 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 
 **Billing (Prometheus):** `monitoring/billing-alerts.yml` defines overage rate, MTD, forecast, and anomaly spike alerts — see [docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md](../docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md).
 
+**SLO (Prometheus):** `monitoring/slo-recording-rules.yml` + `slo-alerts.yml` — availability/latency SLIs and error budget alerts — see [docs/42-SLO-ERROR-BUDGET-GUIDE.md](../docs/42-SLO-ERROR-BUDGET-GUIDE.md).
+
 Both forward to Alertmanager (`monitoring/alertmanager.generated.yml` — generate with `./scripts/write-alertmanager-config.sh`).
 
 - Alertmanager UI: http://localhost:9093 (do not expose publicly without auth)

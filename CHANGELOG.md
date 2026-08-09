@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.38-beta] — 2026-08-09
+
+### Added
+
+- Multi-environment sign-off matrix — `staging-signoff-matrix.sh` + `STAGING_SIGNOFF_ENVIRONMENTS`
+- Combined matrix JSON/Markdown reports with per-environment sign-off embeds
+- `STAGING_SIGNOFF_LABEL` on single-host reports for matrix identification
+- `docs/43-STAGING-SIGNOFF-MATRIX-GUIDE.md`
+
 ## [0.2.37-beta] — 2026-08-09
 
 ### Added

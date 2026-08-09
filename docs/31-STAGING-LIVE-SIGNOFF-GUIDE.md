@@ -52,6 +52,7 @@ Manual UX checklist (§9 in dogfood guide) remains for human operators — RAG u
 | `STAGING_SIGNOFF_REQUIRE_HTTPS` | `1` when URL is `https://` | Fail if edge is not HTTPS |
 | `STAGING_SIGNOFF_STREAM` | `1` | Run SSE chat stream probe |
 | `STAGING_SIGNOFF` / `STAGING_DOGFOOD_FULL_SIGNOFF` | unset | Dogfood step 7 runs full sign-off instead of manual echo |
+| `STAGING_SIGNOFF_LABEL` | unset | Environment label (set by sign-off matrix) |
 | `IMAGE_TAG` | `unknown` | Recorded in report |
 | `API_URL` | edge proxy | Direct API for probes/metrics when set |
 | `METRICS_SCRAPE_TOKEN` | unset | Enables dogfood internal Prometheus check |
@@ -109,5 +110,6 @@ Record the Markdown report path in the sign-off table ([14-STAGING-DOGFOOD-GUIDE
 | Doc | Topic |
 |-----|-------|
 | [14-STAGING-DOGFOOD-GUIDE.md](14-STAGING-DOGFOOD-GUIDE.md) | Staging deploy + manual checklist |
+| [43-STAGING-SIGNOFF-MATRIX-GUIDE.md](43-STAGING-SIGNOFF-MATRIX-GUIDE.md) | Multi-environment sign-off matrix |
 | [24-STAGING-PROVIDER-PROBES-GUIDE.md](24-STAGING-PROVIDER-PROBES-GUIDE.md) | Stripe/OIDC/SAML/SMTP probes |
 | [13-DEPLOYMENT-GUIDE.md](13-DEPLOYMENT-GUIDE.md) | Compose deploy + GHCR |

@@ -136,6 +136,11 @@ aistudio:
     autoscale:
       target-pending-per-replica: ${WORKER_TARGET_PENDING_PER_REPLICA:10}
       max-replicas: ${WORKER_REPLICAS_MAX:6}
+  git:
+    provider: ${GIT_METADATA_PROVIDER:mock}
+    api-token: ${GITHUB_SYNC_TOKEN:}
+    api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
+    public-api-base-url: ${API_PUBLIC_BASE_URL:http://localhost:8080}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

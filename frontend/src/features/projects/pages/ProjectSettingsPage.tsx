@@ -24,7 +24,7 @@ import {
 } from '../api/knowledgeApi';
 import { jobsApi, type BackgroundJob } from '../api/jobsApi';
 import { chatApi } from '../../chat/api/chatApi';
-import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataApi';
+import { gitLinkApi, type ProjectGitLink } from '../api/gitLinkApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
@@ -51,6 +51,10 @@ export function ProjectSettingsPage() {
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
   const [codeMetadata, setCodeMetadata] = useState<CodeMetadataSummary | null>(null);
   const [codeManifestJson, setCodeManifestJson] = useState('');
+  const [gitLink, setGitLink] = useState<ProjectGitLink | null>(null);
+  const [gitRepository, setGitRepository] = useState('');
+  const [gitBranch, setGitBranch] = useState('main');
+  const [gitEnabled, setGitEnabled] = useState(true);
 
   useEffect(() => {
     if (!projectId) return;
@@ -61,8 +65,9 @@ export function ProjectSettingsPage() {
       knowledgeApi.status(projectId),
       jobsApi.list(projectId, 10),
       codeMetadataApi.summary(projectId),
+      gitLinkApi.get(projectId),
     ])
-      .then(([p, listed, status, listedJobs, codeSummary]) => {
+      .then(([p, listed, status, listedJobs, codeSummary, link]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
@@ -74,6 +79,10 @@ export function ProjectSettingsPage() {
         setKnowledge(status);
         setJobs(listedJobs);
         setCodeMetadata(codeSummary);
+        setGitLink(link);
+        setGitRepository(link.repository || '');
+        setGitBranch(link.branch || 'main');
+        setGitEnabled(link.enabled);
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
           setAssetType(current.assetType);
@@ -117,6 +126,61 @@ export function ProjectSettingsPage() {
       setMessage('Project updated');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSaveGitLink(e: FormEvent) {
+    e.preventDefault();
+    if (!projectId || !gitRepository.trim()) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const link = await gitLinkApi.upsert(projectId, {
+        repository: gitRepository.trim(),
+        branch: gitBranch.trim() || 'main',
+        enabled: gitEnabled,
+      });
+      setGitLink(link);
+      setMessage('Git link saved — configure GitHub webhook with the secret below');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to save Git link');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSyncGitNow() {
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const link = await gitLinkApi.syncNow(projectId);
+      setGitLink(link);
+      setCodeMetadata(await codeMetadataApi.summary(projectId));
+      setKnowledge(await knowledgeApi.status(projectId));
+      setMessage(`Git sync succeeded · status ${link.lastSyncStatus}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Git sync failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSyncGitAsync() {
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const job = await gitLinkApi.syncAsync(projectId);
+      setJobs((prev) => [job, ...prev.filter((j) => j.id !== job.id)].slice(0, 10));
+      setMessage(`Git sync job queued (${job.id.slice(0, 8)}…)`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to queue Git sync');
     } finally {
       setSaving(false);
     }
@@ -362,6 +426,60 @@ export function ProjectSettingsPage() {
           >
             Save context asset
           </Button>
+        </Stack>
+      </Paper>
+
+      <Paper component="form" onSubmit={onSaveGitLink} variant="outlined" sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6">Git repository sync</Typography>
+          <Typography color="text.secondary">
+            Link a GitHub repository for automatic code metadata sync. Last sync:{' '}
+            {gitLink?.lastSyncStatus || 'never'}
+            {gitLink?.lastSyncedAt ? ` · ${new Date(gitLink.lastSyncedAt).toLocaleString()}` : ''}
+          </Typography>
+          <TextField
+            label="Repository (owner/name)"
+            value={gitRepository}
+            onChange={(e) => setGitRepository(e.target.value)}
+            placeholder="acme/platform-api"
+            required
+            slotProps={{ htmlInput: { 'data-testid': 'git-repository' } }}
+          />
+          <TextField
+            label="Branch"
+            value={gitBranch}
+            onChange={(e) => setGitBranch(e.target.value)}
+            slotProps={{ htmlInput: { 'data-testid': 'git-branch' } }}
+          />
+          <TextField
+            select
+            label="Enabled"
+            value={gitEnabled ? 'yes' : 'no'}
+            onChange={(e) => setGitEnabled(e.target.value === 'yes')}
+          >
+            <MenuItem value="yes">Enabled</MenuItem>
+            <MenuItem value="no">Disabled</MenuItem>
+          </TextField>
+          {gitLink?.webhookUrl && (
+            <Typography variant="body2" color="text.secondary">
+              Webhook URL: {gitLink.webhookUrl}
+              {gitLink.webhookSecret ? ` · secret ${gitLink.webhookSecret.slice(0, 8)}…` : ''}
+            </Typography>
+          )}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button type="submit" variant="contained" disabled={saving || !gitRepository.trim()} data-testid="git-link-save">
+              Save Git link
+            </Button>
+            <Button variant="outlined" onClick={() => void onSyncGitNow()} disabled={saving || !gitLink?.id} data-testid="git-sync-now">
+              Sync now
+            </Button>
+            <Button variant="outlined" onClick={() => void onSyncGitAsync()} disabled={saving || !gitLink?.id} data-testid="git-sync-async">
+              Sync in background
+            </Button>
+          </Stack>
+          {gitLink?.lastSyncError && (
+            <Typography color="error" variant="body2">{gitLink.lastSyncError}</Typography>
+          )}
         </Stack>
       </Paper>
 

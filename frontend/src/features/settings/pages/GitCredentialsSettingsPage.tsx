@@ -39,6 +39,7 @@ export function GitCredentialsSettingsPage() {
   const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
   const [runSourceFilter, setRunSourceFilter] = useState<'all' | 'manual' | 'scheduled' | 'webhook'>('all');
   const [runStatusFilter, setRunStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [runProjectFilter, setRunProjectFilter] = useState<'all' | string>('all');
   const [runOffset, setRunOffset] = useState(0);
   const [runItems, setRunItems] = useState<OrgGitSyncRunItem[]>([]);
   const [runHasMore, setRunHasMore] = useState(false);
@@ -81,13 +82,20 @@ export function GitCredentialsSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const runProjectOptionsQuery = useQuery({
+    queryKey: ['org-git-sync-overview', org?.id, 'run-project-options'],
+    queryFn: () => gitCredentialsApi.getSyncOverview(org!.id),
+    enabled: !!org?.id,
+  });
+
   const syncRunsQuery = useQuery({
-    queryKey: ['org-git-sync-runs', org?.id, runSourceFilter, runStatusFilter],
+    queryKey: ['org-git-sync-runs', org?.id, runSourceFilter, runStatusFilter, runProjectFilter],
     queryFn: () =>
       gitCredentialsApi.listSyncRuns(org!.id, 20, {
         offset: 0,
         source: runSourceFilter,
         status: runStatusFilter,
+        projectId: runProjectFilter === 'all' ? undefined : runProjectFilter,
       }),
     enabled: !!org?.id,
   });
@@ -103,17 +111,19 @@ export function GitCredentialsSettingsPage() {
 
   async function loadSyncRuns(
     source = runSourceFilter,
-    status = runStatusFilter
+    status = runStatusFilter,
+    project = runProjectFilter
   ) {
     if (!org?.id) return;
     setRunOffset(0);
     const page = await queryClient.fetchQuery({
-      queryKey: ['org-git-sync-runs', org.id, source, status],
+      queryKey: ['org-git-sync-runs', org.id, source, status, project],
       queryFn: () =>
         gitCredentialsApi.listSyncRuns(org.id, 20, {
           offset: 0,
           source,
           status,
+          projectId: project === 'all' ? undefined : project,
         }),
     });
     setRunItems(page.items);
@@ -131,6 +141,7 @@ export function GitCredentialsSettingsPage() {
         offset: nextOffset,
         source: runSourceFilter,
         status: runStatusFilter,
+        projectId: runProjectFilter === 'all' ? undefined : runProjectFilter,
       });
       setRunItems((prev) => [...prev, ...page.items]);
       setRunHasMore(page.hasMore);
@@ -184,6 +195,7 @@ export function GitCredentialsSettingsPage() {
       await gitCredentialsApi.downloadSyncRunsExport(org.id, format, {
         source: runSourceFilter,
         status: runStatusFilter,
+        projectId: runProjectFilter === 'all' ? undefined : runProjectFilter,
       });
     } catch (err) {
       setMessage(null);
@@ -439,13 +451,34 @@ export function GitCredentialsSettingsPage() {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
           <TextField
             select
+            label="Project"
+            size="small"
+            value={runProjectFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setRunProjectFilter(value);
+              void loadSyncRuns(runSourceFilter, runStatusFilter, value);
+            }}
+            slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-project-filter' } }}
+          >
+            <MenuItem value="all">All projects</MenuItem>
+            {(runProjectOptionsQuery.data?.items ?? [])
+              .sort((a, b) => a.projectKey.localeCompare(b.projectKey))
+              .map((item) => (
+                <MenuItem key={item.projectId} value={item.projectId}>
+                  {item.projectKey} — {item.projectName}
+                </MenuItem>
+              ))}
+          </TextField>
+          <TextField
+            select
             label="Source"
             size="small"
             value={runSourceFilter}
             onChange={(e) => {
               const value = e.target.value as 'all' | 'manual' | 'scheduled' | 'webhook';
               setRunSourceFilter(value);
-              void loadSyncRuns(value, runStatusFilter);
+              void loadSyncRuns(value, runStatusFilter, runProjectFilter);
             }}
             slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-source-filter' } }}
           >
@@ -462,7 +495,7 @@ export function GitCredentialsSettingsPage() {
             onChange={(e) => {
               const value = e.target.value as 'all' | 'success' | 'failed';
               setRunStatusFilter(value);
-              void loadSyncRuns(runSourceFilter, value);
+              void loadSyncRuns(runSourceFilter, value, runProjectFilter);
             }}
             slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-status-filter' } }}
           >

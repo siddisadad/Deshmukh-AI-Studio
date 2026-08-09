@@ -171,6 +171,42 @@ class RoutingAiProviderTest {
     }
 
     @Test
+    void crossRegionRoutingUsesOrgDeployRegionOverride() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("openai", new FastProvider("openai"));
+        registry.register("openai-eu", new FastProvider("openai-eu"));
+
+        AiProviderCrossRegionRegistry crossRegion = new AiProviderCrossRegionRegistry(
+                true,
+                "us-east",
+                "openai-eu=https://eu.api.openai.com",
+                "us-east=openai;eu-west=openai-eu"
+        );
+
+        OrgAiRoutingContext.setDeployRegion("eu-west");
+
+        RoutingAiProvider routing = new RoutingAiProvider(
+                registry,
+                List.of("openai"),
+                disabledBreaker(),
+                null,
+                false,
+                null,
+                null,
+                false,
+                null,
+                crossRegion
+        );
+        try {
+            AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+            assertThat(routing.providerId()).isEqualTo("openai-eu");
+            assertThat(result.text()).contains("openai-eu response");
+        } finally {
+            OrgAiRoutingContext.clear();
+        }
+    }
+
+    @Test
     void crossRegionRoutingUsesRegionalChain() {
         AiProviderRegistry registry = new AiProviderRegistry();
         registry.register("openai", new FastProvider("openai"));

@@ -46,6 +46,15 @@ public class OrgAiRoutingPolicyService {
                 .filter(chain -> chain != null && !chain.isBlank());
     }
 
+    public Optional<String> deployRegionOverride(UUID organizationId) {
+        if (organizationId == null) {
+            return Optional.empty();
+        }
+        return subscriptionRepository.findByOrganizationId(organizationId)
+                .map(OrganizationSubscriptionEntity::getAiDeployRegion)
+                .filter(region -> region != null && !region.isBlank());
+    }
+
     private static List<String> parseChain(String raw) {
         return Arrays.stream(raw.split(","))
                 .map(String::trim)

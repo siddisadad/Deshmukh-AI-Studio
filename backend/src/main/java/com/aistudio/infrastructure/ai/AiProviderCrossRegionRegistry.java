@@ -42,14 +42,36 @@ public class AiProviderCrossRegionRegistry {
     }
 
     public List<String> resolveChain(List<String> defaultChain) {
-        if (!enabled || deployRegion == null || deployRegion.isBlank()) {
+        return resolveChain(defaultChain, null);
+    }
+
+    public List<String> resolveChain(List<String> defaultChain, String regionOverride) {
+        if (!enabled) {
             return defaultChain;
         }
-        List<String> regional = regionChains.get(deployRegion);
+        String region = normalizeRegion(regionOverride);
+        if (region == null || region.isBlank()) {
+            region = deployRegion;
+        }
+        if (region == null || region.isBlank()) {
+            return defaultChain;
+        }
+        List<String> regional = regionChains.get(region);
         if (regional == null || regional.isEmpty()) {
             return defaultChain;
         }
         return regional;
+    }
+
+    public String effectiveRegion(String regionOverride) {
+        if (!enabled) {
+            return null;
+        }
+        String region = normalizeRegion(regionOverride);
+        if (region != null && !region.isBlank()) {
+            return region;
+        }
+        return deployRegion == null || deployRegion.isBlank() ? null : deployRegion;
     }
 
     public String endpointFor(String providerId) {
@@ -117,6 +139,9 @@ public class AiProviderCrossRegionRegistry {
     }
 
     private static String normalizeRegion(String region) {
-        return region == null ? "" : region.trim().toLowerCase(Locale.ROOT);
+        if (region == null) {
+            return "";
+        }
+        return region.trim().toLowerCase(Locale.ROOT);
     }
 }

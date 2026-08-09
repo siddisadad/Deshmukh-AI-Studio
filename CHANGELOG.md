@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.44-beta] — 2026-08-09
+
+### Added
+
+- Org deploy region override — `ai_deploy_region` on subscriptions + `deployRegion` on ai-policy API
+- `OrgAiRoutingContext` applies org region to cross-region provider chain resolution
+- AI routing policy UI — `/settings/ai-routing` for provider chain, token budget, model map, deploy region
+- `docs/49-ORG-AI-ROUTING-UI-GUIDE.md`
+
 ## [0.2.43-beta] — 2026-08-09
 
 ### Added

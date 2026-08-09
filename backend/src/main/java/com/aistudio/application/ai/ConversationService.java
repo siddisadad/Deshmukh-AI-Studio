@@ -79,6 +79,7 @@ public class ConversationService {
     private final ThreadExportDlpNotifier exportDlpNotifier;
     private final AiModelRoutingService modelRoutingService;
     private final AiPromptCache promptCache;
+    private final OrgAiRoutingPolicyService routingPolicyService;
 
     public ConversationService(
             ConversationRepository conversationRepository,
@@ -104,7 +105,8 @@ public class ConversationService {
             @Value("${aistudio.ai.conversation.export-dlp-webhook-url:}") String exportDlpWebhookUrl,
             ThreadExportDlpNotifier exportDlpNotifier,
             AiModelRoutingService modelRoutingService,
-            AiPromptCache promptCache
+            AiPromptCache promptCache,
+            OrgAiRoutingPolicyService routingPolicyService
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -132,6 +134,7 @@ public class ConversationService {
         this.exportDlpNotifier = exportDlpNotifier;
         this.modelRoutingService = modelRoutingService;
         this.promptCache = promptCache;
+        this.routingPolicyService = routingPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -472,6 +475,8 @@ public class ConversationService {
         ProjectEntity project = projectRepository.findById(conversation.getProjectId())
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
         OrgAiRoutingContext.setOrganizationId(project.getOrganizationId());
+        routingPolicyService.deployRegionOverride(project.getOrganizationId())
+                .ifPresent(OrgAiRoutingContext::setDeployRegion);
         modelRoutingService.resolve(conversation.getAssistantRole(), project.getOrganizationId())
                 .ifPresent(OrgAiRoutingContext::setModelRoute);
         billingService.requireAndConsumeAiActionForProject(conversation.getProjectId());

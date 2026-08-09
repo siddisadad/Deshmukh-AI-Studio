@@ -222,6 +222,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 21. Phase 18 — Org git sync run filters (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Project filter UI | Project dropdown on org sync runs + export ([86-ORG-GIT-SYNC-RUN-PROJECT-FILTER-GUIDE.md](86-ORG-GIT-SYNC-RUN-PROJECT-FILTER-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

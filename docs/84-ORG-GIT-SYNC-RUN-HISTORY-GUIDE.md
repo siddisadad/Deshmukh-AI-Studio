@@ -25,6 +25,7 @@ Response: `OrgGitSyncRunPageResponse` with `items` including `projectName` and `
 Settings → **Git** → **Recent sync runs (org-wide)**:
 
 - Source/status filters and refresh
+- **Project** filter dropdown (all org projects)
 - Per-run line shows project key, timestamp, source, status, file count / error
 - **Load more** when `hasMore` is true
 

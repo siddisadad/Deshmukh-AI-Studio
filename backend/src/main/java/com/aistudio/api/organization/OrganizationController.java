@@ -3,6 +3,7 @@ package com.aistudio.api.organization;
 import com.aistudio.api.organization.dto.AddMemberRequest;
 import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.project.OrgAiPolicyService;
@@ -19,9 +20,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -88,5 +90,33 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.updatePolicy(orgId, user.getId(), request);
+    }
+
+    @GetMapping("/{orgId}/ai-policy/changes")
+    @Operation(summary = "List AI routing policy change audit log")
+    public List<OrgAiPolicyChangeResponse> listAiPolicyChanges(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "50") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.listChanges(orgId, user.getId(), limit);
+    }
+
+    @PostMapping("/{orgId}/ai-policy/pending/approve")
+    @Operation(summary = "Approve pending AI routing policy change (OWNER)")
+    public OrgAiPolicyResponse approvePendingAiPolicy(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.approvePendingChange(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/ai-policy/pending/reject")
+    @Operation(summary = "Reject pending AI routing policy change (OWNER)")
+    public OrgAiPolicyResponse rejectPendingAiPolicy(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.rejectPendingChange(orgId, user.getId());
     }
 }

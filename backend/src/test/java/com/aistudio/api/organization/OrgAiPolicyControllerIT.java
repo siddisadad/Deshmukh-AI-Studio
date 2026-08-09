@@ -52,6 +52,12 @@ class OrgAiPolicyControllerIT {
                 .andExpect(jsonPath("$.dailyTokenBudget").value(50000))
                 .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(50000))
                 .andExpect(jsonPath("$.deployRegion").value("eu-west"));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy/changes")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("APPLIED"))
+                .andExpect(jsonPath("$[0].providerChain").value("mock"));
     }
 
     private JsonNode register(String email) throws Exception {

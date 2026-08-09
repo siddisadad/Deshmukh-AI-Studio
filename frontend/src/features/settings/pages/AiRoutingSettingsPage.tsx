@@ -30,6 +30,9 @@ export function AiRoutingSettingsPage() {
   const [dailyTokenBudget, setDailyTokenBudget] = useState('');
   const [modelMap, setModelMap] = useState('');
   const [deployRegion, setDeployRegion] = useState('');
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof aiPolicyApi.simulate>> | null>(
+    null,
+  );
 
   const policyQuery = useQuery({
     queryKey: ['ai-policy', org?.id],
@@ -83,6 +86,7 @@ export function AiRoutingSettingsPage() {
       }),
     onSuccess: async (policy) => {
       setError(null);
+      setPreview(null);
       if (policy.changeApprovalRequired && !isOwner && policy.pendingChange) {
         setMessage('Change submitted for owner approval');
       } else {
@@ -94,6 +98,25 @@ export function AiRoutingSettingsPage() {
     onError: (err) => {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to save AI routing policy');
+    },
+  });
+
+  const simulate = useMutation({
+    mutationFn: () =>
+      aiPolicyApi.simulate(org!.id, {
+        providerChain: providerChain.trim(),
+        dailyTokenBudget: dailyTokenBudget.trim() ? Number(dailyTokenBudget) : null,
+        modelMap: modelMap.trim(),
+        deployRegion: deployRegion.trim(),
+      }),
+    onSuccess: (result) => {
+      setError(null);
+      setMessage(null);
+      setPreview(result);
+    },
+    onError: (err) => {
+      setPreview(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to preview AI routing policy');
     },
   });
 
@@ -248,18 +271,60 @@ export function AiRoutingSettingsPage() {
           slotProps={{ htmlInput: { 'data-testid': 'ai-policy-deploy-region' } }}
         />
         {canEdit ? (
-          <Button
-            variant="contained"
-            onClick={() => save.mutate()}
-            disabled={save.isPending || !org?.id}
-            data-testid="ai-policy-save"
-          >
-            {save.isPending ? 'Saving…' : 'Save policy'}
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => simulate.mutate()}
+              disabled={simulate.isPending || !org?.id}
+              data-testid="ai-policy-preview"
+            >
+              {simulate.isPending ? 'Previewing…' : 'Preview changes'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => save.mutate()}
+              disabled={save.isPending || !org?.id}
+              data-testid="ai-policy-save"
+            >
+              {save.isPending ? 'Saving…' : 'Save policy'}
+            </Button>
+          </Stack>
         ) : (
           <Alert severity="info">Only organization owners and admins can edit AI routing policy.</Alert>
         )}
       </Stack>
+
+      {preview && (
+        <Stack spacing={1} data-testid="ai-policy-preview-panel">
+          <Typography variant="h6">Policy preview (dry-run)</Typography>
+          {preview.wouldRequireApproval && (
+            <Alert severity="info">
+              This change would require owner approval before it applies.
+            </Alert>
+          )}
+          {preview.missingProviders.length > 0 && (
+            <Alert severity="warning">
+              Missing providers in simulated chain: {preview.missingProviders.join(', ')}
+            </Alert>
+          )}
+          <Typography variant="body2">
+            Current effective chain: {preview.currentEffectiveProviderChain.join(' → ') || '—'}
+          </Typography>
+          <Typography variant="body2">
+            Simulated effective chain:{' '}
+            {preview.simulatedEffectiveProviderChain.join(' → ') || '—'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Simulated budget: {preview.simulated.effectiveDailyTokenBudget.toLocaleString()} tokens
+            ({preview.simulated.tokenBudgetRemaining?.toLocaleString() ?? '—'} remaining today)
+          </Typography>
+          {preview.simulated.effectiveDeployRegion && (
+            <Typography variant="caption" color="text.secondary">
+              Simulated deploy region: {preview.simulated.effectiveDeployRegion}
+            </Typography>
+          )}
+        </Stack>
+      )}
 
       {changesQuery.data && changesQuery.data.length > 0 && (
         <Stack spacing={1} data-testid="ai-policy-change-history">

@@ -55,8 +55,9 @@ Read in order; each document builds on the previous.
 | 48 | [48-PROVIDER-NATIVE-CACHE-CROSS-REGION-GUIDE.md](48-PROVIDER-NATIVE-CACHE-CROSS-REGION-GUIDE.md) | Provider-native prompt cache and cross-region routing |
 | 49 | [49-ORG-AI-ROUTING-UI-GUIDE.md](49-ORG-AI-ROUTING-UI-GUIDE.md) | Org AI routing policy UI and region overrides |
 | 50 | [50-AI-POLICY-AUDIT-APPROVAL-GUIDE.md](50-AI-POLICY-AUDIT-APPROVAL-GUIDE.md) | AI routing policy audit log and change approvals |
+| 51 | [51-AI-POLICY-SIMULATION-GUIDE.md](51-AI-POLICY-SIMULATION-GUIDE.md) | AI routing policy simulation / dry-run before apply |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.45-beta** adds AI routing policy audit log and change approvals — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.46-beta** adds AI routing policy simulation / dry-run — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -10,6 +10,7 @@ public record OrgAiPolicyResponse(
         String deployRegion,
         String effectiveDeployRegion,
         boolean changeApprovalRequired,
+        boolean simulationGateEnabled,
         OrgAiPolicyChangeResponse pendingChange
 ) {
 }

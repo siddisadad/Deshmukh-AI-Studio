@@ -26,7 +26,9 @@ import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
 import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
+import com.aistudio.application.organization.OrgGitSyncRunsService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
+import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
@@ -69,6 +71,7 @@ public class OrganizationController {
     private final OrgDlpConnectorService orgDlpConnectorService;
     private final OrgGitCredentialService orgGitCredentialService;
     private final OrgGitSyncOverviewService orgGitSyncOverviewService;
+    private final OrgGitSyncRunsService orgGitSyncRunsService;
 
     public OrganizationController(
             OrganizationService organizationService,
@@ -77,7 +80,8 @@ public class OrganizationController {
             OrgSsoIdpService orgSsoIdpService,
             OrgDlpConnectorService orgDlpConnectorService,
             OrgGitCredentialService orgGitCredentialService,
-            OrgGitSyncOverviewService orgGitSyncOverviewService
+            OrgGitSyncOverviewService orgGitSyncOverviewService,
+            OrgGitSyncRunsService orgGitSyncRunsService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
@@ -86,6 +90,7 @@ public class OrganizationController {
         this.orgDlpConnectorService = orgDlpConnectorService;
         this.orgGitCredentialService = orgGitCredentialService;
         this.orgGitSyncOverviewService = orgGitSyncOverviewService;
+        this.orgGitSyncRunsService = orgGitSyncRunsService;
     }
 
     @GetMapping
@@ -436,5 +441,19 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.retryFailedSyncs(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/git-sync-runs")
+    @Operation(summary = "Organization git sync run history across projects")
+    public OrgGitSyncRunPageResponse listGitSyncRuns(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncRunsService.listRuns(orgId, user.getId(), limit, offset, source, status, projectId);
     }
 }

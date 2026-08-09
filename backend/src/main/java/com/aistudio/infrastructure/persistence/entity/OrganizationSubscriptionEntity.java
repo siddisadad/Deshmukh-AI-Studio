@@ -56,6 +56,12 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "stripe_metered_usage_synced_at")
     private Instant stripeMeteredUsageSyncedAt;
 
+    @Column(name = "daily_token_budget")
+    private Long dailyTokenBudget;
+
+    @Column(name = "ai_provider_chain", length = 255)
+    private String aiProviderChain;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

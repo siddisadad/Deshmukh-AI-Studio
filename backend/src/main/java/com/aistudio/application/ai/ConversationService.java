@@ -377,15 +377,21 @@ public class ConversationService {
 
     @Transactional
     public ChatMessageResponse sendMessage(UUID conversationId, UUID userId, String content) {
-        PreparedChat prepared = prepareChat(conversationId, userId, content);
-        AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
-        MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result, prepared.promptVersion());
-        return new ChatMessageResponse(
-                toChatDto(prepared.userMessage()),
-                toChatDto(assistantMessage),
-                aiProviderPort.providerId(),
-                result.model()
-        );
+        try {
+            PreparedChat prepared = prepareChat(conversationId, userId, content);
+            AiProviderPort.AiGenerationResult result = aiProviderPort.generate(prepared.request());
+            billingService.recordTokenUsageForProject(
+                    prepared.conversation().getProjectId(), tokenTotal(result));
+            MessageEntity assistantMessage = persistAssistant(prepared.conversation(), result, prepared.promptVersion());
+            return new ChatMessageResponse(
+                    toChatDto(prepared.userMessage()),
+                    toChatDto(assistantMessage),
+                    aiProviderPort.providerId(),
+                    result.model()
+            );
+        } finally {
+            OrgAiRoutingContext.clear();
+        }
     }
 
     public void streamMessage(UUID conversationId, UUID userId, String content, SseEmitter emitter) {
@@ -423,6 +429,8 @@ public class ConversationService {
             if (assistantMessage == null) {
                 throw new IllegalStateException("Failed to persist assistant message");
             }
+            billingService.recordTokenUsageForProject(
+                    prepared.conversation().getProjectId(), tokenTotal(result));
 
             Map<String, Object> done = new LinkedHashMap<>();
             done.put("assistantMessage", toChatDto(assistantMessage));
@@ -448,11 +456,16 @@ public class ConversationService {
                 // emitter may already be closed
             }
             emitter.completeWithError(ex);
+        } finally {
+            OrgAiRoutingContext.clear();
         }
     }
 
     private PreparedChat prepareChat(UUID conversationId, UUID userId, String content) {
         ConversationEntity conversation = requireConversationEdit(conversationId, userId);
+        ProjectEntity project = projectRepository.findById(conversation.getProjectId())
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        OrgAiRoutingContext.setOrganizationId(project.getOrganizationId());
         billingService.requireAndConsumeAiActionForProject(conversation.getProjectId());
         AssistantRegistry.AssistantDefinition assistant = assistantRegistry.require(conversation.getAssistantRole());
 
@@ -492,7 +505,20 @@ public class ConversationService {
                         "promptVersion", promptVersion
                 )
         );
+        billingService.requireTokenBudgetForProject(
+                conversation.getProjectId(), estimateTokens(content.trim(), 2000));
         return new PreparedChat(conversation, userMessage, request, promptVersion);
+    }
+
+    private static int estimateTokens(String content, int maxOutputTokens) {
+        int inputEstimate = Math.max(1, content.length() / 4);
+        return inputEstimate + maxOutputTokens;
+    }
+
+    private static long tokenTotal(AiProviderPort.AiGenerationResult result) {
+        int input = result.inputTokens() != null ? result.inputTokens() : 0;
+        int output = result.outputTokens() != null ? result.outputTokens() : 0;
+        return input + output;
     }
 
     private void maybeAutoTitle(ConversationEntity conversation, String firstUserContent) {

@@ -1,12 +1,15 @@
 package com.aistudio.infrastructure.ai;
 
 import com.aistudio.application.ai.AiProviderPort;
+import com.aistudio.application.ai.OrgAiRoutingContext;
+import com.aistudio.application.ai.OrgAiRoutingPolicyService;
 import com.aistudio.domain.common.AiProviderException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ public class RoutingAiProvider implements AiProviderPort {
     private final AiProviderCostTierRegistry costTierRegistry;
     private final AiProviderQuotaTracker quotaTracker;
     private final boolean costAwareRoutingEnabled;
+    private final OrgAiRoutingPolicyService routingPolicyService;
     private final ThreadLocal<String> activeProviderId = new ThreadLocal<>();
 
     public RoutingAiProvider(
@@ -35,7 +39,7 @@ public class RoutingAiProvider implements AiProviderPort {
             List<String> chain,
             AiProviderCircuitBreaker circuitBreaker
     ) {
-        this(registry, chain, circuitBreaker, null, false, null, null, false);
+        this(registry, chain, circuitBreaker, null, false, null, null, false, null);
     }
 
     public RoutingAiProvider(
@@ -53,7 +57,8 @@ public class RoutingAiProvider implements AiProviderPort {
                 adaptiveRoutingEnabled,
                 null,
                 null,
-                false);
+                false,
+                null);
     }
 
     public RoutingAiProvider(
@@ -66,6 +71,29 @@ public class RoutingAiProvider implements AiProviderPort {
             AiProviderQuotaTracker quotaTracker,
             boolean costAwareRoutingEnabled
     ) {
+        this(
+                registry,
+                chain,
+                circuitBreaker,
+                latencyTracker,
+                adaptiveRoutingEnabled,
+                costTierRegistry,
+                quotaTracker,
+                costAwareRoutingEnabled,
+                null);
+    }
+
+    public RoutingAiProvider(
+            AiProviderRegistry registry,
+            List<String> chain,
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker,
+            boolean adaptiveRoutingEnabled,
+            AiProviderCostTierRegistry costTierRegistry,
+            AiProviderQuotaTracker quotaTracker,
+            boolean costAwareRoutingEnabled,
+            OrgAiRoutingPolicyService routingPolicyService
+    ) {
         this.registry = registry;
         this.chain = chain;
         this.circuitBreaker = circuitBreaker;
@@ -74,6 +102,7 @@ public class RoutingAiProvider implements AiProviderPort {
         this.costTierRegistry = costTierRegistry;
         this.quotaTracker = quotaTracker;
         this.costAwareRoutingEnabled = costAwareRoutingEnabled && costTierRegistry != null;
+        this.routingPolicyService = routingPolicyService;
     }
 
     @Override
@@ -159,15 +188,27 @@ public class RoutingAiProvider implements AiProviderPort {
         return false;
     }
 
+    private List<String> effectiveChain() {
+        UUID orgId = OrgAiRoutingContext.organizationId();
+        if (routingPolicyService != null && orgId != null) {
+            var orgChain = routingPolicyService.resolveChain(orgId);
+            if (orgChain.isPresent() && !orgChain.get().isEmpty()) {
+                return orgChain.get();
+            }
+        }
+        return chain;
+    }
+
     private List<String> orderedChain() {
+        List<String> base = effectiveChain();
         if (!adaptiveRoutingEnabled && !costAwareRoutingEnabled) {
-            return chain;
+            return base;
         }
         Map<String, Integer> originalIndex = new HashMap<>();
-        for (int i = 0; i < chain.size(); i++) {
-            originalIndex.put(chain.get(i), i);
+        for (int i = 0; i < base.size(); i++) {
+            originalIndex.put(base.get(i), i);
         }
-        List<String> ordered = new ArrayList<>(chain);
+        List<String> ordered = new ArrayList<>(base);
         Comparator<String> comparator = Comparator.comparingInt(id -> originalIndex.get(id));
         if (adaptiveRoutingEnabled) {
             comparator = Comparator
@@ -180,8 +221,8 @@ public class RoutingAiProvider implements AiProviderPort {
                     .thenComparing(comparator);
         }
         ordered.sort(comparator);
-        if (!ordered.equals(chain)) {
-            log.debug("Routing order: {} (chain: {})", ordered, chain);
+        if (!ordered.equals(base)) {
+            log.debug("Routing order: {} (chain: {})", ordered, base);
         }
         return ordered;
     }

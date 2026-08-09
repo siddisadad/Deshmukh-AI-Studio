@@ -108,6 +108,8 @@ public class BillingService {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         int usedToday = usageRepository.getCount(organizationId, today);
         int overageToday = usageRepository.getOverageCount(organizationId, today);
+        long tokensUsedToday = usageRepository.getTokenCount(organizationId, today);
+        long effectiveTokenBudget = effectiveDailyTokenBudget(sub, plan);
         LocalDate periodStart = today.withDayOfMonth(1);
         int periodOverage = usageRepository.sumOverageBetween(organizationId, periodStart, today);
         int seatEstimate = estimateSeatCentsMonthly(plan, memberCount);
@@ -126,9 +128,12 @@ public class BillingService {
                 usedToday,
                 overageToday,
                 plan.getMaxAiActionsPerDay(),
+                tokensUsedToday,
+                effectiveTokenBudget,
                 periodOverage,
                 seatEstimate,
-                overageEstimate
+                overageEstimate,
+                sub.getAiProviderChain()
         );
     }
 
@@ -274,6 +279,78 @@ public class BillingService {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
         requireAndConsumeAiAction(project.getOrganizationId());
+    }
+
+    @Transactional(readOnly = true)
+    public void requireTokenBudgetForProject(UUID projectId, int estimatedTokens) {
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        requireTokenBudget(project.getOrganizationId(), estimatedTokens);
+    }
+
+    @Transactional
+    public void recordTokenUsageForProject(UUID projectId, long tokens) {
+        if (tokens <= 0) {
+            return;
+        }
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        recordTokenUsage(project.getOrganizationId(), tokens);
+    }
+
+    @Transactional(readOnly = true)
+    public void requireTokenBudget(UUID organizationId, int estimatedTokens) {
+        if (estimatedTokens <= 0) {
+            return;
+        }
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        PlanEntity plan = requirePlan(sub.getPlanCode());
+        long budget = effectiveDailyTokenBudget(sub, plan);
+        if (budget <= 0) {
+            return;
+        }
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        long used = usageRepository.getTokenCount(organizationId, today);
+        if (used + estimatedTokens > budget) {
+            throw new DomainException(
+                    "PLAN_LIMIT",
+                    "Daily AI token budget exhausted (" + used + "/" + budget + " tokens used today). "
+                            + "Upgrade or try tomorrow."
+            );
+        }
+    }
+
+    @Transactional
+    public void recordTokenUsage(UUID organizationId, long tokens) {
+        if (tokens <= 0) {
+            return;
+        }
+        usageRepository.addTokens(organizationId, LocalDate.now(ZoneOffset.UTC), tokens);
+    }
+
+    @Transactional
+    public OrganizationSubscriptionEntity updateAiPolicy(
+            UUID organizationId,
+            String providerChain,
+            Long dailyTokenBudget
+    ) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        if (providerChain != null) {
+            String normalized = providerChain.trim();
+            sub.setAiProviderChain(normalized.isEmpty() ? null : normalized);
+        }
+        if (dailyTokenBudget != null) {
+            sub.setDailyTokenBudget(dailyTokenBudget <= 0 ? null : dailyTokenBudget);
+        }
+        return subscriptionRepository.save(sub);
+    }
+
+    private long effectiveDailyTokenBudget(OrganizationSubscriptionEntity sub, PlanEntity plan) {
+        Long override = sub.getDailyTokenBudget();
+        if (override != null && override > 0) {
+            return override;
+        }
+        return plan.getMaxAiTokensPerDay();
     }
 
     @Transactional
@@ -554,6 +631,7 @@ public class BillingService {
                 plan.getPriceCentsMonthly(),
                 plan.getMaxProjects(),
                 plan.getMaxAiActionsPerDay(),
+                plan.getMaxAiTokensPerDay(),
                 plan.getMaxSeats(),
                 plan.getPriceCentsPerSeatMonthly(),
                 plan.getPriceCentsPerAiActionOverage(),

@@ -16,8 +16,11 @@ public record BillingOverviewResponse(
         int aiActionsUsedToday,
         int aiActionsOverageToday,
         int maxAiActionsPerDay,
+        long aiTokensUsedToday,
+        long effectiveDailyTokenBudget,
         int periodOverageActions,
         int estimatedSeatCentsMonthly,
-        int estimatedOverageCentsThisPeriod
+        int estimatedOverageCentsThisPeriod,
+        String aiProviderChain
 ) {
 }

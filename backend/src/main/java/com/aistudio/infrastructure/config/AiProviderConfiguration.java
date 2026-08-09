@@ -2,6 +2,7 @@ package com.aistudio.infrastructure.config;
 
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
+import com.aistudio.application.ai.OrgAiRoutingPolicyService;
 import com.aistudio.infrastructure.ai.AiProviderCostTierRegistry;
 import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
 import com.aistudio.infrastructure.ai.AiProviderQuotaTracker;
@@ -56,7 +57,8 @@ public class AiProviderConfiguration {
             AiProviderCircuitBreaker circuitBreaker,
             AiProviderLatencyTracker latencyTracker,
             AiProviderCostTierRegistry costTierRegistry,
-            AiProviderQuotaTracker quotaTracker
+            AiProviderQuotaTracker quotaTracker,
+            OrgAiRoutingPolicyService routingPolicyService
     ) {
         boolean adaptiveRouting = properties.adaptiveRouting() != null && properties.adaptiveRouting().enabled();
         boolean costAwareRouting = properties.costAwareRouting() != null && properties.costAwareRouting().enabled();
@@ -79,7 +81,8 @@ public class AiProviderConfiguration {
                     adaptiveRouting,
                     costTierRegistry,
                     quotaTracker,
-                    costAwareRouting);
+                    costAwareRouting,
+                    routingPolicyService);
         }
         List<String> chain = new ArrayList<>();
         chain.add(provider);
@@ -93,7 +96,8 @@ public class AiProviderConfiguration {
                     adaptiveRouting,
                     costTierRegistry,
                     quotaTracker,
-                    costAwareRouting);
+                    costAwareRouting,
+                    routingPolicyService);
         }
         return registry.require(provider);
     }

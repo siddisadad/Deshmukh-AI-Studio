@@ -24,7 +24,7 @@ import {
 } from '../api/knowledgeApi';
 import { jobsApi, type BackgroundJob } from '../api/jobsApi';
 import { chatApi } from '../../chat/api/chatApi';
-import { gitLinkApi, type ProjectGitLink } from '../api/gitLinkApi';
+import { gitLinkApi, type GitSyncRun, type ProjectGitLink } from '../api/gitLinkApi';
 import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
@@ -63,6 +63,7 @@ export function ProjectSettingsPage() {
   const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState('');
   const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
   const [gitPathIncludePatterns, setGitPathIncludePatterns] = useState('');
+  const [gitSyncRuns, setGitSyncRuns] = useState<GitSyncRun[]>([]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -74,8 +75,9 @@ export function ProjectSettingsPage() {
       jobsApi.list(projectId, 10),
       codeMetadataApi.summary(projectId),
       gitLinkApi.get(projectId),
+      gitLinkApi.listSyncRuns(projectId, 10),
     ])
-      .then(([p, listed, status, listedJobs, codeSummary, link]) => {
+      .then(([p, listed, status, listedJobs, codeSummary, link, syncRuns]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
@@ -88,6 +90,7 @@ export function ProjectSettingsPage() {
         setJobs(listedJobs);
         setCodeMetadata(codeSummary);
         setGitLink(link);
+        setGitSyncRuns(syncRuns);
         setGitRepository(link.repository || '');
         setGitBranch(link.branch || 'main');
         setGitProvider(
@@ -203,6 +206,7 @@ export function ProjectSettingsPage() {
     try {
       const link = await gitLinkApi.syncNow(projectId);
       setGitLink(link);
+      setGitSyncRuns(await gitLinkApi.listSyncRuns(projectId, 10));
       setCodeMetadata(await codeMetadataApi.summary(projectId));
       setKnowledge(await knowledgeApi.status(projectId));
       setMessage(`Git sync succeeded · status ${link.lastSyncStatus}`);
@@ -580,6 +584,18 @@ export function ProjectSettingsPage() {
           </Stack>
           {gitLink?.lastSyncError && (
             <Typography color="error" variant="body2">{gitLink.lastSyncError}</Typography>
+          )}
+          {gitSyncRuns.length > 0 && (
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2">Recent sync runs</Typography>
+              {gitSyncRuns.map((run) => (
+                <Typography key={run.id} variant="body2" color="text.secondary">
+                  {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
+                  {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
+                  {run.errorMessage ? ` · ${run.errorMessage}` : ''}
+                </Typography>
+              ))}
+            </Stack>
           )}
         </Stack>
       </Paper>

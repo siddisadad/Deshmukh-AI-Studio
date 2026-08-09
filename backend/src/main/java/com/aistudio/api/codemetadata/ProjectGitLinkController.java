@@ -1,5 +1,6 @@
 package com.aistudio.api.codemetadata;
 
+import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
 import com.aistudio.api.job.dto.JobResponse;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -53,6 +56,16 @@ public class ProjectGitLinkController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return gitSyncService.upsertLink(projectId, user.getId(), request);
+    }
+
+    @GetMapping("/api/v1/projects/{projectId}/git-link/sync-runs")
+    @Operation(summary = "List recent git code metadata sync runs")
+    public List<GitSyncRunResponse> listSyncRuns(
+            @PathVariable UUID projectId,
+            @RequestParam(defaultValue = "20") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return gitSyncService.listSyncRuns(projectId, user.getId(), limit);
     }
 
     @PostMapping("/api/v1/projects/{projectId}/git-link/sync")

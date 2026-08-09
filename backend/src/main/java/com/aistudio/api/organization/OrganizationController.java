@@ -3,6 +3,9 @@ package com.aistudio.api.organization;
 import com.aistudio.api.organization.dto.AddMemberRequest;
 import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
+import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
+import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,9 +32,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizationController {
 
     private final OrganizationService organizationService;
+    private final OrgAiPolicyService orgAiPolicyService;
 
-    public OrganizationController(OrganizationService organizationService) {
+    public OrganizationController(OrganizationService organizationService, OrgAiPolicyService orgAiPolicyService) {
         this.organizationService = organizationService;
+        this.orgAiPolicyService = orgAiPolicyService;
     }
 
     @GetMapping
@@ -63,5 +69,24 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return organizationService.addMember(orgId, user.getId(), request);
+    }
+
+    @GetMapping("/{orgId}/ai-policy")
+    @Operation(summary = "Get organization AI routing policy and token budget usage")
+    public OrgAiPolicyResponse getAiPolicy(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.getPolicy(orgId, user.getId());
+    }
+
+    @PutMapping("/{orgId}/ai-policy")
+    @Operation(summary = "Update organization AI routing policy (OWNER)")
+    public OrgAiPolicyResponse updateAiPolicy(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdateOrgAiPolicyRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.updatePolicy(orgId, user.getId(), request);
     }
 }

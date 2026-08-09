@@ -37,6 +37,34 @@ public class AiUsageJdbcRepository {
         return rows.isEmpty() ? 0 : rows.getFirst();
     }
 
+    public long getTokenCount(UUID organizationId, LocalDate date) {
+        List<Long> rows = jdbcTemplate.query(
+                "SELECT token_count FROM ai_usage_daily WHERE organization_id = ? AND usage_date = ?",
+                (rs, rowNum) -> rs.getLong(1),
+                organizationId,
+                java.sql.Date.valueOf(date)
+        );
+        return rows.isEmpty() ? 0L : rows.getFirst();
+    }
+
+    public void addTokens(UUID organizationId, LocalDate date, long tokens) {
+        if (tokens <= 0) {
+            return;
+        }
+        jdbcTemplate.update(
+                """
+                        INSERT INTO ai_usage_daily (organization_id, usage_date, action_count, overage_count, token_count)
+                        VALUES (?, ?, 0, 0, ?)
+                        ON CONFLICT (organization_id, usage_date)
+                        DO UPDATE SET token_count = ai_usage_daily.token_count + ?
+                        """,
+                organizationId,
+                java.sql.Date.valueOf(date),
+                tokens,
+                tokens
+        );
+    }
+
     public void incrementIncluded(UUID organizationId, LocalDate date) {
         jdbcTemplate.update(
                 """

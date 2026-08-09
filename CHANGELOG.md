@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.41-beta] — 2026-08-09
+
+### Added
+
+- Per-plan daily AI token budgets — `plans.max_ai_tokens_per_day` with usage in `ai_usage_daily.token_count`
+- Org token budget override — `organization_subscriptions.daily_token_budget`
+- Org-level AI routing — `ai_provider_chain` per org; `GET/PUT /organizations/{id}/ai-policy`
+- `OrgAiRoutingContext` + `RoutingAiProvider` org chain resolution per chat request
+- Billing overview fields — `aiTokensUsedToday`, `effectiveDailyTokenBudget`, `aiProviderChain`
+- `docs/46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md`
+
 ## [0.2.40-beta] — 2026-08-09
 
 ### Added

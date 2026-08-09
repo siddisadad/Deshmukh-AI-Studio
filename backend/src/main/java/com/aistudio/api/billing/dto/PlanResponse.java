@@ -8,6 +8,7 @@ public record PlanResponse(
         int priceCentsMonthly,
         int maxProjects,
         int maxAiActionsPerDay,
+        long maxAiTokensPerDay,
         int maxSeats,
         int priceCentsPerSeatMonthly,
         int priceCentsPerAiActionOverage,

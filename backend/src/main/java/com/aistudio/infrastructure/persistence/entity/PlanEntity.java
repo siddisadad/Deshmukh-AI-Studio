@@ -35,6 +35,9 @@ public class PlanEntity {
     @Column(name = "max_ai_actions_per_day", nullable = false)
     private int maxAiActionsPerDay;
 
+    @Column(name = "max_ai_tokens_per_day", nullable = false)
+    private long maxAiTokensPerDay = 200000L;
+
     @Column(name = "max_seats", nullable = false)
     private int maxSeats = 3;
 

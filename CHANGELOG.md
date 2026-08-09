@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.53-beta] — 2026-08-09
+
+### Added
+
+- Org DLP connectors — V30 migration, `organization_dlp_connectors` (WEBHOOK / SIEM)
+- `thread_export_dlp_events` audit log with `siem_exported_at` tracking
+- Richer built-in DLP patterns — credit card, GitHub PAT, Google API key, Slack token
+- Org custom regex patterns via `custom_patterns_json` on connectors
+- `ThreadExportDlpPolicyService` — records events, org webhook notify, org-level block
+- `GET/POST/DELETE /organizations/{id}/dlp/connectors` and `GET /dlp/events`
+- `POST /api/v1/exports/siem/run` operator endpoint (`BILLING_USAGE_SYNC_TOKEN`)
+- `SiemExportService` + `SiemExportScheduler` batch export to SIEM connectors
+- Settings UI `/settings/dlp` for connector and event management
+- Cron script `scheduled-siem-export.sh`
+- `docs/58-THREAD-DLP-SIEM-EXPORT-GUIDE.md`
+
 ## [0.2.52-beta] — 2026-08-09
 
 ### Added

@@ -23,7 +23,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final List<String> BILLING_OPERATOR_PATHS = List.of(
             "/api/v1/billing/stripe/sync-metered-usage",
             "/api/v1/billing/stripe/reconcile",
-            "/api/v1/billing/stripe/dunning/run"
+            "/api/v1/billing/stripe/dunning/run",
+            "/api/v1/exports/siem/run"
     );
 
     private final JwtService jwtService;

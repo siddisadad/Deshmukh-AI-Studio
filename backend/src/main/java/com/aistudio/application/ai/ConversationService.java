@@ -73,10 +73,7 @@ public class ConversationService {
     private final ThreadExportRedactionPolicy complianceExportRedactionPolicy;
     private final boolean exportWatermarkEnabled;
     private final String exportWatermarkNotice;
-    private final boolean exportDlpEnabled;
-    private final boolean exportDlpBlockOnMatch;
-    private final String exportDlpWebhookUrl;
-    private final ThreadExportDlpNotifier exportDlpNotifier;
+    private final ThreadExportDlpPolicyService exportDlpPolicyService;
     private final AiModelRoutingService modelRoutingService;
     private final AiPromptCache promptCache;
     private final OrgAiRoutingPolicyService routingPolicyService;
@@ -101,10 +98,7 @@ public class ConversationService {
             @Value("${aistudio.ai.conversation.compliance-export-redaction-policy:none}") String complianceExportRedactionPolicy,
             @Value("${aistudio.ai.conversation.export-watermark-enabled:false}") boolean exportWatermarkEnabled,
             @Value("${aistudio.ai.conversation.export-watermark-notice:}") String exportWatermarkNotice,
-            @Value("${aistudio.ai.conversation.export-dlp-enabled:false}") boolean exportDlpEnabled,
-            @Value("${aistudio.ai.conversation.export-dlp-block-on-match:true}") boolean exportDlpBlockOnMatch,
-            @Value("${aistudio.ai.conversation.export-dlp-webhook-url:}") String exportDlpWebhookUrl,
-            ThreadExportDlpNotifier exportDlpNotifier,
+            ThreadExportDlpPolicyService exportDlpPolicyService,
             AiModelRoutingService modelRoutingService,
             AiPromptCache promptCache,
             OrgAiRoutingPolicyService routingPolicyService,
@@ -130,10 +124,7 @@ public class ConversationService {
         this.complianceExportRedactionPolicy = ThreadExportRedactionPolicy.fromWireValue(complianceExportRedactionPolicy);
         this.exportWatermarkEnabled = exportWatermarkEnabled;
         this.exportWatermarkNotice = exportWatermarkNotice;
-        this.exportDlpEnabled = exportDlpEnabled;
-        this.exportDlpBlockOnMatch = exportDlpBlockOnMatch;
-        this.exportDlpWebhookUrl = exportDlpWebhookUrl;
-        this.exportDlpNotifier = exportDlpNotifier;
+        this.exportDlpPolicyService = exportDlpPolicyService;
         this.modelRoutingService = modelRoutingService;
         this.promptCache = promptCache;
         this.routingPolicyService = routingPolicyService;
@@ -310,7 +301,7 @@ public class ConversationService {
         conversationRepository.save(conversation);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ExportedConversation exportConversation(UUID conversationId, UUID userId, String format, String redaction) {
         ConversationEntity conversation = requireConversationAccess(conversationId, userId);
         List<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
@@ -326,7 +317,7 @@ public class ConversationService {
         return finalizeUserExport(exported, exportMetadata, conversation.getProjectId(), conversation.getId());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ExportedConversation exportProjectConversations(
             UUID projectId,
             String roleValue,
@@ -789,30 +780,14 @@ public class ConversationService {
             UUID projectId,
             UUID conversationId
     ) {
-        if (!exportDlpEnabled) {
-            return exported;
-        }
-        String text = new String(exported.body(), StandardCharsets.UTF_8);
-        ThreadExportDlpScanResult scanResult = ThreadExportDlpScanner.scan(text);
-        if (!scanResult.hasMatches()) {
-            return exported;
-        }
-        exportDlpNotifier.notifyIfConfigured(
-                exportDlpWebhookUrl,
-                exportMetadata.exportId(),
-                exportMetadata.exportedByUserId(),
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        return exportDlpPolicyService.apply(
+                exported,
+                exportMetadata,
+                project.getOrganizationId(),
                 projectId,
-                conversationId,
-                scanResult);
-        if (exportDlpBlockOnMatch) {
-            String categories = scanResult.matches().stream()
-                    .map(ThreadExportDlpMatch::category)
-                    .distinct()
-                    .reduce((left, right) -> left + ", " + right)
-                    .orElse("policy");
-            throw new DomainException("FORBIDDEN", "Export blocked by DLP policy: " + categories);
-        }
-        return exported;
+                conversationId);
     }
 
     private ExportedConversation exportAsJson(

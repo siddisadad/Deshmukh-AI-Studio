@@ -198,6 +198,58 @@ class ProjectGitLinkControllerIT {
                 .andExpect(jsonPath("$.checks[0].name").value("credential"));
     }
 
+    @Test
+    void regenerateWebhookSecretAndDisconnectLink() throws Exception {
+        JsonNode auth = register("git-webhook" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Webhook Proj","projectKey":"WH","description":"webhook"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/webhook","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.webhookSecret").exists());
+
+        String firstSecret = objectMapper.readTree(mockMvc.perform(post(
+                        "/api/v1/projects/" + projectId + "/git-link/regenerate-webhook-secret")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("webhookSecret").asText();
+
+        String secondSecret = objectMapper.readTree(mockMvc.perform(post(
+                        "/api/v1/projects/" + projectId + "/git-link/regenerate-webhook-secret")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("webhookSecret").asText();
+
+        if (firstSecret.equals(secondSecret)) {
+            throw new AssertionError("expected webhook secret to change after regenerate");
+        }
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
+                        "/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.repository").value(""));
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

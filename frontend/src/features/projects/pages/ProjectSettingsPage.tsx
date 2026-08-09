@@ -64,6 +64,7 @@ export function ProjectSettingsPage() {
   const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
   const [gitPathIncludePatterns, setGitPathIncludePatterns] = useState('');
   const [gitSyncRuns, setGitSyncRuns] = useState<GitSyncRun[]>([]);
+  const [showGitWebhookSecret, setShowGitWebhookSecret] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -236,6 +237,53 @@ export function ProjectSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Connection test failed');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function onRegenerateWebhookSecret() {
+    if (!projectId || !gitLink?.id) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const link = await gitLinkApi.regenerateWebhookSecret(projectId);
+      setGitLink(link);
+      setShowGitWebhookSecret(true);
+      setMessage('Webhook secret regenerated — update your git host webhook configuration');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to regenerate webhook secret');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDisconnectGitLink() {
+    if (!projectId || !gitLink?.id) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await gitLinkApi.delete(projectId);
+      setGitLink(null);
+      setGitRepository('');
+      setGitBranch('main');
+      setGitSyncRuns([]);
+      setShowGitWebhookSecret(false);
+      setMessage('Git link disconnected');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to disconnect git link');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function copyGitWebhookValue(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setMessage(`${label} copied to clipboard`);
+      setError(null);
+    } catch {
+      setError(`Failed to copy ${label}`);
     }
   }
 
@@ -588,10 +636,61 @@ export function ProjectSettingsPage() {
             slotProps={{ htmlInput: { 'data-testid': 'git-path-ignore' } }}
           />
           {gitLink?.webhookUrl && (
-            <Typography variant="body2" color="text.secondary">
-              Webhook URL: {gitLink.webhookUrl}
-              {gitLink.webhookSecret ? ` · secret ${gitLink.webhookSecret.slice(0, 8)}…` : ''}
-            </Typography>
+            <Stack spacing={1}>
+              <Typography variant="subtitle2">Webhook setup</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {gitProvider === 'github'
+                  ? 'GitHub: repository Settings → Webhooks → content type application/json, secret below.'
+                  : gitProvider === 'gitlab'
+                    ? 'GitLab: project Settings → Webhooks → secret token below.'
+                    : 'Bitbucket: repository Settings → Webhooks → secret below.'}
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                  URL: {gitLink.webhookUrl}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => void copyGitWebhookValue('Webhook URL', gitLink.webhookUrl)}
+                  data-testid="git-webhook-copy-url"
+                >
+                  Copy URL
+                </Button>
+              </Stack>
+              {gitLink.webhookSecret && (
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                    Secret: {showGitWebhookSecret ? gitLink.webhookSecret : `${gitLink.webhookSecret.slice(0, 8)}…`}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setShowGitWebhookSecret((v) => !v)}
+                    data-testid="git-webhook-reveal-secret"
+                  >
+                    {showGitWebhookSecret ? 'Hide' : 'Reveal'}
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void copyGitWebhookValue('Webhook secret', gitLink.webhookSecret!)}
+                    data-testid="git-webhook-copy-secret"
+                  >
+                    Copy secret
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void onRegenerateWebhookSecret()}
+                    disabled={saving}
+                    data-testid="git-webhook-regenerate"
+                  >
+                    Regenerate secret
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
           )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button type="submit" variant="contained" disabled={saving || !gitRepository.trim()} data-testid="git-link-save">
@@ -605,6 +704,15 @@ export function ProjectSettingsPage() {
             </Button>
             <Button variant="outlined" onClick={() => void onSyncGitAsync()} disabled={saving || !gitLink?.id} data-testid="git-sync-async">
               Sync in background
+            </Button>
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={() => void onDisconnectGitLink()}
+              disabled={saving || !gitLink?.id}
+              data-testid="git-link-disconnect"
+            >
+              Disconnect
             </Button>
           </Stack>
           {gitLink?.lastSyncError && (

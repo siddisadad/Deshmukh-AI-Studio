@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.72-beta] — 2026-08-09
+
+### Added
+
+- Git webhook secret UX — `POST .../git-link/regenerate-webhook-secret` and `DELETE .../git-link`
+- Project settings — copy URL/secret, reveal secret, regenerate, disconnect
+- `docs/77-GIT-WEBHOOK-SECRET-UX-GUIDE.md`
+
 ## [0.2.71-beta] — 2026-08-09
 
 ### Added

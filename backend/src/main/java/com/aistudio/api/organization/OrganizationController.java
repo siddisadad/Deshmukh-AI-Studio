@@ -17,6 +17,10 @@ import com.aistudio.api.organization.dto.CreateOrgSsoIdpRequest;
 import com.aistudio.api.organization.dto.UpdateOrgSsoIdpRequest;
 import com.aistudio.api.organization.dto.UpdateOrgSloSettingsRequest;
 import com.aistudio.application.organization.OrgSloService;
+import com.aistudio.api.organization.dto.CreateOrgDlpConnectorRequest;
+import com.aistudio.api.organization.dto.OrgDlpConnectorResponse;
+import com.aistudio.api.organization.dto.ThreadExportDlpEventResponse;
+import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -50,17 +54,20 @@ public class OrganizationController {
     private final OrgAiPolicyService orgAiPolicyService;
     private final OrgSloService orgSloService;
     private final OrgSsoIdpService orgSsoIdpService;
+    private final OrgDlpConnectorService orgDlpConnectorService;
 
     public OrganizationController(
             OrganizationService organizationService,
             OrgAiPolicyService orgAiPolicyService,
             OrgSloService orgSloService,
-            OrgSsoIdpService orgSsoIdpService
+            OrgSsoIdpService orgSsoIdpService,
+            OrgDlpConnectorService orgDlpConnectorService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
         this.orgSloService = orgSloService;
         this.orgSsoIdpService = orgSsoIdpService;
+        this.orgDlpConnectorService = orgDlpConnectorService;
     }
 
     @GetMapping
@@ -278,5 +285,45 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgSsoIdpService.refreshMetadata(orgId, idpId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/dlp/connectors")
+    @Operation(summary = "List organization DLP connectors")
+    public List<OrgDlpConnectorResponse> listDlpConnectors(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgDlpConnectorService.listConnectors(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/dlp/connectors")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create DLP connector (OWNER)")
+    public OrgDlpConnectorResponse createDlpConnector(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody CreateOrgDlpConnectorRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgDlpConnectorService.createConnector(orgId, user.getId(), request);
+    }
+
+    @DeleteMapping("/{orgId}/dlp/connectors/{connectorId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete DLP connector (OWNER)")
+    public void deleteDlpConnector(
+            @PathVariable UUID orgId,
+            @PathVariable UUID connectorId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        orgDlpConnectorService.deleteConnector(orgId, connectorId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/dlp/events")
+    @Operation(summary = "List thread export DLP events")
+    public List<ThreadExportDlpEventResponse> listDlpEvents(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgDlpConnectorService.listEvents(orgId, user.getId());
     }
 }

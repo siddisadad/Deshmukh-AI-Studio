@@ -77,6 +77,9 @@ aistudio:
       export-dlp-enabled: ${CHAT_EXPORT_DLP_ENABLED:false}
       export-dlp-block-on-match: ${CHAT_EXPORT_DLP_BLOCK_ON_MATCH:true}
       export-dlp-webhook-url: ${CHAT_EXPORT_DLP_WEBHOOK_URL:}
+  exports:
+    siem-export-enabled: ${EXPORT_SIEM_EXPORT_ENABLED:false}
+    siem-export-interval-ms: ${EXPORT_SIEM_EXPORT_INTERVAL_MS:300000}
     rate-limit:
       ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
     embedding:

@@ -91,6 +91,13 @@ export function AppShell() {
               SSO
             </Button>
             <Button
+              onClick={() => navigate('/settings/dlp')}
+              aria-label="DLP and SIEM export"
+              data-testid="nav-dlp"
+            >
+              DLP
+            </Button>
+            <Button
               onClick={() => navigate('/settings/plugins')}
               aria-label="Plugins and assistants"
               data-testid="nav-plugins"

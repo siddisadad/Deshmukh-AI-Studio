@@ -2,6 +2,8 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
+  FormControlLabel,
   LinearProgress,
   Stack,
   TextField,
@@ -32,6 +34,13 @@ export function AiRoutingSettingsPage() {
   const [deployRegion, setDeployRegion] = useState('');
   const [canaryProviderChain, setCanaryProviderChain] = useState('');
   const [canaryPercent, setCanaryPercent] = useState('10');
+  const [canaryAutoPromoteEnabled, setCanaryAutoPromoteEnabled] = useState(false);
+  const [canaryAutoAbortEnabled, setCanaryAutoAbortEnabled] = useState(false);
+  const [canaryHookWebhookUrl, setCanaryHookWebhookUrl] = useState('');
+  const [canaryMinSamples, setCanaryMinSamples] = useState('20');
+  const [canaryAbortErrorRatePercent, setCanaryAbortErrorRatePercent] = useState('25');
+  const [canaryPromoteMinSamples, setCanaryPromoteMinSamples] = useState('50');
+  const [canaryPromoteMaxErrorRatePercent, setCanaryPromoteMaxErrorRatePercent] = useState('5');
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof aiPolicyApi.simulate>> | null>(
     null,
   );
@@ -79,6 +88,13 @@ export function AiRoutingSettingsPage() {
     setCanaryPercent(
       policy.canaryPercent != null ? String(policy.canaryPercent) : '10',
     );
+    setCanaryAutoPromoteEnabled(policy.canaryAutoPromoteEnabled);
+    setCanaryAutoAbortEnabled(policy.canaryAutoAbortEnabled);
+    setCanaryHookWebhookUrl(policy.canaryHookWebhookUrl ?? '');
+    setCanaryMinSamples(String(policy.canaryMinSamples));
+    setCanaryAbortErrorRatePercent(String(policy.canaryAbortErrorRatePercent));
+    setCanaryPromoteMinSamples(String(policy.canaryPromoteMinSamples));
+    setCanaryPromoteMaxErrorRatePercent(String(policy.canaryPromoteMaxErrorRatePercent));
     setPreview(null);
   }, [policyQuery.data]);
 
@@ -209,6 +225,47 @@ export function AiRoutingSettingsPage() {
     onError: (err) => {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to abort canary');
+    },
+  });
+
+  const updateCanaryHooks = useMutation({
+    mutationFn: () =>
+      aiPolicyApi.updateCanaryHooks(org!.id, {
+        autoPromoteEnabled: canaryAutoPromoteEnabled,
+        autoAbortEnabled: canaryAutoAbortEnabled,
+        hookWebhookUrl: canaryHookWebhookUrl.trim() || null,
+        minSamples: Number(canaryMinSamples),
+        abortErrorRatePercent: Number(canaryAbortErrorRatePercent),
+        promoteMinSamples: Number(canaryPromoteMinSamples),
+        promoteMaxErrorRatePercent: Number(canaryPromoteMaxErrorRatePercent),
+      }),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Canary automation hooks saved');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to save canary hooks');
+    },
+  });
+
+  const evaluateCanaryHooks = useMutation({
+    mutationFn: () => aiPolicyApi.evaluateCanaryHooks(org!.id),
+    onSuccess: async (result) => {
+      setError(null);
+      if (result.action === 'PROMOTED') {
+        setMessage(`Canary auto-promoted: ${result.reason}`);
+      } else if (result.action === 'ABORTED') {
+        setMessage(`Canary auto-aborted: ${result.reason}`);
+      } else {
+        setMessage(`Canary evaluation: ${result.reason}`);
+      }
+      await refreshPolicy();
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to evaluate canary hooks');
     },
   });
 
@@ -435,6 +492,99 @@ export function AiRoutingSettingsPage() {
                 </Button>
               </>
             )}
+          </Stack>
+        </Stack>
+      )}
+
+      {canEdit && (
+        <Stack spacing={2} data-testid="ai-policy-canary-hooks">
+          <Typography variant="h6">Canary automation hooks</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Automatically promote or abort canary rollouts when chat success/failure metrics cross
+            configured thresholds. A background scheduler evaluates hooks when enabled.
+          </Typography>
+          {policy?.canaryMetrics && (
+            <Typography variant="body2" data-testid="ai-policy-canary-metrics">
+              Canary outcomes: {policy.canaryMetrics.canarySuccessCount} ok /{' '}
+              {policy.canaryMetrics.canaryFailureCount} fail — stable:{' '}
+              {policy.canaryMetrics.stableSuccessCount} ok /{' '}
+              {policy.canaryMetrics.stableFailureCount} fail
+            </Typography>
+          )}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={canaryAutoPromoteEnabled}
+                onChange={(e) => setCanaryAutoPromoteEnabled(e.target.checked)}
+                data-testid="ai-policy-canary-auto-promote"
+              />
+            }
+            label="Auto-promote when canary error rate is within threshold"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={canaryAutoAbortEnabled}
+                onChange={(e) => setCanaryAutoAbortEnabled(e.target.checked)}
+                data-testid="ai-policy-canary-auto-abort"
+              />
+            }
+            label="Auto-abort when canary error rate exceeds threshold"
+          />
+          <TextField
+            label="Hook webhook URL"
+            placeholder="https://hooks.example.com/canary"
+            value={canaryHookWebhookUrl}
+            onChange={(e) => setCanaryHookWebhookUrl(e.target.value)}
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-hook-webhook' } }}
+          />
+          <TextField
+            label="Abort min samples"
+            value={canaryMinSamples}
+            onChange={(e) => setCanaryMinSamples(e.target.value)}
+            helperText="Minimum canary outcomes before auto-abort can fire."
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-min-samples' } }}
+          />
+          <TextField
+            label="Abort error rate percent"
+            value={canaryAbortErrorRatePercent}
+            onChange={(e) => setCanaryAbortErrorRatePercent(e.target.value)}
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-abort-rate' } }}
+          />
+          <TextField
+            label="Promote min samples"
+            value={canaryPromoteMinSamples}
+            onChange={(e) => setCanaryPromoteMinSamples(e.target.value)}
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-promote-samples' } }}
+          />
+          <TextField
+            label="Promote max error rate percent"
+            value={canaryPromoteMaxErrorRatePercent}
+            onChange={(e) => setCanaryPromoteMaxErrorRatePercent(e.target.value)}
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-promote-rate' } }}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => updateCanaryHooks.mutate()}
+              disabled={updateCanaryHooks.isPending || !org?.id}
+              data-testid="ai-policy-canary-hooks-save"
+            >
+              {updateCanaryHooks.isPending ? 'Saving…' : 'Save hook settings'}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => evaluateCanaryHooks.mutate()}
+              disabled={evaluateCanaryHooks.isPending || !org?.id}
+              data-testid="ai-policy-canary-evaluate"
+            >
+              {evaluateCanaryHooks.isPending ? 'Evaluating…' : 'Evaluate now'}
+            </Button>
           </Stack>
         </Stack>
       )}

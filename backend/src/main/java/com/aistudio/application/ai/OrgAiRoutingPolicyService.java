@@ -72,7 +72,9 @@ public class OrgAiRoutingPolicyService {
     }
 
     private Optional<List<String>> resolveChainFromSubscription(OrganizationSubscriptionEntity sub) {
-        if (shouldUseCanary(sub)) {
+        boolean useCanary = shouldUseCanary(sub);
+        OrgAiRoutingContext.setCanaryRoute(useCanary);
+        if (useCanary) {
             return Optional.of(parseChain(sub.getAiCanaryProviderChain()));
         }
         String stable = sub.getAiProviderChain();

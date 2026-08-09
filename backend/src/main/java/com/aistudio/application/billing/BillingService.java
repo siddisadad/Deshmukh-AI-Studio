@@ -398,6 +398,31 @@ public class BillingService {
         return subscriptionRepository.save(sub);
     }
 
+    @Transactional
+    public OrganizationSubscriptionEntity updateCanaryHooks(
+            UUID organizationId,
+            boolean autoPromoteEnabled,
+            boolean autoAbortEnabled,
+            String hookWebhookUrl,
+            int minSamples,
+            int abortErrorRatePercent,
+            int promoteMinSamples,
+            int promoteMaxErrorRatePercent
+    ) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        sub.setAiCanaryAutoPromoteEnabled(autoPromoteEnabled);
+        sub.setAiCanaryAutoAbortEnabled(autoAbortEnabled);
+        if (hookWebhookUrl != null) {
+            String trimmed = hookWebhookUrl.trim();
+            sub.setAiCanaryHookWebhookUrl(trimmed.isEmpty() ? null : trimmed);
+        }
+        sub.setAiCanaryMinSamples(minSamples);
+        sub.setAiCanaryAbortErrorRatePercent(abortErrorRatePercent);
+        sub.setAiCanaryPromoteMinSamples(promoteMinSamples);
+        sub.setAiCanaryPromoteMaxErrorRatePercent(promoteMaxErrorRatePercent);
+        return subscriptionRepository.save(sub);
+    }
+
     private long effectiveDailyTokenBudget(OrganizationSubscriptionEntity sub, PlanEntity plan) {
         Long override = sub.getDailyTokenBudget();
         if (override != null && override > 0) {

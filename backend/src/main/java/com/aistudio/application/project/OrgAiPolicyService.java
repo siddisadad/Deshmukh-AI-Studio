@@ -1,12 +1,17 @@
 package com.aistudio.application.project;
 
+import com.aistudio.api.organization.dto.OrgAiCanaryEvaluationResponse;
+import com.aistudio.api.organization.dto.OrgAiCanaryMetricsDto;
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySnapshotDto;
+import com.aistudio.api.organization.dto.UpdateOrgAiCanaryHooksRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
+import com.aistudio.application.ai.OrgAiCanaryHookService;
+import com.aistudio.application.ai.OrgAiCanaryOutcomeService;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.ai.OrgAiPolicyChangeStatus;
@@ -15,6 +20,7 @@ import com.aistudio.domain.organization.OrgRole;
 import com.aistudio.infrastructure.ai.AiProviderCrossRegionRegistry;
 import com.aistudio.infrastructure.billing.AiUsageJdbcRepository;
 import com.aistudio.infrastructure.persistence.entity.MembershipEntity;
+import com.aistudio.infrastructure.persistence.entity.OrgAiCanaryOutcomeEntity;
 import com.aistudio.infrastructure.persistence.entity.OrgAiPolicyChangeEntity;
 import com.aistudio.infrastructure.persistence.entity.OrgAiPolicySimulationEntity;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
@@ -49,6 +55,8 @@ public class OrgAiPolicyService {
     private final OrgAiPolicyChangeRepository changeRepository;
     private final OrgAiPolicySimulationRepository simulationRepository;
     private final OrgAiPolicyRoutingPreview routingPreview;
+    private final OrgAiCanaryOutcomeService canaryOutcomeService;
+    private final OrgAiCanaryHookService canaryHookService;
     private final ObjectMapper objectMapper;
     private final boolean changeApprovalRequired;
     private final boolean simulationGateEnabled;
@@ -64,6 +72,8 @@ public class OrgAiPolicyService {
             OrgAiPolicyChangeRepository changeRepository,
             OrgAiPolicySimulationRepository simulationRepository,
             OrgAiPolicyRoutingPreview routingPreview,
+            OrgAiCanaryOutcomeService canaryOutcomeService,
+            OrgAiCanaryHookService canaryHookService,
             ObjectMapper objectMapper,
             @Value("${aistudio.ai.policy-change-approval-enabled:false}") boolean changeApprovalRequired,
             @Value("${aistudio.ai.policy-simulation-gate-enabled:false}") boolean simulationGateEnabled,
@@ -78,6 +88,8 @@ public class OrgAiPolicyService {
         this.changeRepository = changeRepository;
         this.simulationRepository = simulationRepository;
         this.routingPreview = routingPreview;
+        this.canaryOutcomeService = canaryOutcomeService;
+        this.canaryHookService = canaryHookService;
         this.objectMapper = objectMapper;
         this.changeApprovalRequired = changeApprovalRequired;
         this.simulationGateEnabled = simulationGateEnabled;
@@ -213,6 +225,32 @@ public class OrgAiPolicyService {
         authorizationService.requireOrgOwner(organizationId, userId);
         billingService.abortCanary(organizationId);
         return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional
+    public OrgAiPolicyResponse updateCanaryHooks(
+            UUID organizationId,
+            UUID userId,
+            UpdateOrgAiCanaryHooksRequest request
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        billingService.updateCanaryHooks(
+                organizationId,
+                request.autoPromoteEnabled(),
+                request.autoAbortEnabled(),
+                request.hookWebhookUrl(),
+                request.minSamples(),
+                request.abortErrorRatePercent(),
+                request.promoteMinSamples(),
+                request.promoteMaxErrorRatePercent());
+        return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional
+    public OrgAiCanaryEvaluationResponse evaluateCanaryHooks(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        OrgAiCanaryHookService.Evaluation evaluation = canaryHookService.evaluateAndAct(organizationId);
+        return toEvaluationResponse(evaluation);
     }
 
     private OrgAiPolicyChangeEntity applyPolicyUpdate(
@@ -388,6 +426,7 @@ public class OrgAiPolicyService {
                 .findByOrganizationIdAndStatus(sub.getOrganizationId(), OrgAiPolicyChangeStatus.PENDING)
                 .map(this::toChangeResponse)
                 .orElse(null);
+        OrgAiCanaryOutcomeEntity canaryMetrics = canaryOutcomeService.metrics(sub.getOrganizationId());
         return new OrgAiPolicyResponse(
                 sub.getAiProviderChain(),
                 sub.getDailyTokenBudget(),
@@ -401,7 +440,32 @@ public class OrgAiPolicyService {
                 simulationGateEnabled,
                 sub.getAiCanaryProviderChain(),
                 sub.getAiCanaryPercent(),
+                sub.isAiCanaryAutoPromoteEnabled(),
+                sub.isAiCanaryAutoAbortEnabled(),
+                sub.getAiCanaryHookWebhookUrl(),
+                sub.getAiCanaryMinSamples(),
+                sub.getAiCanaryAbortErrorRatePercent(),
+                sub.getAiCanaryPromoteMinSamples(),
+                sub.getAiCanaryPromoteMaxErrorRatePercent(),
+                toCanaryMetricsDto(canaryMetrics),
                 pending
+        );
+    }
+
+    private static OrgAiCanaryMetricsDto toCanaryMetricsDto(OrgAiCanaryOutcomeEntity metrics) {
+        return new OrgAiCanaryMetricsDto(
+                metrics.getCanarySuccessCount(),
+                metrics.getCanaryFailureCount(),
+                metrics.getStableSuccessCount(),
+                metrics.getStableFailureCount()
+        );
+    }
+
+    private OrgAiCanaryEvaluationResponse toEvaluationResponse(OrgAiCanaryHookService.Evaluation evaluation) {
+        return new OrgAiCanaryEvaluationResponse(
+                evaluation.action().name(),
+                evaluation.reason(),
+                toCanaryMetricsDto(evaluation.metrics())
         );
     }
 

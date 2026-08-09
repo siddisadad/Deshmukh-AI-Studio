@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.49-beta] — 2026-08-09
+
+### Added
+
+- Automated canary promotion / rollback hooks — hook settings on subscriptions (V26)
+- Per-org canary outcome counters (`org_ai_canary_outcomes`) recorded from chat requests
+- `OrgAiCanaryHookService` evaluates thresholds → auto promote/abort + optional webhook
+- `PUT/POST /organizations/{id}/ai-policy/canary/hooks` and `canary/evaluate`
+- Scheduled hook evaluation — `AI_CANARY_HOOK_EVAL_ENABLED` + interval env vars
+- Settings UI — canary automation hooks on `/settings/ai-routing`
+- `docs/54-AI-POLICY-CANARY-HOOKS-GUIDE.md`
+
 ## [0.2.48-beta] — 2026-08-09
 
 ### Added

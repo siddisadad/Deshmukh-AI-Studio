@@ -3,10 +3,12 @@ package com.aistudio.api.organization;
 import com.aistudio.api.organization.dto.AddMemberRequest;
 import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
+import com.aistudio.api.organization.dto.OrgAiCanaryEvaluationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
+import com.aistudio.api.organization.dto.UpdateOrgAiCanaryHooksRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.project.OrgAiPolicyService;
@@ -170,5 +172,24 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.abortCanary(orgId, user.getId());
+    }
+
+    @PutMapping("/{orgId}/ai-policy/canary/hooks")
+    @Operation(summary = "Configure automated canary promotion / rollback hooks (OWNER)")
+    public OrgAiPolicyResponse updateAiPolicyCanaryHooks(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdateOrgAiCanaryHooksRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.updateCanaryHooks(orgId, user.getId(), request);
+    }
+
+    @PostMapping("/{orgId}/ai-policy/canary/evaluate")
+    @Operation(summary = "Evaluate canary metrics and apply auto promote/abort hooks (OWNER)")
+    public OrgAiCanaryEvaluationResponse evaluateAiPolicyCanaryHooks(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.evaluateCanaryHooks(orgId, user.getId());
     }
 }

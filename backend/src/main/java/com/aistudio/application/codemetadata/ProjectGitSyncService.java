@@ -143,6 +143,24 @@ public class ProjectGitSyncService {
         return toResponse(entity);
     }
 
+    @Transactional
+    public ProjectGitLinkResponse regenerateWebhookSecret(UUID projectId, UUID userId) {
+        authorizationService.requireProjectEdit(projectId, userId);
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Git link not configured"));
+        link.setWebhookSecret(generateSecret());
+        gitLinkRepository.save(link);
+        return toResponse(link);
+    }
+
+    @Transactional
+    public void deleteLink(UUID projectId, UUID userId) {
+        authorizationService.requireProjectEdit(projectId, userId);
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Git link not configured"));
+        gitLinkRepository.delete(link);
+    }
+
     @Transactional(readOnly = true)
     public List<GitSyncRunResponse> listSyncRuns(UUID projectId, UUID userId, int limit) {
         authorizationService.requireProjectAccess(projectId, userId);

@@ -58,6 +58,10 @@ export const gitLinkApi = {
     http.post<ProjectGitLink>(`/projects/${projectId}/git-link/sync`).then((r) => r.data),
   syncAsync: (projectId: string) =>
     http.post<BackgroundJob>(`/projects/${projectId}/git-link/sync/async`).then((r) => r.data),
+  regenerateWebhookSecret: (projectId: string) =>
+    http.post<ProjectGitLink>(`/projects/${projectId}/git-link/regenerate-webhook-secret`).then((r) => r.data),
+  delete: (projectId: string) =>
+    http.delete(`/projects/${projectId}/git-link`).then(() => undefined),
   testConnection: (projectId: string) =>
     http.post<{ ok: boolean; message: string; checks: { name: string; status: string; message: string }[] }>(
       `/projects/${projectId}/git-link/test`

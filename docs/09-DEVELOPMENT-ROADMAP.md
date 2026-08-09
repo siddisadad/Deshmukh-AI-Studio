@@ -164,6 +164,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 14. Phase 11 — Git link operations (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Webhook UX | Regenerate, copy, disconnect ([77-GIT-WEBHOOK-SECRET-UX-GUIDE.md](77-GIT-WEBHOOK-SECRET-UX-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

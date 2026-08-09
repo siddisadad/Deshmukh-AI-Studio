@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import {
   contextAssetsApi,
@@ -31,11 +31,13 @@ import { projectsApi, type Project } from '../api/projectsApi';
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
 const GIT_PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 const GIT_SYNC_RUN_PAGE_SIZE = 20;
+const GIT_SYNC_SECTION_ID = 'git-repository-sync';
 type GitProvider = (typeof GIT_PROVIDERS)[number];
 
 export function ProjectSettingsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<Project | null>(null);
   const [name, setName] = useState('');
   const [projectKey, setProjectKey] = useState('');
@@ -129,6 +131,12 @@ export function ProjectSettingsPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load project'))
       .finally(() => setLoading(false));
   }, [projectId]);
+
+  useEffect(() => {
+    if (loading || location.hash !== `#${GIT_SYNC_SECTION_ID}`) return;
+    const section = document.getElementById(GIT_SYNC_SECTION_ID);
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading, location.hash]);
 
   function selectAsset(type: ContextAssetType) {
     setAssetType(type);
@@ -596,7 +604,14 @@ export function ProjectSettingsPage() {
         </Stack>
       </Paper>
 
-      <Paper component="form" onSubmit={onSaveGitLink} variant="outlined" sx={{ p: 3 }}>
+      <Paper
+        component="form"
+        onSubmit={onSaveGitLink}
+        variant="outlined"
+        sx={{ p: 3 }}
+        id={GIT_SYNC_SECTION_ID}
+        data-testid="git-repository-sync"
+      >
         <Stack spacing={2}>
           <Typography variant="h6">Git repository sync</Typography>
           <Typography color="text.secondary">

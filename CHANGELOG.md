@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.76-beta] — 2026-08-09
+
+### Added
+
+- Git sync run pagination — `offset` on `GET .../git-link/sync-runs` with page response (`totalCount`, `hasMore`)
+- Project settings — “Showing N of total” and Load more for sync runs
+- `docs/81-GIT-SYNC-RUN-PAGINATION-GUIDE.md`
+
 ## [0.2.75-beta] — 2026-08-09
 
 ### Added

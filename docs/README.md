@@ -52,7 +52,7 @@ Read in order; each document builds on the previous.
 | 45 | [45-COST-AWARE-AI-ROUTING-GUIDE.md](45-COST-AWARE-AI-ROUTING-GUIDE.md) | Cost-aware routing and provider quotas |
 | 46 | [46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md](46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md) | Token budget caps and org routing policies |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.40-beta** adds cost-aware AI routing and provider quotas — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.41-beta** adds token budget caps and org-level AI routing — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

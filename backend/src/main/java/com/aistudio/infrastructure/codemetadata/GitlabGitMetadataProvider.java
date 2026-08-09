@@ -51,12 +51,13 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
             List<MockGitMetadataProvider.GitTreeNode> nodes = new ArrayList<>();
             int page = 1;
             while (nodes.size() < MAX_FILES) {
+                final int pageNum = page;
                 String treeJson = client.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/projects/{project}/repository/tree")
                                 .queryParam("recursive", true)
                                 .queryParam("per_page", 100)
-                                .queryParam("page", page)
+                                .queryParam("page", pageNum)
                                 .queryParam("ref", branchName)
                                 .build(projectPath))
                         .retrieve()

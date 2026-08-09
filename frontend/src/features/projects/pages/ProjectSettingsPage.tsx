@@ -28,6 +28,7 @@ import { gitLinkApi, type ProjectGitLink } from '../api/gitLinkApi';
 import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataApi';
 import { projectsApi, type Project } from '../api/projectsApi';
 
+const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
 const GIT_PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 type GitProvider = (typeof GIT_PROVIDERS)[number];
 

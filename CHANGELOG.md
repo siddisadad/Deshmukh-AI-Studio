@@ -10,18 +10,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ### Added
 
-- Per-organization multi-IdP SSO — `organization_sso_idps` table (V29)
-- OIDC and SAML IdP CRUD for org owners (`/organizations/{id}/sso/idps`)
-- Configured SSO ports (`db-{id}` provider ids) alongside env-based mock/OIDC/SAML
-- Automated metadata refresh scheduler — `SSO_METADATA_REFRESH_ENABLED`
-- Manual metadata refresh API and `/settings/sso` UI
-- Login discovery by org slug — `GET /auth/sso/providers?organizationSlug=`
-- `docs/57-SSO-MULTI-IDP-METADATA-GUIDE.md`
-
-## [0.2.51-beta] — 2026-08-09
-
-### Added
-
 - Stripe revenue reconciliation — V28 migration, `billing_reconciliation_runs` audit table
 - Internal MTD vs Stripe paid invoice comparison per org (`BillingReconciliationService`)
 - `POST /api/v1/billing/stripe/reconcile` operator endpoint

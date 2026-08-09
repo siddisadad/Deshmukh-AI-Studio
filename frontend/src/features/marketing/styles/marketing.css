@@ -184,10 +184,41 @@
   cursor: pointer;
 }
 
+.dt-form__note,
+.dt-form__error {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 .dt-form__note {
+  color: var(--dt-muted);
+}
+
+.dt-form__error {
+  color: #9f1239;
+}
+
+.dt-form-success {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 36rem;
+  padding-top: 0.25rem;
+}
+
+.dt-form-success h2 {
+  margin: 0;
+  font-family: var(--dt-font-display);
+  font-size: 1.5rem;
+}
+
+.dt-form-success p {
   margin: 0;
   color: var(--dt-muted);
-  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.dt-form-success .dt-btn {
+  justify-self: start;
 }
 
 .dt-contact-aside {

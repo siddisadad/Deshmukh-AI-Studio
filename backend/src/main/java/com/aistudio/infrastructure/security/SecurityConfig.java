@@ -82,6 +82,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/**",
                                 "/api/v1/billing/stripe/webhook",
                                 "/api/v1/shared/conversations/**",
+                                "/api/v1/contact/**",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/v3/api-docs/**",

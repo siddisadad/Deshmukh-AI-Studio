@@ -41,3 +41,65 @@ groups:
         annotations:
           summary: High API availability error burn rate
           description: 1h 5xx rate exceeds 14.4× the 99.5% SLO allowance — budget exhausts in ~2 days if sustained.
+
+      - alert: ApiSloAvailabilityBurnRatePage
+        expr: |
+          aistudio_slo:api_error_burn_rate:5m > 14.4
+          and aistudio_slo:api_error_burn_rate:1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: API availability fast burn (multi-window page)
+          description: 5m and 1h error burn rates exceed 14.4× — page on-call (2% budget in ~1h).
+
+      - alert: ApiSloAvailabilityBurnRateTicket
+        expr: |
+          aistudio_slo:api_error_burn_rate:1h > 6
+          and aistudio_slo:api_error_burn_rate:6h > 6
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: API availability slow burn (multi-window ticket)
+          description: 1h and 6h error burn rates exceed 6× — investigate sustained degradation.
+
+      - alert: OrgSloAvailabilityBurnRatePage
+        expr: |
+          aistudio_slo:org_api_error_burn_rate:5m > 14.4
+          and aistudio_slo:org_api_error_burn_rate:1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Tenant availability fast burn ({{ $labels.organization_id }})
+          description: Organization {{ $labels.organization_id }} exceeds multi-window fast burn thresholds.
+
+      - alert: OrgSloAvailabilityBurnRateTicket
+        expr: |
+          aistudio_slo:org_api_error_burn_rate:1h > 6
+          and aistudio_slo:org_api_error_burn_rate:6h > 6
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Tenant availability slow burn ({{ $labels.organization_id }})
+          description: Organization {{ $labels.organization_id }} exceeds multi-window slow burn thresholds.
+
+      - alert: OrgSloAvailabilityBudgetLow
+        expr: aistudio_slo:org_api_availability_error_budget_remaining:30d < 0.25
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Tenant availability error budget low ({{ $labels.organization_id }})
+          description: Organization {{ $labels.organization_id }} has less than 25% availability error budget remaining.
+
+      - alert: OrgSloLatencyBudgetLow
+        expr: aistudio_slo:org_api_latency_error_budget_remaining:30d < 0.25
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Tenant latency error budget low ({{ $labels.organization_id }})
+          description: Organization {{ $labels.organization_id }} has less than 25% latency error budget remaining.

@@ -226,6 +226,7 @@ jobs:
           bash -n scripts/write-grafana-slo-dashboard.sh
           ./scripts/write-grafana-slo-dashboard.sh
           python3 -c "import json; json.load(open('monitoring/grafana/dashboards/aistudio-slo.json'))"
+          python3 -c "import json; json.load(open('monitoring/grafana/dashboards/aistudio-slo-tenant.json'))"
           bash -n scripts/sync-loki-ruler-regions.sh
           bash -n scripts/write-alertmanager-config.sh
           bash -n scripts/sync-alertmanager-regions.sh

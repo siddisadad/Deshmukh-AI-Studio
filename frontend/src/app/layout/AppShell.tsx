@@ -77,6 +77,13 @@ export function AppShell() {
               AI routing
             </Button>
             <Button
+              onClick={() => navigate('/settings/slo')}
+              aria-label="SLO targets"
+              data-testid="nav-slo"
+            >
+              SLO
+            </Button>
+            <Button
               onClick={() => navigate('/settings/plugins')}
               aria-label="Plugins and assistants"
               data-testid="nav-plugins"

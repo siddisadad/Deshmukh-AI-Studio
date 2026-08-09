@@ -167,6 +167,42 @@
           "refId": "B"
         }
       ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "id": 8,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "title": "Availability error burn rate (multi-window)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "aistudio_slo:api_error_burn_rate:5m",
+          "legendFormat": "5m burn",
+          "refId": "A"
+        },
+        {
+          "expr": "aistudio_slo:api_error_burn_rate:1h",
+          "legendFormat": "1h burn",
+          "refId": "B"
+        },
+        {
+          "expr": "aistudio_slo:api_error_burn_rate:6h",
+          "legendFormat": "6h burn",
+          "refId": "C"
+        },
+        {
+          "expr": "vector(14.4)",
+          "legendFormat": "page threshold (14.4×)",
+          "refId": "D"
+        },
+        {
+          "expr": "vector(6)",
+          "legendFormat": "ticket threshold (6×)",
+          "refId": "E"
+        }
+      ]
     }
   ],
   "refresh": "30s",

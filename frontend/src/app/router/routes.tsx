@@ -20,6 +20,7 @@ import { BillingSettingsPage } from '../../features/settings/pages/BillingSettin
 import { OrgMembersSettingsPage } from '../../features/settings/pages/OrgMembersSettingsPage';
 import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettingsPage';
 import { AiRoutingSettingsPage } from '../../features/settings/pages/AiRoutingSettingsPage';
+import { SloSettingsPage } from '../../features/settings/pages/SloSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
           { path: '/settings/members', element: <OrgMembersSettingsPage /> },
           { path: '/settings/billing', element: <BillingSettingsPage /> },
           { path: '/settings/ai-routing', element: <AiRoutingSettingsPage /> },
+          { path: '/settings/slo', element: <SloSettingsPage /> },
           { path: '/settings/plugins', element: <PluginsSettingsPage /> },
         ],
       },

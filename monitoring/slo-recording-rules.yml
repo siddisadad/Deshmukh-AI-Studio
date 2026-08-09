@@ -46,3 +46,142 @@ groups:
             ),
             1
           )
+
+  - name: aistudio-slo-tenant-recording
+    interval: 1m
+    rules:
+      - record: aistudio_slo:org_api_success_ratio:5m
+        expr: |
+          sum by (organization_id) (
+            rate(http_server_requests_seconds_count{job="aistudio-api",status!~"5..",organization_id!=""}[5m])
+          )
+          /
+          clamp_min(
+            sum by (organization_id) (
+              rate(http_server_requests_seconds_count{job="aistudio-api",organization_id!=""}[5m])
+            ),
+            1e-9
+          )
+
+      - record: aistudio_slo:org_api_latency_sli:5m
+        expr: |
+          sum by (organization_id) (
+            rate(http_server_requests_seconds_bucket{job="aistudio-api",organization_id!="",le="2"}[5m])
+          )
+          /
+          clamp_min(
+            sum by (organization_id) (
+              rate(http_server_requests_seconds_count{job="aistudio-api",organization_id!=""}[5m])
+            ),
+            1e-9
+          )
+
+      - record: aistudio_slo:org_api_availability:30d
+        expr: avg_over_time(aistudio_slo:org_api_success_ratio:5m[30d])
+
+      - record: aistudio_slo:org_api_latency_sli:30d
+        expr: avg_over_time(aistudio_slo:org_api_latency_sli:5m[30d])
+
+      - record: aistudio_slo:org_api_availability_error_budget_remaining:30d
+        expr: |
+          clamp_min(
+            1 - (
+              (1 - aistudio_slo:org_api_availability:30d)
+              / (1 - on(organization_id) group_left aistudio_slo_org_availability_target)
+            ),
+            0
+          )
+
+      - record: aistudio_slo:org_api_latency_error_budget_remaining:30d
+        expr: |
+          clamp_max(
+            clamp_min(
+              1 - (
+                (
+                  on(organization_id) group_left aistudio_slo_org_latency_target
+                  - aistudio_slo:org_api_latency_sli:30d
+                )
+                / (1 - on(organization_id) group_left aistudio_slo_org_latency_target)
+              ),
+              0
+            ),
+            1
+          )
+
+      - record: aistudio_slo:org_api_error_burn_rate:5m
+        expr: |
+          (
+            sum by (organization_id) (
+              rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5..",organization_id!=""}[5m])
+            )
+            /
+            clamp_min(
+              sum by (organization_id) (
+                rate(http_server_requests_seconds_count{job="aistudio-api",organization_id!=""}[5m])
+              ),
+              1e-9
+            )
+          )
+          /
+          (1 - on(organization_id) group_left aistudio_slo_org_availability_target)
+
+      - record: aistudio_slo:org_api_error_burn_rate:1h
+        expr: |
+          (
+            sum by (organization_id) (
+              rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5..",organization_id!=""}[1h])
+            )
+            /
+            clamp_min(
+              sum by (organization_id) (
+                rate(http_server_requests_seconds_count{job="aistudio-api",organization_id!=""}[1h])
+              ),
+              1e-9
+            )
+          )
+          /
+          (1 - on(organization_id) group_left aistudio_slo_org_availability_target)
+
+      - record: aistudio_slo:org_api_error_burn_rate:6h
+        expr: |
+          (
+            sum by (organization_id) (
+              rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5..",organization_id!=""}[6h])
+            )
+            /
+            clamp_min(
+              sum by (organization_id) (
+                rate(http_server_requests_seconds_count{job="aistudio-api",organization_id!=""}[6h])
+              ),
+              1e-9
+            )
+          )
+          /
+          (1 - on(organization_id) group_left aistudio_slo_org_availability_target)
+
+      - record: aistudio_slo:api_error_burn_rate:5m
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[5m])), 1e-9)
+          )
+          / 0.005
+
+      - record: aistudio_slo:api_error_burn_rate:1h
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5.."}[1h]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[1h])), 1e-9)
+          )
+          / 0.005
+
+      - record: aistudio_slo:api_error_burn_rate:6h
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5.."}[6h]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[6h])), 1e-9)
+          )
+          / 0.005

@@ -44,6 +44,8 @@ aistudio:
     hsts-enabled: ${HSTS_ENABLED:false}
   metrics:
     scrape-token: ${METRICS_SCRAPE_TOKEN:}
+  slo:
+    target-metrics-refresh-ms: ${SLO_TARGET_METRICS_REFRESH_MS:60000}
   mail:
     provider: ${MAIL_PROVIDER:logging}
     from: ${MAIL_FROM:noreply@localhost}

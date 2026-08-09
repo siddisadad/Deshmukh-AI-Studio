@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.82-beta] — 2026-08-09
+
+### Added
+
+- Org git sync project settings deep links — overview and sync run rows link to `#git-repository-sync`
+- Project settings scrolls to git repository sync section when hash is present
+- `docs/87-ORG-GIT-SYNC-PROJECT-LINKS-GUIDE.md`, Phase 19 roadmap
+
 ## [0.2.81-beta] — 2026-08-09
 
 ### Added

@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.persistence.repository;
 
 import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,4 +11,6 @@ public interface ProjectGitLinkRepository extends JpaRepository<ProjectGitLinkEn
     Optional<ProjectGitLinkEntity> findByProjectId(UUID projectId);
 
     List<ProjectGitLinkEntity> findByEnabledTrue();
+
+    List<ProjectGitLinkEntity> findByProjectIdIn(Collection<UUID> projectIds);
 }

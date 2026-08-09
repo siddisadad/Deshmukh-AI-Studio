@@ -44,6 +44,32 @@ export interface GitConnectionTestResult {
   checks: GitConnectionCheck[];
 }
 
+export interface OrgGitSyncOverviewItem {
+  projectId: string;
+  projectName: string;
+  projectKey: string;
+  linked: boolean;
+  linkId: string | null;
+  provider: string | null;
+  repository: string | null;
+  branch: string | null;
+  enabled: boolean;
+  scheduledSyncEnabled: boolean;
+  lastSyncedAt: string | null;
+  lastSyncStatus: string;
+  lastSyncError: string | null;
+  scheduledSyncIntervalMinutes: number | null;
+}
+
+export interface OrgGitSyncOverview {
+  organizationId: string;
+  totalProjects: number;
+  linkedProjects: number;
+  enabledLinks: number;
+  failedLastSync: number;
+  items: OrgGitSyncOverviewItem[];
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -64,4 +90,6 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
+  getSyncOverview: (orgId: string) =>
+    http.get<OrgGitSyncOverview>(`/organizations/${orgId}/git-sync-overview`).then((r) => r.data),
 };

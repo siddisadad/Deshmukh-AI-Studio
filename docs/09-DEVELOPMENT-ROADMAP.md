@@ -146,7 +146,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 11. Staffing Suggestion
+## 12. Staffing Suggestion
 
 | Role | Focus |
 |---|---|
@@ -157,7 +157,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 12. Document Control
+## 13. Document Control
 
 | Version | Date | Notes |
 |---|---|---|

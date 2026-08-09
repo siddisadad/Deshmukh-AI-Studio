@@ -137,6 +137,15 @@ export function BillingSettingsPage() {
 
       {error && <Alert severity="error">{error}</Alert>}
       {message && <Alert severity="success">{message}</Alert>}
+      {overview?.subscriptionStatus === 'PAST_DUE' && (
+        <Alert severity="warning" data-testid="billing-past-due-banner">
+          Your subscription is past due.
+          {overview.dunningStage > 0
+            ? ` Reminder stage ${overview.dunningStage}.`
+            : ''}
+          Update your payment method to avoid service interruption.
+        </Alert>
+      )}
       {overviewQuery.isError && (
         <Alert severity="error">
           {overviewQuery.error instanceof ApiError
@@ -153,6 +162,19 @@ export function BillingSettingsPage() {
               ({overview.subscriptionStatus} · {overview.billingProvider})
             </Typography>
           </Typography>
+
+          {overview.reconciliationCheckedAt != null && overview.reconciliationDeltaCents != null && (
+            <Typography
+              variant="body2"
+              color={
+                Math.abs(overview.reconciliationDeltaCents) > 500 ? 'warning.main' : 'text.secondary'
+              }
+              data-testid="billing-reconciliation-delta"
+            >
+              Revenue reconciliation (MTD): Stripe vs internal delta $
+              {(overview.reconciliationDeltaCents / 100).toFixed(2)}
+            </Typography>
+          )}
 
           <Box>
             <Typography variant="body2" sx={{ mb: 0.5 }}>

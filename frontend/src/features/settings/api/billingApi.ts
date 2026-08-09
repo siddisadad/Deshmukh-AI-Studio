@@ -29,6 +29,10 @@ export interface BillingOverview {
   periodOverageActions: number;
   estimatedSeatCentsMonthly: number;
   estimatedOverageCentsThisPeriod: number;
+  dunningStage: number;
+  dunningLastNotifiedAt: string | null;
+  reconciliationDeltaCents: number | null;
+  reconciliationCheckedAt: string | null;
 }
 
 export interface CheckoutSession {

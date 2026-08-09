@@ -243,6 +243,8 @@ jobs:
           bash -n scripts/staging-signoff-matrix.sh
           bash -n scripts/sync-stripe-metered-prices.sh
           bash -n scripts/scheduled-stripe-usage-sync.sh
+          bash -n scripts/scheduled-stripe-reconciliation.sh
+          bash -n scripts/scheduled-billing-dunning.sh
           bash -n scripts/staging-provider-probes.sh
           bash -n scripts/scheduled-chat-retention.sh
           bash -n scripts/write-prometheus-token.sh

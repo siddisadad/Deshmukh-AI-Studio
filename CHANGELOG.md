@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.51-beta] — 2026-08-09
+
+### Added
+
+- Stripe revenue reconciliation — V28 migration, `billing_reconciliation_runs` audit table
+- Internal MTD vs Stripe paid invoice comparison per org (`BillingReconciliationService`)
+- `POST /api/v1/billing/stripe/reconcile` operator endpoint
+- Dunning automation — `dunning_stage`, `billing_dunning_events` audit log
+- Stripe webhook handlers for `invoice.payment_failed` / `invoice.payment_succeeded`
+- Staged dunning emails to org owners via `BillingDunningService`
+- `POST /api/v1/billing/stripe/dunning/run` and `BillingDunningScheduler`
+- Billing settings UI — past-due banner and reconciliation delta display
+- Prometheus `aistudio_billing_reconciliation_delta_cents` per-org gauge
+- `BillingReconciliationMismatch` alert in `monitoring/billing-alerts.yml`
+- Cron scripts `scheduled-stripe-reconciliation.sh`, `scheduled-billing-dunning.sh`
+- `docs/56-STRIPE-REVENUE-RECONCILIATION-DUNNING-GUIDE.md`
+
 ## [0.2.50-beta] — 2026-08-09
 
 ### Added

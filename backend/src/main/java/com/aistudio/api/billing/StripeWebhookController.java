@@ -1,7 +1,9 @@
 package com.aistudio.api.billing;
 
 import com.aistudio.application.billing.BillingService;
+import com.aistudio.api.billing.dto.StripeDunningRunResponse;
 import com.aistudio.api.billing.dto.StripeMeteredSyncResponse;
+import com.aistudio.api.billing.dto.StripeReconciliationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -33,5 +35,17 @@ public class StripeWebhookController {
     @Operation(summary = "Sync seat + AI overage usage to Stripe metered prices (BILLING_USAGE_SYNC_TOKEN)")
     public StripeMeteredSyncResponse syncMeteredUsage() {
         return billingService.syncStripeMeteredUsage();
+    }
+
+    @PostMapping("/api/v1/billing/stripe/reconcile")
+    @Operation(summary = "Reconcile internal MTD revenue vs Stripe paid invoices (BILLING_USAGE_SYNC_TOKEN)")
+    public StripeReconciliationResponse reconcileRevenue() {
+        return billingService.reconcileStripeRevenue();
+    }
+
+    @PostMapping("/api/v1/billing/stripe/dunning/run")
+    @Operation(summary = "Run scheduled dunning reminders for past-due subscriptions (BILLING_USAGE_SYNC_TOKEN)")
+    public StripeDunningRunResponse runDunning() {
+        return billingService.runStripeDunning();
     }
 }

@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final List<String> BILLING_OPERATOR_PATHS = List.of(
+            "/api/v1/billing/stripe/sync-metered-usage",
+            "/api/v1/billing/stripe/reconcile",
+            "/api/v1/billing/stripe/dunning/run"
+    );
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -102,7 +109,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (billingUsageSyncToken == null || billingUsageSyncToken.isBlank()) {
             return false;
         }
-        if (!request.getRequestURI().endsWith("/api/v1/billing/stripe/sync-metered-usage")) {
+        if (!BILLING_OPERATOR_PATHS.contains(request.getRequestURI())) {
             return false;
         }
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);

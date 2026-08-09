@@ -66,6 +66,55 @@ class OrgGitSyncOverviewControllerIT {
                 .andExpect(jsonPath("$.items[?(@.projectId == '" + unlinkedProjectId + "')].linked").value(false));
     }
 
+    @Test
+    void overviewFiltersByLinkedProviderAndLastSyncStatus() throws Exception {
+        JsonNode user = register("org-sync-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubProjectId = createProject(token, orgId, "GitHub Proj", "GH");
+        UUID gitlabProjectId = createProject(token, orgId, "GitLab Proj", "GL");
+        UUID unlinkedProjectId = createProject(token, orgId, "Plain Proj", "PL");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/projects/" + githubProjectId + "/git-link/sync")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?linked=true&provider=github&lastSyncStatus=success")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalProjects").value(3))
+                .andExpect(jsonPath("$.linkedProjects").value(2))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(githubProjectId.toString()));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?linked=false")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(unlinkedProjectId.toString()));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?lastSyncStatus=never")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2));
+    }
+
     private UUID createProject(String token, UUID orgId, String name, String key) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
                         .header("Authorization", "Bearer " + token)

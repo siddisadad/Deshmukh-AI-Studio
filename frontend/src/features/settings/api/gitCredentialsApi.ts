@@ -90,6 +90,23 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
-  getSyncOverview: (orgId: string) =>
-    http.get<OrgGitSyncOverview>(`/organizations/${orgId}/git-sync-overview`).then((r) => r.data),
+  getSyncOverview: (
+    orgId: string,
+    filters?: {
+      linked?: boolean;
+      provider?: string;
+      lastSyncStatus?: string;
+    }
+  ) => {
+    const params = new URLSearchParams();
+    if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
+    if (filters?.provider) params.set('provider', filters.provider);
+    if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
+    const query = params.toString();
+    return http
+      .get<OrgGitSyncOverview>(
+        `/organizations/${orgId}/git-sync-overview${query ? `?${query}` : ''}`
+      )
+      .then((r) => r.data);
+  },
 };

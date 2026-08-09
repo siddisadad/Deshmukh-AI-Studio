@@ -185,6 +185,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Item | Status on `main` | Next depth |
 |---|---|---|
 | Sync overview | Org-wide project git link + last sync dashboard ([79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md](79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md)) | — |
+| Overview filters | Linked/provider/last-sync filters + refresh UI ([80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md](80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md)) | — |
 
 ---
 

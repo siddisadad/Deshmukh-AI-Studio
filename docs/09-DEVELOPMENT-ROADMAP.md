@@ -128,7 +128,15 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
-## 10. Dependency Graph (simplified)
+## 10. Phase 7 — Production depth (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Code metadata RAG | Manifest API + `CODE_FILE` indexing ([63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md)) | Live Git sync, webhook reindex |
+
+---
+
+## 11. Dependency Graph (simplified)
 
 ```
 Foundations → Identity → Projects → Requirements/Tasks/Docs → AI → Hardening → Beta

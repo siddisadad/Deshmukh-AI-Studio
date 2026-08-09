@@ -11,7 +11,8 @@ import com.aistudio.infrastructure.persistence.entity.TaskEntity;
 import com.aistudio.infrastructure.persistence.repository.ContextAssetRepository;
 import com.aistudio.infrastructure.persistence.repository.DocumentRepository;
 import com.aistudio.infrastructure.persistence.repository.RequirementRepository;
-import com.aistudio.infrastructure.persistence.repository.TaskRepository;
+import com.aistudio.infrastructure.persistence.entity.ProjectCodeFileEntity;
+import com.aistudio.infrastructure.persistence.repository.ProjectCodeFileRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public class KnowledgeIndexService {
     private final DocumentRepository documentRepository;
     private final ContextAssetRepository contextAssetRepository;
     private final TaskRepository taskRepository;
+    private final ProjectCodeFileRepository codeFileRepository;
     private final KnowledgeEmbeddingMetrics embeddingMetrics;
     private final boolean ragEnabled;
     private final int maxChunksPerProject;
@@ -40,6 +42,7 @@ public class KnowledgeIndexService {
             DocumentRepository documentRepository,
             ContextAssetRepository contextAssetRepository,
             TaskRepository taskRepository,
+            ProjectCodeFileRepository codeFileRepository,
             KnowledgeEmbeddingMetrics embeddingMetrics,
             AiProperties aiProperties
     ) {
@@ -49,6 +52,7 @@ public class KnowledgeIndexService {
         this.documentRepository = documentRepository;
         this.contextAssetRepository = contextAssetRepository;
         this.taskRepository = taskRepository;
+        this.codeFileRepository = codeFileRepository;
         this.embeddingMetrics = embeddingMetrics;
         this.ragEnabled = aiProperties.rag() == null || aiProperties.rag().enabled();
         this.maxChunksPerProject = aiProperties.rag() == null || aiProperties.rag().maxChunksPerProject() <= 0
@@ -136,6 +140,16 @@ public class KnowledgeIndexService {
                 }
             }
         }
+        if (!corpusLimitReached) {
+            for (ProjectCodeFileEntity file : codeFileRepository.findByProjectIdOrderByPathAsc(projectId)) {
+                IndexSlice slice = indexCodeFile(projectId, file, chunks);
+                chunks += slice.chunksIndexed();
+                if (slice.corpusLimitReached()) {
+                    corpusLimitReached = true;
+                    break;
+                }
+            }
+        }
         return new ReindexResult(
                 chunks,
                 embeddingPort.providerId(),
@@ -146,6 +160,22 @@ public class KnowledgeIndexService {
     }
 
     @Transactional
+    public void reindexCodeFiles(UUID projectId) {
+        if (!ragEnabled) {
+            return;
+        }
+        chunkRepository.deleteBySourceType(projectId, KnowledgeSourceType.CODE_FILE);
+        int chunks = chunkRepository.countByProjectId(projectId);
+        for (ProjectCodeFileEntity file : codeFileRepository.findByProjectIdOrderByPathAsc(projectId)) {
+            IndexSlice slice = indexCodeFile(projectId, file, chunks);
+            chunks += slice.chunksIndexed();
+            if (slice.corpusLimitReached()) {
+                break;
+            }
+        }
+    }
+
+    @Transactional
     public void reindexSource(UUID projectId, KnowledgeSourceType sourceType, UUID sourceId, String title, String body) {
         if (!ragEnabled) {
             return;
@@ -153,6 +183,22 @@ public class KnowledgeIndexService {
         chunkRepository.deleteBySource(projectId, sourceType, sourceId);
         int existing = chunkRepository.countByProjectId(projectId);
         indexText(projectId, sourceType, sourceId, title, title + "\n" + nullToEmpty(body), existing);
+    }
+
+    private IndexSlice indexCodeFile(UUID projectId, ProjectCodeFileEntity file, int existingChunks) {
+        String title = file.getPath();
+        String body = "path: " + file.getPath()
+                + "\nlanguage: " + nullToEmpty(file.getLanguage())
+                + "\nsize_bytes: " + file.getSizeBytes()
+                + "\n" + nullToEmpty(file.getSnippet());
+        return indexText(
+                projectId,
+                KnowledgeSourceType.CODE_FILE,
+                file.getId(),
+                title,
+                body,
+                existingChunks
+        );
     }
 
     private IndexSlice indexText(

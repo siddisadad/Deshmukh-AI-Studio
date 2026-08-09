@@ -67,8 +67,9 @@ Read in order; each document builds on the previous.
 | 60 | [60-PLUGIN-MARKETPLACE-GUIDE.md](60-PLUGIN-MARKETPLACE-GUIDE.md) | Plugin marketplace and third-party packs |
 | 61 | [61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md](61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md) | K8s HPA and cloud-native worker autoscaling |
 | 62 | [62-RAG-LARGE-CORPUS-EMBEDDING-GUIDE.md](62-RAG-LARGE-CORPUS-EMBEDDING-GUIDE.md) | RAG large corpus and embedding operations |
+| 63 | [63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md) | Code metadata manifest RAG ingestion |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.57-beta** adds RAG large corpus tuning — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.58-beta** adds code metadata RAG — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

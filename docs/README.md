@@ -85,8 +85,9 @@ Read in order; each document builds on the previous.
 | 78 | [78-GIT-SYNC-RUN-FILTERS-GUIDE.md](78-GIT-SYNC-RUN-FILTERS-GUIDE.md) | Git sync run source/status filters |
 | 79 | [79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md](79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md) | Organization git sync overview dashboard |
 | 80 | [80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md](80-ORG-GIT-SYNC-OVERVIEW-FILTERS-GUIDE.md) | Org git sync overview filters |
+| 81 | [81-GIT-SYNC-RUN-PAGINATION-GUIDE.md](81-GIT-SYNC-RUN-PAGINATION-GUIDE.md) | Git sync run offset pagination |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.75-beta** adds org git sync overview filters — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.76-beta** adds git sync run pagination — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

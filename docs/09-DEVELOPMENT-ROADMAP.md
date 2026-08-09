@@ -177,6 +177,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Item | Status on `main` | Next depth |
 |---|---|---|
 | Run filters | Source/status filters + refresh UI ([78-GIT-SYNC-RUN-FILTERS-GUIDE.md](78-GIT-SYNC-RUN-FILTERS-GUIDE.md)) | — |
+| Run pagination | Offset/limit page response + load more UI ([81-GIT-SYNC-RUN-PAGINATION-GUIDE.md](81-GIT-SYNC-RUN-PAGINATION-GUIDE.md)) | — |
 
 ---
 

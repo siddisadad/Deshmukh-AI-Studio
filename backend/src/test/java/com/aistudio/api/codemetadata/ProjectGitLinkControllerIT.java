@@ -164,15 +164,65 @@ class ProjectGitLinkControllerIT {
                         "/api/v1/projects/" + projectId + "/git-link/sync-runs?source=manual&status=success")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].source").value("manual"))
-                .andExpect(jsonPath("$[0].status").value("success"));
+                .andExpect(jsonPath("$.items[0].source").value("manual"))
+                .andExpect(jsonPath("$.items[0].status").value("success"))
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
                         "/api/v1/projects/" + projectId + "/git-link/sync-runs?status=failed")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalCount").value(0));
+    }
+
+    @Test
+    void listSyncRunsSupportsOffsetPagination() throws Exception {
+        JsonNode auth = register("git-page" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Page Proj","projectKey":"PG","description":"page"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/page-service","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=2&offset=0")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.offset").value(0))
+                .andExpect(jsonPath("$.limit").value(2))
+                .andExpect(jsonPath("$.totalCount").value(3))
+                .andExpect(jsonPath("$.hasMore").value(true));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?limit=2&offset=2")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.offset").value(2))
+                .andExpect(jsonPath("$.hasMore").value(false));
     }
 
     @Test

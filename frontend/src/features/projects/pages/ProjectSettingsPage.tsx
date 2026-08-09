@@ -30,6 +30,7 @@ import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
 const GIT_PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
+const GIT_SYNC_RUN_PAGE_SIZE = 20;
 type GitProvider = (typeof GIT_PROVIDERS)[number];
 
 export function ProjectSettingsPage() {
@@ -64,6 +65,9 @@ export function ProjectSettingsPage() {
   const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
   const [gitPathIncludePatterns, setGitPathIncludePatterns] = useState('');
   const [gitSyncRuns, setGitSyncRuns] = useState<GitSyncRun[]>([]);
+  const [gitSyncRunOffset, setGitSyncRunOffset] = useState(0);
+  const [gitSyncRunHasMore, setGitSyncRunHasMore] = useState(false);
+  const [gitSyncRunTotalCount, setGitSyncRunTotalCount] = useState(0);
   const [gitSyncRunSourceFilter, setGitSyncRunSourceFilter] = useState<'all' | 'manual' | 'scheduled' | 'webhook'>('all');
   const [gitSyncRunStatusFilter, setGitSyncRunStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [showGitWebhookSecret, setShowGitWebhookSecret] = useState(false);
@@ -78,9 +82,9 @@ export function ProjectSettingsPage() {
       jobsApi.list(projectId, 10),
       codeMetadataApi.summary(projectId),
       gitLinkApi.get(projectId),
-      gitLinkApi.listSyncRuns(projectId, 20, { source: 'all', status: 'all' }),
+      gitLinkApi.listSyncRuns(projectId, GIT_SYNC_RUN_PAGE_SIZE, { source: 'all', status: 'all', offset: 0 }),
     ])
-      .then(([p, listed, status, listedJobs, codeSummary, link, syncRuns]) => {
+      .then(([p, listed, status, listedJobs, codeSummary, link, syncRunsPage]) => {
         setProject(p);
         setName(p.name);
         setProjectKey(p.projectKey);
@@ -93,7 +97,10 @@ export function ProjectSettingsPage() {
         setJobs(listedJobs);
         setCodeMetadata(codeSummary);
         setGitLink(link);
-        setGitSyncRuns(syncRuns);
+        setGitSyncRuns(syncRunsPage.items);
+        setGitSyncRunOffset(syncRunsPage.offset);
+        setGitSyncRunHasMore(syncRunsPage.hasMore);
+        setGitSyncRunTotalCount(syncRunsPage.totalCount);
         setGitRepository(link.repository || '');
         setGitBranch(link.branch || 'main');
         setGitProvider(
@@ -165,8 +172,29 @@ export function ProjectSettingsPage() {
     status = gitSyncRunStatusFilter,
   ) {
     if (!projectId) return;
-    const runs = await gitLinkApi.listSyncRuns(projectId, 20, { source, status });
-    setGitSyncRuns(runs);
+    const page = await gitLinkApi.listSyncRuns(projectId, GIT_SYNC_RUN_PAGE_SIZE, {
+      source,
+      status,
+      offset: 0,
+    });
+    setGitSyncRuns(page.items);
+    setGitSyncRunOffset(page.offset);
+    setGitSyncRunHasMore(page.hasMore);
+    setGitSyncRunTotalCount(page.totalCount);
+  }
+
+  async function loadMoreGitSyncRuns() {
+    if (!projectId || !gitSyncRunHasMore) return;
+    const nextOffset = gitSyncRunOffset + GIT_SYNC_RUN_PAGE_SIZE;
+    const page = await gitLinkApi.listSyncRuns(projectId, GIT_SYNC_RUN_PAGE_SIZE, {
+      source: gitSyncRunSourceFilter,
+      status: gitSyncRunStatusFilter,
+      offset: nextOffset,
+    });
+    setGitSyncRuns((prev) => [...prev, ...page.items]);
+    setGitSyncRunOffset(page.offset);
+    setGitSyncRunHasMore(page.hasMore);
+    setGitSyncRunTotalCount(page.totalCount);
   }
 
   async function onSaveGitLink(e: FormEvent) {
@@ -218,10 +246,15 @@ export function ProjectSettingsPage() {
     try {
       const link = await gitLinkApi.syncNow(projectId);
       setGitLink(link);
-      setGitSyncRuns(await gitLinkApi.listSyncRuns(projectId, 20, {
+      const page = await gitLinkApi.listSyncRuns(projectId, GIT_SYNC_RUN_PAGE_SIZE, {
         source: gitSyncRunSourceFilter,
         status: gitSyncRunStatusFilter,
-      }));
+        offset: 0,
+      });
+      setGitSyncRuns(page.items);
+      setGitSyncRunOffset(page.offset);
+      setGitSyncRunHasMore(page.hasMore);
+      setGitSyncRunTotalCount(page.totalCount);
       setCodeMetadata(await codeMetadataApi.summary(projectId));
       setKnowledge(await knowledgeApi.status(projectId));
       setMessage(`Git sync succeeded · status ${link.lastSyncStatus}`);
@@ -282,6 +315,9 @@ export function ProjectSettingsPage() {
       setGitRepository('');
       setGitBranch('main');
       setGitSyncRuns([]);
+      setGitSyncRunOffset(0);
+      setGitSyncRunHasMore(false);
+      setGitSyncRunTotalCount(0);
       setShowGitWebhookSecret(false);
       setMessage('Git link disconnected');
     } catch (err) {
@@ -734,6 +770,11 @@ export function ProjectSettingsPage() {
           )}
           <Stack spacing={1}>
             <Typography variant="subtitle2">Recent sync runs</Typography>
+            {gitSyncRunTotalCount > 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Showing {gitSyncRuns.length} of {gitSyncRunTotalCount}
+              </Typography>
+            )}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
               <TextField
                 select
@@ -792,6 +833,17 @@ export function ProjectSettingsPage() {
                 {run.errorMessage ? ` · ${run.errorMessage}` : ''}
               </Typography>
             ))}
+            {gitSyncRunHasMore && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => void loadMoreGitSyncRuns()}
+                disabled={saving || !gitLink?.id}
+                data-testid="git-sync-runs-load-more"
+              >
+                Load more
+              </Button>
+            )}
           </Stack>
         </Stack>
       </Paper>

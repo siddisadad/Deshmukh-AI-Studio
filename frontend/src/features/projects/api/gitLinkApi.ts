@@ -47,6 +47,14 @@ export interface GitSyncRun {
   finishedAt: string;
 }
 
+export interface GitSyncRunPage {
+  items: GitSyncRun[];
+  offset: number;
+  limit: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
 export const gitLinkApi = {
   get: (projectId: string) =>
     http.get<ProjectGitLink>(`/projects/${projectId}/git-link`).then((r) => r.data),
@@ -55,13 +63,14 @@ export const gitLinkApi = {
   listSyncRuns: (
     projectId: string,
     limit = 20,
-    filters?: { source?: string; status?: string },
+    filters?: { source?: string; status?: string; offset?: number },
   ) => {
     const params = new URLSearchParams({ limit: String(limit) });
+    if (filters?.offset != null) params.set('offset', String(filters.offset));
     if (filters?.source && filters.source !== 'all') params.set('source', filters.source);
     if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
     return http
-      .get<GitSyncRun[]>(`/projects/${projectId}/git-link/sync-runs?${params.toString()}`)
+      .get<GitSyncRunPage>(`/projects/${projectId}/git-link/sync-runs?${params.toString()}`)
       .then((r) => r.data);
   },
   syncNow: (projectId: string) =>

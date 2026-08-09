@@ -61,7 +61,14 @@ export interface OrgAiPolicy {
   effectiveDeployRegion: string | null;
   changeApprovalRequired: boolean;
   simulationGateEnabled: boolean;
+  canaryProviderChain: string | null;
+  canaryPercent: number | null;
   pendingChange: OrgAiPolicyChange | null;
+}
+
+export interface UpdateOrgAiCanaryRequest {
+  providerChain: string;
+  percent: number;
 }
 
 export interface UpdateOrgAiPolicyRequest {
@@ -101,4 +108,10 @@ export const aiPolicyApi = {
     http
       .post<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/pending/reject`)
       .then((r) => r.data),
+  updateCanary: (orgId: string, body: UpdateOrgAiCanaryRequest) =>
+    http.put<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary`, body).then((r) => r.data),
+  promoteCanary: (orgId: string) =>
+    http.post<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary/promote`).then((r) => r.data),
+  abortCanary: (orgId: string) =>
+    http.delete<OrgAiPolicy>(`/organizations/${orgId}/ai-policy/canary`).then((r) => r.data),
 };

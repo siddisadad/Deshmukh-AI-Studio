@@ -23,6 +23,9 @@ vi.mock('../api/aiPolicyApi', () => ({
     listChanges: vi.fn(),
     approvePending: vi.fn(),
     rejectPending: vi.fn(),
+    updateCanary: vi.fn(),
+    promoteCanary: vi.fn(),
+    abortCanary: vi.fn(),
   },
 }));
 
@@ -57,6 +60,8 @@ describe('AiRoutingSettingsPage', () => {
       effectiveDeployRegion: 'eu-west',
       changeApprovalRequired: false,
       simulationGateEnabled: false,
+      canaryProviderChain: null,
+      canaryPercent: null,
       pendingChange: null,
     });
     vi.mocked(aiPolicyApi.listChanges).mockResolvedValue([]);
@@ -89,6 +94,8 @@ describe('AiRoutingSettingsPage', () => {
       effectiveDeployRegion: 'us-east',
       changeApprovalRequired: false,
       simulationGateEnabled: false,
+      canaryProviderChain: null,
+      canaryPercent: null,
       pendingChange: null,
     });
 

@@ -68,6 +68,12 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "ai_deploy_region", length = 64)
     private String aiDeployRegion;
 
+    @Column(name = "ai_canary_provider_chain", length = 255)
+    private String aiCanaryProviderChain;
+
+    @Column(name = "ai_canary_percent")
+    private Integer aiCanaryPercent;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

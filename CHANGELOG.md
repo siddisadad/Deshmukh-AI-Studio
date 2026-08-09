@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.48-beta] — 2026-08-09
+
+### Added
+
+- AI policy canary rollout — `ai_canary_provider_chain` + `ai_canary_percent` on subscriptions
+- Per-conversation sticky routing to canary chain via `OrgAiRoutingPolicyService`
+- `PUT/POST/DELETE /organizations/{id}/ai-policy/canary` promote and abort endpoints
+- Settings UI — canary rollout section on `/settings/ai-routing`
+- `docs/53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md`
+
 ## [0.2.47-beta] — 2026-08-09
 
 ### Added

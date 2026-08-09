@@ -57,8 +57,9 @@ Read in order; each document builds on the previous.
 | 50 | [50-AI-POLICY-AUDIT-APPROVAL-GUIDE.md](50-AI-POLICY-AUDIT-APPROVAL-GUIDE.md) | AI routing policy audit log and change approvals |
 | 51 | [51-AI-POLICY-SIMULATION-GUIDE.md](51-AI-POLICY-SIMULATION-GUIDE.md) | AI routing policy simulation / dry-run before apply |
 | 52 | [52-AI-POLICY-SIMULATION-AUDIT-GATE-GUIDE.md](52-AI-POLICY-SIMULATION-AUDIT-GATE-GUIDE.md) | Simulation audit trail and rollout gates |
+| 53 | [53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md](53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md) | Policy canary rollout / gradual provider shifts |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.47-beta** adds simulation audit trail and rollout gates — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.48-beta** adds policy canary rollout — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

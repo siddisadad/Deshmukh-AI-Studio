@@ -475,6 +475,7 @@ public class ConversationService {
         ProjectEntity project = projectRepository.findById(conversation.getProjectId())
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
         OrgAiRoutingContext.setOrganizationId(project.getOrganizationId());
+        OrgAiRoutingContext.setConversationId(conversation.getId());
         routingPolicyService.deployRegionOverride(project.getOrganizationId())
                 .ifPresent(OrgAiRoutingContext::setDeployRegion);
         modelRoutingService.resolve(conversation.getAssistantRole(), project.getOrganizationId())

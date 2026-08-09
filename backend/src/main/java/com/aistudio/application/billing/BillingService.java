@@ -355,6 +355,49 @@ public class BillingService {
         return subscriptionRepository.save(sub);
     }
 
+    @Transactional
+    public OrganizationSubscriptionEntity updateCanary(
+            UUID organizationId,
+            String providerChain,
+            int percent
+    ) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        String normalizedChain = providerChain == null ? null : providerChain.trim();
+        if (normalizedChain == null || normalizedChain.isEmpty()) {
+            throw new DomainException("VALIDATION_ERROR", "providerChain is required for canary rollout");
+        }
+        if (percent < 1 || percent > 100) {
+            throw new DomainException("VALIDATION_ERROR", "canary percent must be between 1 and 100");
+        }
+        sub.setAiCanaryProviderChain(normalizedChain);
+        sub.setAiCanaryPercent(percent);
+        return subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    public OrganizationSubscriptionEntity promoteCanary(UUID organizationId) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        String canaryChain = sub.getAiCanaryProviderChain();
+        if (canaryChain == null || canaryChain.isBlank()) {
+            throw new DomainException("NOT_FOUND", "No active canary provider chain");
+        }
+        sub.setAiProviderChain(canaryChain.trim());
+        sub.setAiCanaryProviderChain(null);
+        sub.setAiCanaryPercent(null);
+        return subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    public OrganizationSubscriptionEntity abortCanary(UUID organizationId) {
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        if (sub.getAiCanaryProviderChain() == null && sub.getAiCanaryPercent() == null) {
+            throw new DomainException("NOT_FOUND", "No active canary provider chain");
+        }
+        sub.setAiCanaryProviderChain(null);
+        sub.setAiCanaryPercent(null);
+        return subscriptionRepository.save(sub);
+    }
+
     private long effectiveDailyTokenBudget(OrganizationSubscriptionEntity sub, PlanEntity plan) {
         Long override = sub.getDailyTokenBudget();
         if (override != null && override > 0) {

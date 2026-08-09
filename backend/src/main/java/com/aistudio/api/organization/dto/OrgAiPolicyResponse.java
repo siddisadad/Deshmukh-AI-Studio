@@ -11,6 +11,8 @@ public record OrgAiPolicyResponse(
         String effectiveDeployRegion,
         boolean changeApprovalRequired,
         boolean simulationGateEnabled,
+        String canaryProviderChain,
+        Integer canaryPercent,
         OrgAiPolicyChangeResponse pendingChange
 ) {
 }

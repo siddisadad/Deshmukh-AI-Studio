@@ -11,4 +11,8 @@ public interface GitMetadataPort {
     default List<GitFileEntry> hydrateFileContents(String repository, String branch, List<GitFileEntry> files) {
         return files;
     }
+
+    default List<GitFileEntry> fetchFilesByPaths(String repository, String branch, List<String> paths) {
+        return List.of();
+    }
 }

@@ -8,11 +8,14 @@ import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.config.GitProperties;
+import com.aistudio.infrastructure.codemetadata.GitWebhookPayloadParser;
 import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
 import com.aistudio.infrastructure.persistence.repository.ProjectGitLinkRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.HexFormat;
 import java.util.Locale;
@@ -21,6 +24,8 @@ import java.util.Set;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +39,11 @@ public class ProjectGitSyncService {
     private final ProjectCodeMetadataService codeMetadataService;
     private final GitMetadataRegistry gitMetadataRegistry;
     private final BackgroundJobService backgroundJobService;
+    private final GitWebhookPayloadParser webhookPayloadParser;
+    private final ObjectMapper objectMapper;
     private final String publicApiBaseUrl;
     private final boolean fetchFileContent;
+    private final boolean webhookDeltaSync;
 
     public ProjectGitSyncService(
             ProjectGitLinkRepository gitLinkRepository,
@@ -43,6 +51,8 @@ public class ProjectGitSyncService {
             ProjectCodeMetadataService codeMetadataService,
             GitMetadataRegistry gitMetadataRegistry,
             BackgroundJobService backgroundJobService,
+            GitWebhookPayloadParser webhookPayloadParser,
+            ObjectMapper objectMapper,
             GitProperties gitProperties
     ) {
         this.gitLinkRepository = gitLinkRepository;
@@ -50,10 +60,13 @@ public class ProjectGitSyncService {
         this.codeMetadataService = codeMetadataService;
         this.gitMetadataRegistry = gitMetadataRegistry;
         this.backgroundJobService = backgroundJobService;
+        this.webhookPayloadParser = webhookPayloadParser;
+        this.objectMapper = objectMapper;
         this.publicApiBaseUrl = gitProperties.publicApiBaseUrl() == null || gitProperties.publicApiBaseUrl().isBlank()
                 ? "http://localhost:8080"
                 : gitProperties.publicApiBaseUrl().trim().replaceAll("/+$", "");
         this.fetchFileContent = gitProperties.fetchFileContentEnabled();
+        this.webhookDeltaSync = gitProperties.webhookDeltaSyncEnabled();
     }
 
     @Transactional(readOnly = true)
@@ -97,10 +110,19 @@ public class ProjectGitSyncService {
 
     @Transactional
     public int syncProject(UUID projectId) {
+        return syncProject(projectId, null);
+    }
+
+    @Transactional
+    public int syncProject(UUID projectId, String jobPayloadJson) {
         ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Git link not configured"));
         if (!link.isEnabled()) {
             throw new DomainException("VALIDATION_ERROR", "Git link is disabled");
+        }
+        GitWebhookDelta delta = parseJobDelta(jobPayloadJson);
+        if (webhookDeltaSync && delta != null && delta.hasChanges()) {
+            return syncLinkDelta(link, delta);
         }
         return syncLink(link);
     }
@@ -109,25 +131,94 @@ public class ProjectGitSyncService {
     public void handleGithubWebhook(UUID projectId, String signatureHeader, String payload) {
         ProjectGitLinkEntity link = requireWebhookLink(projectId, "github");
         verifyHmacSha256Signature(link.getWebhookSecret(), signatureHeader, payload, "sha256=");
-        enqueueWebhookSync(projectId);
+        enqueueWebhookSync(projectId, webhookPayloadParser.parseGithub(payload, link.getBranch()));
     }
 
     @Transactional
     public void handleGitlabWebhook(UUID projectId, String tokenHeader, String payload) {
         ProjectGitLinkEntity link = requireWebhookLink(projectId, "gitlab");
         verifySharedToken(link.getWebhookSecret(), tokenHeader);
-        enqueueWebhookSync(projectId);
+        enqueueWebhookSync(projectId, webhookPayloadParser.parseGitlab(payload, link.getBranch()));
     }
 
     @Transactional
     public void handleBitbucketWebhook(UUID projectId, String signatureHeader, String payload) {
         ProjectGitLinkEntity link = requireWebhookLink(projectId, "bitbucket");
         verifyHmacSha256Signature(link.getWebhookSecret(), signatureHeader, payload, "sha256=");
-        enqueueWebhookSync(projectId);
+        enqueueWebhookSync(projectId, webhookPayloadParser.parseBitbucket(payload, link.getBranch()));
     }
 
-    private void enqueueWebhookSync(UUID projectId) {
-        backgroundJobService.enqueueInternal(projectId, JobType.CODE_METADATA_SYNC, Map.of("source", "webhook"));
+    private void enqueueWebhookSync(UUID projectId, GitWebhookDelta delta) {
+        Map<String, Object> jobPayload = new HashMap<>();
+        jobPayload.put("source", "webhook");
+        if (webhookDeltaSync && delta != null && delta.hasChanges()) {
+            jobPayload.put("changedPaths", delta.changedPaths());
+            jobPayload.put("removedPaths", delta.removedPaths());
+        }
+        backgroundJobService.enqueueInternal(projectId, JobType.CODE_METADATA_SYNC, jobPayload);
+    }
+
+    private int syncLinkDelta(ProjectGitLinkEntity link, GitWebhookDelta delta) {
+        try {
+            GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
+            List<GitFileEntry> upserts = port.fetchFilesByPaths(
+                    link.getRepository(),
+                    link.getBranch(),
+                    delta.changedPaths()
+            );
+            if (fetchFileContent) {
+                upserts = port.hydrateFileContents(link.getRepository(), link.getBranch(), upserts);
+            }
+            int count = codeMetadataService.applyDeltaInternal(
+                    link.getProjectId(),
+                    upserts,
+                    delta.removedPaths()
+            );
+            link.setLastSyncedAt(Instant.now());
+            link.setLastSyncStatus("success");
+            link.setLastSyncError(null);
+            gitLinkRepository.save(link);
+            return count;
+        } catch (Exception ex) {
+            link.setLastSyncStatus("failed");
+            link.setLastSyncError(ex.getMessage() == null ? "sync failed" : truncate(ex.getMessage(), 2000));
+            gitLinkRepository.save(link);
+            if (ex instanceof DomainException domainEx) {
+                throw domainEx;
+            }
+            throw new DomainException("GIT_ERROR", link.getLastSyncError());
+        }
+    }
+
+    private GitWebhookDelta parseJobDelta(String jobPayloadJson) {
+        if (jobPayloadJson == null || jobPayloadJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(jobPayloadJson);
+            if (!root.has("changedPaths") && !root.has("removedPaths")) {
+                return null;
+            }
+            List<String> changed = readPathArray(root.path("changedPaths"));
+            List<String> removed = readPathArray(root.path("removedPaths"));
+            return new GitWebhookDelta(changed, removed);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private static List<String> readPathArray(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> paths = new ArrayList<>();
+        for (JsonNode value : node) {
+            String path = value.asText("").trim();
+            if (!path.isBlank()) {
+                paths.add(path);
+            }
+        }
+        return paths;
     }
 
     private int syncLink(ProjectGitLinkEntity link) {

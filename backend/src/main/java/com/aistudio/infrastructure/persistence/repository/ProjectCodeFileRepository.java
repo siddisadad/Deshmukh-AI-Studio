@@ -10,5 +10,9 @@ public interface ProjectCodeFileRepository extends JpaRepository<ProjectCodeFile
 
     void deleteByProjectId(UUID projectId);
 
+    void deleteByProjectIdAndPath(UUID projectId, String path);
+
+    java.util.Optional<ProjectCodeFileEntity> findByProjectIdAndPath(UUID projectId, String path);
+
     int countByProjectId(UUID projectId);
 }

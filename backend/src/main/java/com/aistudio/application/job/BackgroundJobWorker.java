@@ -155,7 +155,7 @@ public class BackgroundJobWorker {
                 ));
             }
             case CODE_METADATA_SYNC -> {
-                int fileCount = projectGitSyncService.syncProject(job.getProjectId());
+                int fileCount = projectGitSyncService.syncProject(job.getProjectId(), job.getPayload());
                 yield objectMapper.writeValueAsString(Map.of("fileCount", fileCount, "source", "git"));
             }
         };

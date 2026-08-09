@@ -14,11 +14,16 @@ public record GitProperties(
         String bitbucketApiBaseUrl,
         Boolean fetchFileContent,
         Integer maxSnippetBytes,
-        Integer maxContentFetchBytes
+        Integer maxContentFetchBytes,
+        Boolean webhookDeltaSync
 ) {
 
     public boolean fetchFileContentEnabled() {
         return fetchFileContent == null || fetchFileContent;
+    }
+
+    public boolean webhookDeltaSyncEnabled() {
+        return webhookDeltaSync == null || webhookDeltaSync;
     }
 
     public int effectiveMaxSnippetBytes() {

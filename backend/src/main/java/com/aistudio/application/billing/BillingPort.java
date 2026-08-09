@@ -13,6 +13,10 @@ public interface BillingPort {
 
     List<InvoiceSummary> listInvoices(UUID organizationId, int limit);
 
+    default long sumPaidInvoiceCents(UUID organizationId, long periodStartEpochSeconds, long periodEndEpochSeconds) {
+        return 0L;
+    }
+
     default void refreshSubscriptionItems(UUID organizationId, String externalSubscriptionId) {
         // no-op for mock
     }

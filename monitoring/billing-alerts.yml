@@ -52,3 +52,15 @@ groups:
         annotations:
           summary: AI overage today anomalous vs 7-day average
           description: Today's overage actions are more than 3× the 7-day average daily overage gauge.
+
+      - alert: BillingReconciliationMismatch
+        expr: |
+          max by (organization_id) (
+            abs(aistudio_billing_reconciliation_delta_cents{job="aistudio-api"})
+          ) > 500
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Stripe revenue reconciliation mismatch
+          description: At least one organization has internal vs Stripe MTD revenue delta exceeding tolerance (500 cents).

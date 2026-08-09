@@ -21,6 +21,10 @@ public record BillingOverviewResponse(
         int periodOverageActions,
         int estimatedSeatCentsMonthly,
         int estimatedOverageCentsThisPeriod,
-        String aiProviderChain
+        String aiProviderChain,
+        int dunningStage,
+        Instant dunningLastNotifiedAt,
+        Long reconciliationDeltaCents,
+        Instant reconciliationCheckedAt
 ) {
 }

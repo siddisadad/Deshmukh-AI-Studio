@@ -126,6 +126,13 @@ aistudio:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}
     usage-sync-token: ${BILLING_USAGE_SYNC_TOKEN:}
+    dunning-enabled: ${BILLING_DUNNING_ENABLED:false}
+    dunning-interval-hours: ${BILLING_DUNNING_INTERVAL_HOURS:72}
+    dunning-max-stage: ${BILLING_DUNNING_MAX_STAGE:3}
+    dunning-scheduler-interval-ms: ${BILLING_DUNNING_SCHEDULER_INTERVAL_MS:259200000}
+    reconciliation-enabled: ${BILLING_RECONCILIATION_ENABLED:false}
+    reconciliation-tolerance-cents: ${BILLING_RECONCILIATION_TOLERANCE_CENTS:500}
+    reconciliation-metrics-refresh-ms: ${BILLING_RECONCILIATION_METRICS_REFRESH_MS:300000}
     stripe:
       api-key: ${STRIPE_API_KEY:}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

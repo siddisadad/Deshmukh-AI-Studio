@@ -56,6 +56,18 @@ public class OrganizationSubscriptionEntity {
     @Column(name = "stripe_metered_usage_synced_at")
     private Instant stripeMeteredUsageSyncedAt;
 
+    @Column(name = "dunning_stage", nullable = false)
+    private int dunningStage = 0;
+
+    @Column(name = "dunning_last_notified_at")
+    private Instant dunningLastNotifiedAt;
+
+    @Column(name = "reconciliation_delta_cents")
+    private Long reconciliationDeltaCents;
+
+    @Column(name = "reconciliation_checked_at")
+    private Instant reconciliationCheckedAt;
+
     @Column(name = "daily_token_budget")
     private Long dailyTokenBudget;
 

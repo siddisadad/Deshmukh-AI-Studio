@@ -7,6 +7,11 @@ public record BillingProperties(
         String provider,
         String appBaseUrl,
         String usageSyncToken,
+        boolean dunningEnabled,
+        int dunningIntervalHours,
+        int dunningMaxStage,
+        boolean reconciliationEnabled,
+        long reconciliationToleranceCents,
         Stripe stripe
 ) {
     public record Stripe(

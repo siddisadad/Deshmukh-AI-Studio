@@ -148,6 +148,31 @@ public class StripeBillingAdapter implements BillingPort {
     }
 
     @Override
+    public long sumPaidInvoiceCents(
+            UUID organizationId,
+            long periodStartEpochSeconds,
+            long periodEndEpochSeconds
+    ) {
+        String customerId = ensureCustomer(organizationId);
+        try {
+            return com.stripe.model.Invoice.list(
+                    InvoiceListParams.builder()
+                            .setCustomer(customerId)
+                            .setLimit(100L)
+                            .build()
+            ).getData().stream()
+                    .filter(invoice -> "paid".equals(invoice.getStatus()))
+                    .filter(invoice -> invoice.getCreated() != null
+                            && invoice.getCreated() >= periodStartEpochSeconds
+                            && invoice.getCreated() < periodEndEpochSeconds)
+                    .mapToLong(invoice -> invoice.getAmountPaid() == null ? 0L : invoice.getAmountPaid())
+                    .sum();
+        } catch (StripeException ex) {
+            throw new DomainException("BILLING_ERROR", "Stripe invoice sum failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
     public void refreshSubscriptionItems(UUID organizationId, String externalSubscriptionId) {
         if (externalSubscriptionId == null || externalSubscriptionId.isBlank()) {
             return;

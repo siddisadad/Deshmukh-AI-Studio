@@ -4,7 +4,9 @@ import com.aistudio.api.billing.dto.BillingOverviewResponse;
 import com.aistudio.api.billing.dto.CheckoutResponse;
 import com.aistudio.api.billing.dto.InvoiceResponse;
 import com.aistudio.api.billing.dto.PlanResponse;
+import com.aistudio.api.billing.dto.StripeDunningRunResponse;
 import com.aistudio.api.billing.dto.StripeMeteredSyncResponse;
+import com.aistudio.api.billing.dto.StripeReconciliationResponse;
 import com.aistudio.api.billing.dto.UsageDayResponse;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.billing.PlanCode;
@@ -24,6 +26,7 @@ import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
+import com.stripe.model.Invoice;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
@@ -54,6 +57,8 @@ public class BillingService {
     private final BillingProperties billingProperties;
     private final ObjectMapper objectMapper;
     private final BillingUsageMetrics billingUsageMetrics;
+    private final BillingReconciliationService reconciliationService;
+    private final BillingDunningService dunningService;
 
     public BillingService(
             PlanRepository planRepository,
@@ -65,7 +70,9 @@ public class BillingService {
             BillingPort billingPort,
             BillingProperties billingProperties,
             ObjectMapper objectMapper,
-            BillingUsageMetrics billingUsageMetrics
+            BillingUsageMetrics billingUsageMetrics,
+            BillingReconciliationService reconciliationService,
+            BillingDunningService dunningService
     ) {
         this.planRepository = planRepository;
         this.subscriptionRepository = subscriptionRepository;
@@ -77,6 +84,8 @@ public class BillingService {
         this.billingProperties = billingProperties;
         this.objectMapper = objectMapper;
         this.billingUsageMetrics = billingUsageMetrics;
+        this.reconciliationService = reconciliationService;
+        this.dunningService = dunningService;
     }
 
     @Transactional
@@ -133,7 +142,11 @@ public class BillingService {
                 periodOverage,
                 seatEstimate,
                 overageEstimate,
-                sub.getAiProviderChain()
+                sub.getAiProviderChain(),
+                sub.getDunningStage(),
+                sub.getDunningLastNotifiedAt(),
+                sub.getReconciliationDeltaCents(),
+                sub.getReconciliationCheckedAt()
         );
     }
 
@@ -471,10 +484,36 @@ public class BillingService {
                     handleSubscriptionDeleted(subscription);
                 }
             }
+            case "invoice.payment_failed" -> {
+                if (stripeObject instanceof Invoice invoice) {
+                    handleInvoicePaymentFailed(invoice);
+                }
+            }
+            case "invoice.payment_succeeded" -> {
+                if (stripeObject instanceof Invoice invoice) {
+                    handleInvoicePaymentSucceeded(invoice);
+                }
+            }
             default -> {
                 // ignore unhandled events
             }
         }
+    }
+
+    @Transactional
+    public StripeReconciliationResponse reconcileStripeRevenue() {
+        return reconciliationService.reconcileStripeRevenue();
+    }
+
+    @Transactional
+    public StripeDunningRunResponse runStripeDunning() {
+        BillingDunningService.BillingDunningRunResult result = dunningService.runScheduledDunning();
+        return new StripeDunningRunResponse(
+                result.processed(),
+                result.notified(),
+                result.skipped(),
+                result.messages()
+        );
     }
 
     @Transactional
@@ -578,6 +617,29 @@ public class BillingService {
         }
         subscriptionRepository.save(sub);
         billingPort.refreshSubscriptionItems(sub.getOrganizationId(), subscription.getId());
+    }
+
+    private void handleInvoicePaymentFailed(Invoice invoice) {
+        OrganizationSubscriptionEntity sub = findSubscriptionByCustomerId(invoice.getCustomer());
+        if (sub == null) {
+            return;
+        }
+        dunningService.handlePaymentFailed(sub.getOrganizationId(), invoice.getId());
+    }
+
+    private void handleInvoicePaymentSucceeded(Invoice invoice) {
+        OrganizationSubscriptionEntity sub = findSubscriptionByCustomerId(invoice.getCustomer());
+        if (sub == null) {
+            return;
+        }
+        dunningService.handlePaymentSucceeded(sub.getOrganizationId());
+    }
+
+    private OrganizationSubscriptionEntity findSubscriptionByCustomerId(String customerId) {
+        if (customerId == null || customerId.isBlank()) {
+            return null;
+        }
+        return subscriptionRepository.findByExternalCustomerId(customerId).orElse(null);
     }
 
     private void handleSubscriptionDeleted(Subscription subscription) {

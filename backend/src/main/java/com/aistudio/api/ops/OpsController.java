@@ -1,9 +1,11 @@
 package com.aistudio.api.ops;
 
+import com.aistudio.api.ops.dto.JobQueueMetricsResponse;
 import com.aistudio.api.ops.dto.ReleaseGateStatusResponse;
 import com.aistudio.api.ops.dto.StagingSignoffRunResponse;
 import com.aistudio.api.ops.dto.StagingSignoffSubmitRequest;
 import com.aistudio.api.ops.dto.StagingSignoffSubmitResponse;
+import com.aistudio.application.ops.JobQueueAutoscaleService;
 import com.aistudio.application.ops.ReleaseGateService;
 import com.aistudio.application.ops.StagingSignoffService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,10 +26,16 @@ public class OpsController {
 
     private final StagingSignoffService stagingSignoffService;
     private final ReleaseGateService releaseGateService;
+    private final JobQueueAutoscaleService jobQueueAutoscaleService;
 
-    public OpsController(StagingSignoffService stagingSignoffService, ReleaseGateService releaseGateService) {
+    public OpsController(
+            StagingSignoffService stagingSignoffService,
+            ReleaseGateService releaseGateService,
+            JobQueueAutoscaleService jobQueueAutoscaleService
+    ) {
         this.stagingSignoffService = stagingSignoffService;
         this.releaseGateService = releaseGateService;
+        this.jobQueueAutoscaleService = jobQueueAutoscaleService;
     }
 
     @PostMapping("/api/v1/ops/staging-signoff/submit")
@@ -41,6 +49,12 @@ public class OpsController {
     @Operation(summary = "List recent staging sign-off runs (BILLING_USAGE_SYNC_TOKEN)")
     public List<StagingSignoffRunResponse> listSignoffRuns() {
         return stagingSignoffService.listRecentRuns();
+    }
+
+    @GetMapping("/api/v1/ops/jobs/queue")
+    @Operation(summary = "Background job queue depth + HPA replica hint (BILLING_USAGE_SYNC_TOKEN)")
+    public JobQueueMetricsResponse jobQueueMetrics() {
+        return jobQueueAutoscaleService.metrics();
     }
 
     @GetMapping("/api/v1/ops/release-gate")

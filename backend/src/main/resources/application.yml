@@ -127,6 +127,9 @@ aistudio:
     stale-lock-seconds: ${JOB_STALE_LOCK_SECONDS:900}
     stale-reclaim-interval-ms: ${JOB_STALE_RECLAIM_INTERVAL_MS:60000}
     max-attempts: ${JOB_MAX_ATTEMPTS:3}
+    autoscale:
+      target-pending-per-replica: ${WORKER_TARGET_PENDING_PER_REPLICA:10}
+      max-replicas: ${WORKER_REPLICAS_MAX:6}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.56-beta] — 2026-08-09
+
+### Added
+
+- Job queue autoscale API — `GET /api/v1/ops/jobs/queue` with pending/running/failed + `suggestedReplicas`
+- K8s manifests — `deploy/kubernetes/worker-deployment.yaml`, Prometheus HPA, KEDA ScaledObject
+- Prometheus recording rule `monitoring/job-queue-autoscale-rules.yml`
+- Cron script `scheduled-worker-autoscale.sh` with optional `WORKER_AUTOSCALE_APPLY`
+- `docs/61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md`
+
 ## [0.2.55-beta] — 2026-08-09
 
 ### Added

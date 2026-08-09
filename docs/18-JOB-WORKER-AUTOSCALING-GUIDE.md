@@ -112,11 +112,15 @@ With `--scale worker=N`, Compose duplicates env — ids collide unless you use s
 
 ---
 
-## 7. Not in MVP (future)
+## 7. Kubernetes / cloud-native autoscaling
 
-- Kubernetes HPA / ECS auto-scaling (use queue depth metric as external signal)
-- Per-job-type worker pools
-- Queue depth API endpoint for external autoscalers
+See [61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md](61-K8S-HPA-WORKER-AUTOSCALING-GUIDE.md) for:
+
+- `GET /api/v1/ops/jobs/queue` — pending depth + `suggestedReplicas` for HPA/KEDA
+- `deploy/kubernetes/` — worker Deployment, Prometheus HPA, KEDA ScaledObject
+- `scripts/scheduled-worker-autoscale.sh` — cron-friendly Compose scale apply
+
+Future: per-job-type worker pools.
 
 ---
 

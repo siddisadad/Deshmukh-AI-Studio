@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.46-beta] — 2026-08-09
+
+### Added
+
+- AI routing policy simulation — `POST /organizations/{id}/ai-policy/simulate` dry-runs proposed changes
+- `OrgAiPolicyRoutingPreview` resolves effective provider chains and flags missing providers
+- Settings UI — **Preview changes** panel on `/settings/ai-routing` with chain diff and approval hint
+- `docs/51-AI-POLICY-SIMULATION-GUIDE.md`
+
 ## [0.2.45-beta] — 2026-08-09
 
 ### Added

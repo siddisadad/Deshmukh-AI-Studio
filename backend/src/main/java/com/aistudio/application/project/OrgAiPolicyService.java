@@ -2,6 +2,8 @@ package com.aistudio.application.project;
 
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicySnapshotDto;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
@@ -40,6 +42,7 @@ public class OrgAiPolicyService {
     private final BillingService billingService;
     private final AiProviderCrossRegionRegistry crossRegionRegistry;
     private final OrgAiPolicyChangeRepository changeRepository;
+    private final OrgAiPolicyRoutingPreview routingPreview;
     private final ObjectMapper objectMapper;
     private final boolean changeApprovalRequired;
 
@@ -51,6 +54,7 @@ public class OrgAiPolicyService {
             BillingService billingService,
             AiProviderCrossRegionRegistry crossRegionRegistry,
             OrgAiPolicyChangeRepository changeRepository,
+            OrgAiPolicyRoutingPreview routingPreview,
             ObjectMapper objectMapper,
             @Value("${aistudio.ai.policy-change-approval-enabled:false}") boolean changeApprovalRequired
     ) {
@@ -61,6 +65,7 @@ public class OrgAiPolicyService {
         this.billingService = billingService;
         this.crossRegionRegistry = crossRegionRegistry;
         this.changeRepository = changeRepository;
+        this.routingPreview = routingPreview;
         this.objectMapper = objectMapper;
         this.changeApprovalRequired = changeApprovalRequired;
     }
@@ -69,6 +74,31 @@ public class OrgAiPolicyService {
     public OrgAiPolicyResponse getPolicy(UUID organizationId, UUID userId) {
         authorizationService.requireOrgMember(organizationId, userId);
         return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional(readOnly = true)
+    public OrgAiPolicySimulationResponse simulatePolicy(
+            UUID organizationId,
+            UUID userId,
+            UpdateOrgAiPolicyRequest request
+    ) {
+        MembershipEntity membership = authorizationService.requireOrgOwner(organizationId, userId);
+        validateRequest(request);
+        OrganizationSubscriptionEntity sub = requireSubscription(organizationId);
+        PlanEntity plan = planRepository.findById(sub.getPlanCode())
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Plan not found"));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        long used = usageRepository.getTokenCount(sub.getOrganizationId(), today);
+        OrgAiPolicyRoutingPreview.Preview preview = routingPreview.preview(sub, plan, used, request);
+        boolean wouldRequireApproval = changeApprovalRequired && membership.getRole() == OrgRole.ADMIN;
+        return new OrgAiPolicySimulationResponse(
+                toSnapshotDto(preview.current()),
+                toSnapshotDto(preview.simulated()),
+                preview.currentEffectiveProviderChain(),
+                preview.simulatedEffectiveProviderChain(),
+                preview.missingProviders(),
+                wouldRequireApproval
+        );
     }
 
     @Transactional(readOnly = true)
@@ -208,6 +238,18 @@ public class OrgAiPolicyService {
                 effectiveDeployRegion,
                 changeApprovalRequired,
                 pending
+        );
+    }
+
+    private static OrgAiPolicySnapshotDto toSnapshotDto(OrgAiPolicyRoutingPreview.Snapshot snapshot) {
+        return new OrgAiPolicySnapshotDto(
+                snapshot.providerChain(),
+                snapshot.dailyTokenBudget(),
+                snapshot.effectiveDailyTokenBudget(),
+                snapshot.tokenBudgetRemaining(),
+                snapshot.modelMap(),
+                snapshot.deployRegion(),
+                snapshot.effectiveDeployRegion()
         );
     }
 

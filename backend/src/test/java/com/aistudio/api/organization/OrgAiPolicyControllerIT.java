@@ -1,6 +1,7 @@
 package com.aistudio.api.organization;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,6 +59,31 @@ class OrgAiPolicyControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("APPLIED"))
                 .andExpect(jsonPath("$[0].providerChain").value("mock"));
+    }
+
+    @Test
+    void ownerCanSimulateAiPolicyWithoutApplying() throws Exception {
+        JsonNode auth = register("aipolicysim" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/ai-policy/simulate")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"providerChain":"mock,openai","dailyTokenBudget":75000,"deployRegion":"us-east"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.simulated.providerChain").value("mock,openai"))
+                .andExpect(jsonPath("$.simulated.dailyTokenBudget").value(75000))
+                .andExpect(jsonPath("$.simulated.deployRegion").value("us-east"))
+                .andExpect(jsonPath("$.simulatedEffectiveProviderChain").isArray())
+                .andExpect(jsonPath("$.wouldRequireApproval").value(false));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(200000));
     }
 
     private JsonNode register(String email) throws Exception {

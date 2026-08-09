@@ -5,6 +5,7 @@ import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -90,6 +91,16 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.updatePolicy(orgId, user.getId(), request);
+    }
+
+    @PostMapping("/{orgId}/ai-policy/simulate")
+    @Operation(summary = "Dry-run AI routing policy changes without applying them")
+    public OrgAiPolicySimulationResponse simulateAiPolicy(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdateOrgAiPolicyRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.simulatePolicy(orgId, user.getId(), request);
     }
 
     @GetMapping("/{orgId}/ai-policy/changes")

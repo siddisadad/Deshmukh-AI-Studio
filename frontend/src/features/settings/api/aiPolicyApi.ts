@@ -14,6 +14,25 @@ export interface OrgAiPolicyChange {
   reviewedAt: string | null;
 }
 
+export interface OrgAiPolicySnapshot {
+  providerChain: string | null;
+  dailyTokenBudget: number | null;
+  effectiveDailyTokenBudget: number;
+  tokenBudgetRemaining: number | null;
+  modelMap: string | null;
+  deployRegion: string | null;
+  effectiveDeployRegion: string | null;
+}
+
+export interface OrgAiPolicySimulation {
+  current: OrgAiPolicySnapshot;
+  simulated: OrgAiPolicySnapshot;
+  currentEffectiveProviderChain: string[];
+  simulatedEffectiveProviderChain: string[];
+  missingProviders: string[];
+  wouldRequireApproval: boolean;
+}
+
 export interface OrgAiPolicy {
   providerChain: string | null;
   dailyTokenBudget: number | null;
@@ -39,6 +58,10 @@ export const aiPolicyApi = {
     http.get<OrgAiPolicy>(`/organizations/${orgId}/ai-policy`).then((r) => r.data),
   update: (orgId: string, body: UpdateOrgAiPolicyRequest) =>
     http.put<OrgAiPolicy>(`/organizations/${orgId}/ai-policy`, body).then((r) => r.data),
+  simulate: (orgId: string, body: UpdateOrgAiPolicyRequest) =>
+    http
+      .post<OrgAiPolicySimulation>(`/organizations/${orgId}/ai-policy/simulate`, body)
+      .then((r) => r.data),
   listChanges: (orgId: string, limit = 50) =>
     http
       .get<OrgAiPolicyChange[]>(`/organizations/${orgId}/ai-policy/changes`, {

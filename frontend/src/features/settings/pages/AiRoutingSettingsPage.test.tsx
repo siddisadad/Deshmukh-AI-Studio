@@ -18,6 +18,7 @@ vi.mock('../api/aiPolicyApi', () => ({
   aiPolicyApi: {
     get: vi.fn(),
     update: vi.fn(),
+    simulate: vi.fn(),
     listChanges: vi.fn(),
     approvePending: vi.fn(),
     rejectPending: vi.fn(),
@@ -103,6 +104,46 @@ describe('AiRoutingSettingsPage', () => {
         modelMap: '',
         deployRegion: 'eu-west',
       });
+    });
+  });
+
+  it('previews policy changes without saving', async () => {
+    vi.mocked(aiPolicyApi.simulate).mockResolvedValue({
+      current: {
+        providerChain: 'mock',
+        dailyTokenBudget: 50000,
+        effectiveDailyTokenBudget: 50000,
+        tokenBudgetRemaining: 48800,
+        modelMap: null,
+        deployRegion: 'eu-west',
+        effectiveDeployRegion: 'eu-west',
+      },
+      simulated: {
+        providerChain: 'mock,openai',
+        dailyTokenBudget: 60000,
+        effectiveDailyTokenBudget: 60000,
+        tokenBudgetRemaining: 58800,
+        modelMap: null,
+        deployRegion: 'us-east',
+        effectiveDeployRegion: 'us-east',
+      },
+      currentEffectiveProviderChain: ['mock'],
+      simulatedEffectiveProviderChain: ['mock', 'openai'],
+      missingProviders: [],
+      wouldRequireApproval: false,
+    });
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('ai-policy-preview')).not.toBeDisabled();
+    });
+
+    await userEvent.click(screen.getByTestId('ai-policy-preview'));
+
+    await waitFor(() => {
+      expect(aiPolicyApi.simulate).toHaveBeenCalled();
+      expect(screen.getByTestId('ai-policy-preview-panel')).toBeInTheDocument();
+      expect(screen.getByText(/Simulated effective chain/)).toBeInTheDocument();
     });
   });
 });

@@ -71,8 +71,9 @@ Read in order; each document builds on the previous.
 | 64 | [64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE.md) | Git sync and webhook code metadata reindex |
 | 65 | [65-GITLAB-BITBUCKET-SYNC-GUIDE.md](65-GITLAB-BITBUCKET-SYNC-GUIDE.md) | GitLab and Bitbucket sync connectors |
 | 66 | [66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md](66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md) | Git sync file snippet hydration |
+| 67 | [67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md](67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md) | Webhook incremental delta sync |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.61-beta** adds Git sync content hydration — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.62-beta** adds Git webhook delta sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -43,6 +43,28 @@ public class MockGitMetadataProvider implements GitMetadataPort {
         );
     }
 
+    @Override
+    public List<GitFileEntry> fetchFilesByPaths(String repository, String branch, List<String> paths) {
+        if (paths == null || paths.isEmpty()) {
+            return List.of();
+        }
+        String repo = repository == null ? "unknown/unknown" : repository.trim();
+        String safeBranch = branch == null || branch.isBlank() ? "main" : branch.trim();
+        List<GitFileEntry> out = new ArrayList<>();
+        for (String path : paths) {
+            if (!isCodeLikePath(path)) {
+                continue;
+            }
+            out.add(new GitFileEntry(
+                    path,
+                    languageFromPath(path),
+                    "delta " + path + " // " + repo + "@" + safeBranch,
+                    256
+            ));
+        }
+        return out;
+    }
+
     static String languageFromPath(String path) {
         int dot = path.lastIndexOf('.');
         if (dot < 0 || dot == path.length() - 1) {
@@ -88,7 +110,7 @@ public class MockGitMetadataProvider implements GitMetadataPort {
         return out;
     }
 
-    private static boolean isCodeLikePath(String path) {
+    public static boolean isCodeLikePath(String path) {
         String lower = path.toLowerCase(Locale.ROOT);
         return lower.endsWith(".java")
                 || lower.endsWith(".kt")

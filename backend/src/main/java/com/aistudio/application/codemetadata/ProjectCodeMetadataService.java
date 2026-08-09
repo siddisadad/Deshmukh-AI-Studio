@@ -90,6 +90,41 @@ public class ProjectCodeMetadataService {
         return codeFileRepository.countByProjectId(projectId);
     }
 
+    @Transactional
+    public int applyDeltaInternal(UUID projectId, List<GitFileEntry> upserts, List<String> removedPaths) {
+        List<String> removals = removedPaths == null ? List.of() : removedPaths;
+        for (String removed : removals) {
+            String path = normalizePath(removed);
+            if (!path.isBlank()) {
+                codeFileRepository.deleteByProjectIdAndPath(projectId, path);
+            }
+        }
+        List<GitFileEntry> updates = upserts == null ? List.of() : upserts;
+        long fileCount = codeFileRepository.countByProjectId(projectId);
+        for (GitFileEntry file : updates) {
+            String path = normalizePath(file.path());
+            if (path.isBlank()) {
+                continue;
+            }
+            var existing = codeFileRepository.findByProjectIdAndPath(projectId, path);
+            if (existing.isEmpty() && fileCount >= maxFilesPerProject) {
+                continue;
+            }
+            ProjectCodeFileEntity entity = existing.orElseGet(ProjectCodeFileEntity::new);
+            entity.setProjectId(projectId);
+            entity.setPath(path);
+            entity.setLanguage(file.language() == null ? "" : file.language().trim());
+            entity.setSnippet(file.snippet() == null ? "" : file.snippet());
+            entity.setSizeBytes(Math.max(0, file.sizeBytes()));
+            codeFileRepository.save(entity);
+            if (existing.isEmpty()) {
+                fileCount++;
+            }
+        }
+        knowledgeIndexService.reindexCodeFiles(projectId);
+        return codeFileRepository.countByProjectId(projectId);
+    }
+
     public int maxFilesPerProject() {
         return maxFilesPerProject;
     }

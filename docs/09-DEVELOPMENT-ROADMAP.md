@@ -132,7 +132,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 | Item | Status on `main` | Next depth |
 |---|---|---|
-| Code metadata RAG | Manifest API + `CODE_FILE` indexing ([63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md)), Git sync + webhook reindex ([64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE.md)), GitLab/Bitbucket connectors ([65-GITLAB-BITBUCKET-SYNC-GUIDE.md](65-GITLAB-BITBUCKET-SYNC-GUIDE.md)), Git content hydration ([66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md](66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md)) | Incremental webhook delta sync |
+| Code metadata RAG | Manifest API + `CODE_FILE` indexing ([63-CODE-METADATA-RAG-GUIDE.md](63-CODE-METADATA-RAG-GUIDE.md)), Git sync + webhook reindex ([64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE.md)), GitLab/Bitbucket connectors ([65-GITLAB-BITBUCKET-SYNC-GUIDE.md](65-GITLAB-BITBUCKET-SYNC-GUIDE.md)), Git content hydration ([66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md](66-GIT-SYNC-CONTENT-HYDRATION-GUIDE.md)), webhook delta sync ([67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md](67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md)) | Scheduled git sync cron |
 
 ---
 

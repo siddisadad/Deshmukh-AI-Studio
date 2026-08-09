@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.62-beta] — 2026-08-09
+
+### Added
+
+- Git webhook incremental delta sync — parse push payloads for changed/removed paths
+- `GIT_SYNC_WEBHOOK_DELTA` config (default `true`)
+- `GitMetadataPort.fetchFilesByPaths` — per-path fetch on GitHub/GitLab/Bitbucket/mock
+- `ProjectCodeMetadataService.applyDeltaInternal` — merge upserts and path deletes
+- `docs/67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md`
+
 ## [0.2.61-beta] — 2026-08-09
 
 ### Added

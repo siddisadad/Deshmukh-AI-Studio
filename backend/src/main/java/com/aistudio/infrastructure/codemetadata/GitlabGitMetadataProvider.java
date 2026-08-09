@@ -95,6 +95,26 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
     }
 
     @Override
+    public List<GitFileEntry> fetchFilesByPaths(String repository, String branch, List<String> paths) {
+        if (paths == null || paths.isEmpty()) {
+            return List.of();
+        }
+        List<GitFileEntry> stubs = new ArrayList<>();
+        for (String path : paths) {
+            if (!MockGitMetadataProvider.isCodeLikePath(path)) {
+                continue;
+            }
+            stubs.add(new GitFileEntry(
+                    path,
+                    MockGitMetadataProvider.languageFromPath(path),
+                    "",
+                    0
+            ));
+        }
+        return hydrateFileContents(repository, branch, stubs);
+    }
+
+    @Override
     public List<GitFileEntry> hydrateFileContents(String repository, String branch, List<GitFileEntry> files) {
         if (files == null || files.isEmpty()) {
             return List.of();

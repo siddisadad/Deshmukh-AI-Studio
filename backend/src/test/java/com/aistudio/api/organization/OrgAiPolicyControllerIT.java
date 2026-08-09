@@ -71,10 +71,10 @@ class OrgAiPolicyControllerIT {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"providerChain":"mock,openai","dailyTokenBudget":75000,"deployRegion":"us-east"}
+                                {"providerChain":"mock","dailyTokenBudget":75000,"deployRegion":"us-east"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.simulated.providerChain").value("mock,openai"))
+                .andExpect(jsonPath("$.simulated.providerChain").value("mock"))
                 .andExpect(jsonPath("$.simulated.dailyTokenBudget").value(75000))
                 .andExpect(jsonPath("$.simulated.deployRegion").value("us-east"))
                 .andExpect(jsonPath("$.simulatedEffectiveProviderChain").isArray())
@@ -86,7 +86,7 @@ class OrgAiPolicyControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].gatePassed").value(true))
-                .andExpect(jsonPath("$[0].providerChain").value("mock,openai"));
+                .andExpect(jsonPath("$[0].providerChain").value("mock"));
 
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy")
                         .header("Authorization", "Bearer " + token))

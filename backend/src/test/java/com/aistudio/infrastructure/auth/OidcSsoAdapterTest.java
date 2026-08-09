@@ -27,6 +27,8 @@ class OidcSsoAdapterTest {
                 true,
                 "oidc",
                 "http://localhost:5173",
+                false,
+                3600000L,
                 new SsoProperties.Oidc(
                         "https://issuer.example.com",
                         "client-id",

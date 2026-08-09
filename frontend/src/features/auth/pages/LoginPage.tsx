@@ -27,13 +27,14 @@ export function LoginPage() {
   const [ssoLoading, setSsoLoading] = useState(false);
   const [providers, setProviders] = useState<SsoProvider[]>([]);
   const resetSuccess = Boolean((location.state as { resetSuccess?: boolean } | null)?.resetSuccess);
+  const orgSlug = new URLSearchParams(location.search).get('org');
 
   useEffect(() => {
     void authApi
-      .listSsoProviders()
+      .listSsoProviders(orgSlug ? { organizationSlug: orgSlug } : undefined)
       .then(setProviders)
       .catch(() => setProviders([]));
-  }, []);
+  }, [orgSlug]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

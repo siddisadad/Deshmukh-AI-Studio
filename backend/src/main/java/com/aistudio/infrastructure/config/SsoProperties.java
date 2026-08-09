@@ -7,6 +7,8 @@ public record SsoProperties(
         boolean enabled,
         String provider,
         String appBaseUrl,
+        boolean metadataRefreshEnabled,
+        long metadataRefreshIntervalMs,
         Oidc oidc,
         Saml saml
 ) {

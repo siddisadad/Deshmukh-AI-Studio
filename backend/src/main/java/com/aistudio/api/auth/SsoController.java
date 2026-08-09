@@ -7,8 +7,8 @@ import com.aistudio.api.auth.dto.SsoStartResponse;
 import com.aistudio.api.auth.dto.TokenResponse;
 import com.aistudio.application.auth.SsoService;
 import com.aistudio.domain.common.DomainException;
+import com.aistudio.infrastructure.auth.SamlAcsCompletionService;
 import com.aistudio.infrastructure.auth.SamlSettingsService;
-import com.aistudio.infrastructure.auth.SamlSpSsoAdapter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,23 +31,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class SsoController {
 
     private final SsoService ssoService;
-    private final Optional<SamlSpSsoAdapter> samlSpSsoAdapter;
+    private final SamlAcsCompletionService samlAcsCompletionService;
     private final Optional<SamlSettingsService> samlSettingsService;
 
     public SsoController(
             SsoService ssoService,
-            Optional<SamlSpSsoAdapter> samlSpSsoAdapter,
+            SamlAcsCompletionService samlAcsCompletionService,
             Optional<SamlSettingsService> samlSettingsService
     ) {
         this.ssoService = ssoService;
-        this.samlSpSsoAdapter = samlSpSsoAdapter;
+        this.samlAcsCompletionService = samlAcsCompletionService;
         this.samlSettingsService = samlSettingsService;
     }
 
     @GetMapping("/providers")
     @Operation(summary = "List enabled SSO providers")
-    public List<SsoProviderResponse> providers() {
-        return ssoService.listProviders();
+    public List<SsoProviderResponse> providers(
+            @RequestParam(required = false) UUID organizationId,
+            @RequestParam(required = false) String organizationSlug
+    ) {
+        return ssoService.listProviders(
+                Optional.ofNullable(organizationId),
+                Optional.ofNullable(organizationSlug)
+        );
     }
 
     @PostMapping("/start")
@@ -71,9 +78,7 @@ public class SsoController {
         if (relayState == null || relayState.isBlank()) {
             throw new DomainException("INVALID_TOKEN", "RelayState is required");
         }
-        String redirectUrl = samlSpSsoAdapter
-                .orElseThrow(() -> new DomainException("NOT_FOUND", "SAML SP mode is not enabled"))
-                .completeAcs(samlResponse, relayState);
+        String redirectUrl = samlAcsCompletionService.complete(samlResponse, relayState);
         response.sendRedirect(redirectUrl);
     }
 

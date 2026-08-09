@@ -28,7 +28,8 @@ export const authApi = {
     http.patch<MeResponse>('/me', body).then((r) => r.data),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     http.post<TokenResponse>('/me/password', body).then((r) => r.data),
-  listSsoProviders: () => http.get<SsoProvider[]>('/auth/sso/providers').then((r) => r.data),
+  listSsoProviders: (params?: { organizationId?: string; organizationSlug?: string }) =>
+    http.get<SsoProvider[]>('/auth/sso/providers', { params }).then((r) => r.data),
   startSso: (body: { provider: string; redirectUri: string; loginHint?: string }) =>
     http.post<SsoStartResponse>('/auth/sso/start', body).then((r) => r.data),
   completeSso: (body: { provider: string; code: string; state: string; redirectUri?: string }) =>

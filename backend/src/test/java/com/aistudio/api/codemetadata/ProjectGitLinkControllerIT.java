@@ -134,6 +134,41 @@ class ProjectGitLinkControllerIT {
                 .andExpect(jsonPath("$.files[?(@.path == 'README.md')]").isEmpty());
     }
 
+    @Test
+    void listSyncRunsReturnsRecordedManualSync() throws Exception {
+        JsonNode auth = register("git-history" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"History Proj","projectKey":"HI","description":"history"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/history-service","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].source").value("manual"))
+                .andExpect(jsonPath("$[0].status").value("success"))
+                .andExpect(jsonPath("$[0].fileCount").value(org.hamcrest.Matchers.greaterThan(0)));
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

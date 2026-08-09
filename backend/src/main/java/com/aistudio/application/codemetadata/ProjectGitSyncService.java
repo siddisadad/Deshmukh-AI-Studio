@@ -1,5 +1,6 @@
 package com.aistudio.application.codemetadata;
 
+import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
 import com.aistudio.application.codemetadata.GitFileEntry;
@@ -11,8 +12,11 @@ import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.config.GitProperties;
 import com.aistudio.infrastructure.codemetadata.GitWebhookPayloadParser;
 import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
+import com.aistudio.infrastructure.persistence.entity.ProjectGitSyncRunEntity;
 import com.aistudio.infrastructure.persistence.repository.BackgroundJobRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectGitLinkRepository;
+import com.aistudio.infrastructure.persistence.repository.ProjectGitSyncRunRepository;
+import org.springframework.data.domain.PageRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -37,6 +41,7 @@ public class ProjectGitSyncService {
     private static final Set<String> ALLOWED_PROVIDERS = Set.of("github", "gitlab", "bitbucket", "mock");
 
     private final ProjectGitLinkRepository gitLinkRepository;
+    private final ProjectGitSyncRunRepository syncRunRepository;
     private final BackgroundJobRepository backgroundJobRepository;
     private final ProjectAuthorizationService authorizationService;
     private final ProjectCodeMetadataService codeMetadataService;
@@ -53,6 +58,7 @@ public class ProjectGitSyncService {
 
     public ProjectGitSyncService(
             ProjectGitLinkRepository gitLinkRepository,
+            ProjectGitSyncRunRepository syncRunRepository,
             BackgroundJobRepository backgroundJobRepository,
             ProjectAuthorizationService authorizationService,
             ProjectCodeMetadataService codeMetadataService,
@@ -63,6 +69,7 @@ public class ProjectGitSyncService {
             GitProperties gitProperties
     ) {
         this.gitLinkRepository = gitLinkRepository;
+        this.syncRunRepository = syncRunRepository;
         this.backgroundJobRepository = backgroundJobRepository;
         this.authorizationService = authorizationService;
         this.codeMetadataService = codeMetadataService;
@@ -129,11 +136,21 @@ public class ProjectGitSyncService {
         return toResponse(entity);
     }
 
+    @Transactional(readOnly = true)
+    public List<GitSyncRunResponse> listSyncRuns(UUID projectId, UUID userId, int limit) {
+        authorizationService.requireProjectAccess(projectId, userId);
+        int safeLimit = limit <= 0 ? 20 : Math.min(limit, 100);
+        return syncRunRepository.findByProjectIdOrderByFinishedAtDesc(
+                projectId,
+                PageRequest.of(0, safeLimit)
+        ).stream().map(this::toSyncRunResponse).toList();
+    }
+
     @Transactional
     public ProjectGitLinkResponse syncNow(UUID projectId, UUID userId) {
         authorizationService.requireProjectEdit(projectId, userId);
         ProjectGitLinkEntity link = requireEnabledLink(projectId);
-        syncLink(link);
+        syncLink(link, "manual");
         return toResponse(gitLinkRepository.findById(link.getId()).orElseThrow());
     }
 
@@ -149,11 +166,12 @@ public class ProjectGitSyncService {
         if (!link.isEnabled()) {
             throw new DomainException("VALIDATION_ERROR", "Git link is disabled");
         }
+        String source = parseJobSource(jobPayloadJson);
         GitWebhookDelta delta = parseJobDelta(jobPayloadJson);
         if (webhookDeltaSync && delta != null && delta.hasChanges()) {
-            return syncLinkDelta(link, delta);
+            return syncLinkDelta(link, delta, source);
         }
-        return syncLink(link);
+        return syncLink(link, source);
     }
 
     @Transactional
@@ -218,7 +236,8 @@ public class ProjectGitSyncService {
         backgroundJobService.enqueueInternal(projectId, JobType.CODE_METADATA_SYNC, jobPayload);
     }
 
-    private int syncLinkDelta(ProjectGitLinkEntity link, GitWebhookDelta delta) {
+    private int syncLinkDelta(ProjectGitLinkEntity link, GitWebhookDelta delta, String source) {
+        Instant startedAt = Instant.now();
         try {
             List<String> changedPaths = filterPaths(link, delta.changedPaths());
             List<String> removedPaths = filterPaths(link, delta.removedPaths());
@@ -241,11 +260,14 @@ public class ProjectGitSyncService {
             link.setLastSyncStatus("success");
             link.setLastSyncError(null);
             gitLinkRepository.save(link);
+            recordSyncRun(link, source, "success", count, null, startedAt);
             return count;
         } catch (Exception ex) {
+            String error = ex.getMessage() == null ? "sync failed" : truncate(ex.getMessage(), 2000);
             link.setLastSyncStatus("failed");
-            link.setLastSyncError(ex.getMessage() == null ? "sync failed" : truncate(ex.getMessage(), 2000));
+            link.setLastSyncError(error);
             gitLinkRepository.save(link);
+            recordSyncRun(link, source, "failed", 0, error, startedAt);
             if (ex instanceof DomainException domainEx) {
                 throw domainEx;
             }
@@ -284,7 +306,8 @@ public class ProjectGitSyncService {
         return paths;
     }
 
-    private int syncLink(ProjectGitLinkEntity link) {
+    private int syncLink(ProjectGitLinkEntity link, String source) {
+        Instant startedAt = Instant.now();
         try {
             GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
             List<GitFileEntry> files = port.fetchRepositoryFiles(link.getRepository(), link.getBranch());
@@ -297,11 +320,14 @@ public class ProjectGitSyncService {
             link.setLastSyncStatus("success");
             link.setLastSyncError(null);
             gitLinkRepository.save(link);
+            recordSyncRun(link, source, "success", count, null, startedAt);
             return count;
         } catch (Exception ex) {
+            String error = ex.getMessage() == null ? "sync failed" : truncate(ex.getMessage(), 2000);
             link.setLastSyncStatus("failed");
-            link.setLastSyncError(ex.getMessage() == null ? "sync failed" : truncate(ex.getMessage(), 2000));
+            link.setLastSyncError(error);
             gitLinkRepository.save(link);
+            recordSyncRun(link, source, "failed", 0, error, startedAt);
             if (ex instanceof DomainException domainEx) {
                 throw domainEx;
             }
@@ -378,6 +404,63 @@ public class ProjectGitSyncService {
 
     private static boolean isFailedSyncStatus(String status) {
         return status != null && "failed".equalsIgnoreCase(status.trim());
+    }
+
+    private String parseJobSource(String jobPayloadJson) {
+        if (jobPayloadJson == null || jobPayloadJson.isBlank()) {
+            return "manual";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(jobPayloadJson);
+            return normalizeSyncSource(root.path("source").asText("manual"));
+        } catch (Exception ex) {
+            return "manual";
+        }
+    }
+
+    private static String normalizeSyncSource(String source) {
+        if (source == null || source.isBlank()) {
+            return "manual";
+        }
+        String value = source.trim().toLowerCase(Locale.ROOT);
+        if ("scheduled".equals(value) || "webhook".equals(value)) {
+            return value;
+        }
+        return "manual";
+    }
+
+    private void recordSyncRun(
+            ProjectGitLinkEntity link,
+            String source,
+            String status,
+            int fileCount,
+            String errorMessage,
+            Instant startedAt
+    ) {
+        ProjectGitSyncRunEntity run = new ProjectGitSyncRunEntity();
+        run.setProjectId(link.getProjectId());
+        run.setGitLinkId(link.getId());
+        run.setSource(normalizeSyncSource(source));
+        run.setStatus(status);
+        run.setFileCount(Math.max(0, fileCount));
+        run.setErrorMessage(errorMessage);
+        run.setStartedAt(startedAt);
+        run.setFinishedAt(Instant.now());
+        syncRunRepository.save(run);
+    }
+
+    private GitSyncRunResponse toSyncRunResponse(ProjectGitSyncRunEntity entity) {
+        return new GitSyncRunResponse(
+                entity.getId(),
+                entity.getProjectId(),
+                entity.getGitLinkId(),
+                entity.getSource(),
+                entity.getStatus(),
+                entity.getFileCount(),
+                entity.getErrorMessage(),
+                entity.getStartedAt(),
+                entity.getFinishedAt()
+        );
     }
 
     private ProjectGitLinkResponse toResponse(ProjectGitLinkEntity entity) {

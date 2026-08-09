@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.69-beta] — 2026-08-09
+
+### Added
+
+- Git sync run history — `project_git_sync_runs` audit table
+- Records manual, scheduled, and webhook sync attempts with status and file count
+- `GET /api/v1/projects/{id}/git-link/sync-runs`
+- Project settings UI — recent sync runs list
+- `docs/74-GIT-SYNC-RUN-HISTORY-GUIDE.md`
+
 ## [0.2.68-beta] — 2026-08-09
 
 ### Added

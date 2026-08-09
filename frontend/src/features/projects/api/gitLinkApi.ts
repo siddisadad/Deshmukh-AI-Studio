@@ -35,11 +35,25 @@ export interface UpsertProjectGitLinkBody {
   clearPathIncludePatterns?: boolean;
 }
 
+export interface GitSyncRun {
+  id: string;
+  projectId: string;
+  gitLinkId: string;
+  source: string;
+  status: string;
+  fileCount: number;
+  errorMessage: string | null;
+  startedAt: string;
+  finishedAt: string;
+}
+
 export const gitLinkApi = {
   get: (projectId: string) =>
     http.get<ProjectGitLink>(`/projects/${projectId}/git-link`).then((r) => r.data),
   upsert: (projectId: string, body: UpsertProjectGitLinkBody) =>
     http.put<ProjectGitLink>(`/projects/${projectId}/git-link`, body).then((r) => r.data),
+  listSyncRuns: (projectId: string, limit = 10) =>
+    http.get<GitSyncRun[]>(`/projects/${projectId}/git-link/sync-runs?limit=${limit}`).then((r) => r.data),
   syncNow: (projectId: string) =>
     http.post<ProjectGitLink>(`/projects/${projectId}/git-link/sync`).then((r) => r.data),
   syncAsync: (projectId: string) =>

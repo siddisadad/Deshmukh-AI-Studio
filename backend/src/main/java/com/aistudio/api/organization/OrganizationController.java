@@ -7,6 +7,7 @@ import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
+import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -140,5 +142,33 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.rejectPendingChange(orgId, user.getId());
+    }
+
+    @PutMapping("/{orgId}/ai-policy/canary")
+    @Operation(summary = "Start or update canary provider chain rollout (OWNER/ADMIN)")
+    public OrgAiPolicyResponse updateAiPolicyCanary(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdateOrgAiCanaryRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.updateCanary(orgId, user.getId(), request);
+    }
+
+    @PostMapping("/{orgId}/ai-policy/canary/promote")
+    @Operation(summary = "Promote canary provider chain to stable policy (OWNER/ADMIN)")
+    public OrgAiPolicyResponse promoteAiPolicyCanary(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.promoteCanary(orgId, user.getId());
+    }
+
+    @DeleteMapping("/{orgId}/ai-policy/canary")
+    @Operation(summary = "Abort canary rollout without promoting (OWNER/ADMIN)")
+    public OrgAiPolicyResponse abortAiPolicyCanary(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.abortCanary(orgId, user.getId());
     }
 }

@@ -5,6 +5,7 @@ import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySnapshotDto;
+import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.billing.BillingService;
 import com.aistudio.application.security.ProjectAuthorizationService;
@@ -185,6 +186,32 @@ public class OrgAiPolicyService {
         pending.setReviewedByUserId(userId);
         pending.setReviewedAt(Instant.now());
         changeRepository.save(pending);
+        return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional
+    public OrgAiPolicyResponse updateCanary(
+            UUID organizationId,
+            UUID userId,
+            UpdateOrgAiCanaryRequest request
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        validateProviderChain(request.providerChain());
+        billingService.updateCanary(organizationId, request.providerChain(), request.percent());
+        return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional
+    public OrgAiPolicyResponse promoteCanary(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        billingService.promoteCanary(organizationId);
+        return toResponse(requireSubscription(organizationId));
+    }
+
+    @Transactional
+    public OrgAiPolicyResponse abortCanary(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        billingService.abortCanary(organizationId);
         return toResponse(requireSubscription(organizationId));
     }
 
@@ -372,6 +399,8 @@ public class OrgAiPolicyService {
                 effectiveDeployRegion,
                 changeApprovalRequired,
                 simulationGateEnabled,
+                sub.getAiCanaryProviderChain(),
+                sub.getAiCanaryPercent(),
                 pending
         );
     }

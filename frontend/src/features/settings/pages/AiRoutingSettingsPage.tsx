@@ -30,6 +30,8 @@ export function AiRoutingSettingsPage() {
   const [dailyTokenBudget, setDailyTokenBudget] = useState('');
   const [modelMap, setModelMap] = useState('');
   const [deployRegion, setDeployRegion] = useState('');
+  const [canaryProviderChain, setCanaryProviderChain] = useState('');
+  const [canaryPercent, setCanaryPercent] = useState('10');
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof aiPolicyApi.simulate>> | null>(
     null,
   );
@@ -73,6 +75,10 @@ export function AiRoutingSettingsPage() {
     );
     setModelMap(policy.modelMap ?? '');
     setDeployRegion(policy.deployRegion ?? '');
+    setCanaryProviderChain(policy.canaryProviderChain ?? '');
+    setCanaryPercent(
+      policy.canaryPercent != null ? String(policy.canaryPercent) : '10',
+    );
     setPreview(null);
   }, [policyQuery.data]);
 
@@ -160,6 +166,49 @@ export function AiRoutingSettingsPage() {
     onError: (err) => {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to reject policy change');
+    },
+  });
+
+  const updateCanary = useMutation({
+    mutationFn: () =>
+      aiPolicyApi.updateCanary(org!.id, {
+        providerChain: canaryProviderChain.trim(),
+        percent: Number(canaryPercent),
+      }),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Canary rollout updated');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to update canary rollout');
+    },
+  });
+
+  const promoteCanary = useMutation({
+    mutationFn: () => aiPolicyApi.promoteCanary(org!.id),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Canary provider chain promoted to stable policy');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to promote canary');
+    },
+  });
+
+  const abortCanary = useMutation({
+    mutationFn: () => aiPolicyApi.abortCanary(org!.id),
+    onSuccess: async (policy) => {
+      setError(null);
+      setMessage('Canary rollout aborted');
+      await queryClient.setQueryData(['ai-policy', org?.id], policy);
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to abort canary');
     },
   });
 
@@ -326,6 +375,69 @@ export function AiRoutingSettingsPage() {
           <Alert severity="info">Only organization owners and admins can edit AI routing policy.</Alert>
         )}
       </Stack>
+
+      {canEdit && (
+        <Stack spacing={2} data-testid="ai-policy-canary">
+          <Typography variant="h6">Canary rollout</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Route a percentage of conversation traffic to a candidate provider chain before full
+            promotion. Selection is sticky per conversation thread.
+          </Typography>
+          {policy?.canaryProviderChain && policy.canaryPercent != null && (
+            <Alert severity="info">
+              Active canary: {policy.canaryProviderChain} at {policy.canaryPercent}% of threads.
+            </Alert>
+          )}
+          <TextField
+            label="Canary provider chain"
+            placeholder="mock,openai"
+            value={canaryProviderChain}
+            onChange={(e) => setCanaryProviderChain(e.target.value)}
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-chain' } }}
+          />
+          <TextField
+            label="Canary traffic percent"
+            placeholder="10"
+            value={canaryPercent}
+            onChange={(e) => setCanaryPercent(e.target.value)}
+            helperText="1–100 percent of conversation threads use the canary chain."
+            fullWidth
+            slotProps={{ htmlInput: { 'data-testid': 'ai-policy-canary-percent' } }}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => updateCanary.mutate()}
+              disabled={updateCanary.isPending || !org?.id}
+              data-testid="ai-policy-canary-start"
+            >
+              {updateCanary.isPending ? 'Updating…' : 'Start / update canary'}
+            </Button>
+            {policy?.canaryProviderChain && (
+              <>
+                <Button
+                  variant="contained"
+                  onClick={() => promoteCanary.mutate()}
+                  disabled={promoteCanary.isPending}
+                  data-testid="ai-policy-canary-promote"
+                >
+                  Promote
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => abortCanary.mutate()}
+                  disabled={abortCanary.isPending}
+                  data-testid="ai-policy-canary-abort"
+                >
+                  Abort
+                </Button>
+              </>
+            )}
+          </Stack>
+        </Stack>
+      )}
 
       {preview && (
         <Stack spacing={1} data-testid="ai-policy-preview-panel">

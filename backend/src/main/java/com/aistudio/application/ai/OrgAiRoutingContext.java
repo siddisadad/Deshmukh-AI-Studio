@@ -8,6 +8,7 @@ import java.util.UUID;
 public final class OrgAiRoutingContext {
 
     private static final ThreadLocal<UUID> ORGANIZATION_ID = new ThreadLocal<>();
+    private static final ThreadLocal<UUID> CONVERSATION_ID = new ThreadLocal<>();
     private static final ThreadLocal<AiModelRoute> MODEL_ROUTE = new ThreadLocal<>();
     private static final ThreadLocal<String> DEPLOY_REGION = new ThreadLocal<>();
 
@@ -20,6 +21,18 @@ public final class OrgAiRoutingContext {
 
     public static UUID organizationId() {
         return ORGANIZATION_ID.get();
+    }
+
+    public static void setConversationId(UUID conversationId) {
+        if (conversationId == null) {
+            CONVERSATION_ID.remove();
+        } else {
+            CONVERSATION_ID.set(conversationId);
+        }
+    }
+
+    public static UUID conversationId() {
+        return CONVERSATION_ID.get();
     }
 
     public static void setModelRoute(AiModelRoute modelRoute) {
@@ -44,6 +57,7 @@ public final class OrgAiRoutingContext {
 
     public static void clear() {
         ORGANIZATION_ID.remove();
+        CONVERSATION_ID.remove();
         MODEL_ROUTE.remove();
         DEPLOY_REGION.remove();
     }

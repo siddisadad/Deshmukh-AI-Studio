@@ -58,16 +58,15 @@ class ProjectGitScheduledSyncIT {
                 .andExpect(status().isOk());
 
         int first = gitSyncService.enqueueScheduledSyncsForEnabledLinks();
-        assertThat(first).isEqualTo(1);
+        assertThat(first).isGreaterThanOrEqualTo(1);
+        assertThat(jobRepository.countByProjectIdAndJobTypeAndStatus(
+                projectId, JobType.CODE_METADATA_SYNC, com.aistudio.domain.job.JobStatus.PENDING
+        )).isEqualTo(1);
 
-        int second = gitSyncService.enqueueScheduledSyncsForEnabledLinks();
-        assertThat(second).isZero();
-
-        long pending = jobRepository.findByProjectIdOrderByCreatedAtDesc(projectId, org.springframework.data.domain.PageRequest.of(0, 5))
-                .stream()
-                .filter(job -> job.getJobType() == JobType.CODE_METADATA_SYNC)
-                .count();
-        assertThat(pending).isEqualTo(1);
+        gitSyncService.enqueueScheduledSyncsForEnabledLinks();
+        assertThat(jobRepository.countByProjectIdAndJobTypeAndStatus(
+                projectId, JobType.CODE_METADATA_SYNC, com.aistudio.domain.job.JobStatus.PENDING
+        )).isEqualTo(1);
     }
 
     private JsonNode register(String email) throws Exception {

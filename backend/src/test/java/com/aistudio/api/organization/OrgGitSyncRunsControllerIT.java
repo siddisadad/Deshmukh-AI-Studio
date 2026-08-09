@@ -1,8 +1,10 @@
 package com.aistudio.api.organization;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,6 +94,58 @@ class OrgGitSyncRunsControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.items[0].projectName").value("Alpha Proj"));
+    }
+
+    @Test
+    void orgMemberCanExportGitSyncRunsAsCsvAndJson() throws Exception {
+        JsonNode user = register("org-sync-export" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID projectId = createProject(token, orgId, "Export Proj", "EX");
+
+        MvcResult linkResult = mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/export","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        UUID gitLinkId = UUID.fromString(
+                objectMapper.readTree(linkResult.getResponse().getContentAsString()).get("id").asText());
+
+        Instant now = Instant.now();
+        seedRun(projectId, gitLinkId, "manual", "success", 5, null, now);
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs/export?format=csv")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".csv")))
+                .andExpect(header().string("Content-Type", containsString("text/csv")));
+
+        MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs/export?format=csv&source=manual")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csv = csvResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("projectId,projectName,projectKey"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains(projectId.toString()));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("manual"));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs/export?format=json")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".json")));
+
+        MvcResult jsonResult = mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs/export?format=json&status=success")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode exportJson = objectMapper.readTree(jsonResult.getResponse().getContentAsByteArray());
+        org.junit.jupiter.api.Assertions.assertEquals(orgId.toString(), exportJson.get("organizationId").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(1, exportJson.get("exportedCount").asInt());
+        org.junit.jupiter.api.Assertions.assertEquals("success", exportJson.get("items").get(0).get("status").asText());
     }
 
     private void seedRun(

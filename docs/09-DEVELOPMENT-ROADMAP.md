@@ -214,6 +214,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 20. Phase 17 — Org git sync run reporting (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Run export | CSV/JSON download with run filters ([85-ORG-GIT-SYNC-RUN-EXPORT-GUIDE.md](85-ORG-GIT-SYNC-RUN-EXPORT-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

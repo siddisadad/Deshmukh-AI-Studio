@@ -28,6 +28,7 @@ import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgGitSyncRunsService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
+import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
@@ -455,5 +456,24 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncRunsService.listRuns(orgId, user.getId(), limit, offset, source, status, projectId);
+    }
+
+    @GetMapping("/{orgId}/git-sync-runs/export")
+    @Operation(summary = "Export organization git sync runs as CSV or JSON (up to 1000 rows)")
+    public ResponseEntity<byte[]> exportGitSyncRuns(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "csv") String format,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        OrgGitSyncRunExport exported = orgGitSyncRunsService.exportRuns(
+                orgId, user.getId(), format, source, status, projectId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + exported.filename() + "\"")
+                .contentType(MediaType.parseMediaType(exported.contentType()))
+                .body(exported.body());
     }
 }

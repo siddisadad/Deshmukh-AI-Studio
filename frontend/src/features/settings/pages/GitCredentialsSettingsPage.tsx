@@ -252,7 +252,7 @@ export function GitCredentialsSettingsPage() {
             >
               Refresh
             </Button>
-            {isOwner && syncOverviewQuery.data.failedLastSync > 0 && (
+            {canRetryFailedSyncs && syncOverviewQuery.data.failedLastSync > 0 && (
               <Button
                 size="small"
                 variant="contained"

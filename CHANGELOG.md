@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.85-beta] — 2026-08-09
+
+### Added
+
+- Org git sync overview scheduled sync filter — `scheduledSyncEnabled` query param on overview and export
+- `scheduledSyncLinks` summary count, scheduled sync dropdown, and quick-filter chip
+- `docs/90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md`, Phase 22 roadmap
+
 ## [0.2.84-beta] — 2026-08-09
 
 ### Added

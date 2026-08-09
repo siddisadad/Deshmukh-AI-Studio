@@ -141,6 +141,7 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 | Item | Status on `main` | Next depth |
 |---|---|---|
 | Scheduled sync controls | Per-project interval ([69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md)), per-project scheduled toggle ([70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md)) | — |
+| Path filtering | Git ignore patterns ([71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md](71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md)) | — |
 
 ---
 

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.66-beta] — 2026-08-09
+
+### Added
+
+- Git path ignore patterns — per-project Ant-style globs on git links
+- Full, webhook delta, and background sync skip matching paths
+- `PUT git-link` — `pathIgnorePatterns` and `clearPathIgnorePatterns`
+- Project settings UI — path ignore patterns (one per line)
+- `docs/71-GIT-PATH-IGNORE-PATTERNS-GUIDE.md`
+
 ## [0.2.65-beta] — 2026-08-09
 
 ### Added

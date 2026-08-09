@@ -7,9 +7,13 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "project_git_links")
@@ -53,6 +57,10 @@ public class ProjectGitLinkEntity {
     @Column(name = "scheduled_sync_interval_minutes")
     private Integer scheduledSyncIntervalMinutes;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "path_ignore_patterns", nullable = false, columnDefinition = "jsonb")
+    private List<String> pathIgnorePatterns = new ArrayList<>();
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -69,6 +77,9 @@ public class ProjectGitLinkEntity {
         }
         if (lastSyncStatus == null || lastSyncStatus.isBlank()) {
             lastSyncStatus = "never";
+        }
+        if (pathIgnorePatterns == null) {
+            pathIgnorePatterns = new ArrayList<>();
         }
         updatedAt = Instant.now();
     }

@@ -66,6 +66,40 @@ class ProjectGitLinkControllerIT {
                 .andExpect(jsonPath("$.files[0].snippet").isNotEmpty());
     }
 
+    @Test
+    void syncNowSkipsIgnoredPathPatterns() throws Exception {
+        JsonNode auth = register("git-ignore" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Ignore Proj","projectKey":"IG","description":"ignore"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/ignore-service","branch":"main","enabled":true,"pathIgnorePatterns":["README.md"]}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lastSyncStatus").value("success"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/projects/" + projectId + "/code-metadata")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fileCount").value(2))
+                .andExpect(jsonPath("$.files[?(@.path == 'README.md')]").isEmpty());
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -113,6 +113,11 @@ public class ProjectGitSyncService {
         } else if (request.scheduledSyncIntervalMinutes() != null) {
             entity.setScheduledSyncIntervalMinutes(request.scheduledSyncIntervalMinutes());
         }
+        if (request.clearPathIgnorePatterns() != null && request.clearPathIgnorePatterns()) {
+            entity.setPathIgnorePatterns(new ArrayList<>());
+        } else if (request.pathIgnorePatterns() != null) {
+            entity.setPathIgnorePatterns(GitPathIgnoreMatcher.normalizePatterns(request.pathIgnorePatterns()));
+        }
         gitLinkRepository.save(entity);
         return toResponse(entity);
     }
@@ -196,30 +201,36 @@ public class ProjectGitSyncService {
     }
 
     private void enqueueWebhookSync(UUID projectId, GitWebhookDelta delta) {
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId).orElse(null);
+        List<String> ignorePatterns = link == null ? List.of() : ignorePatterns(link);
         Map<String, Object> jobPayload = new HashMap<>();
         jobPayload.put("source", "webhook");
         if (webhookDeltaSync && delta != null && delta.hasChanges()) {
-            jobPayload.put("changedPaths", delta.changedPaths());
-            jobPayload.put("removedPaths", delta.removedPaths());
+            jobPayload.put("changedPaths", GitPathIgnoreMatcher.filterPaths(delta.changedPaths(), ignorePatterns));
+            jobPayload.put("removedPaths", GitPathIgnoreMatcher.filterPaths(delta.removedPaths(), ignorePatterns));
         }
         backgroundJobService.enqueueInternal(projectId, JobType.CODE_METADATA_SYNC, jobPayload);
     }
 
     private int syncLinkDelta(ProjectGitLinkEntity link, GitWebhookDelta delta) {
         try {
+            List<String> ignorePatterns = ignorePatterns(link);
+            List<String> changedPaths = GitPathIgnoreMatcher.filterPaths(delta.changedPaths(), ignorePatterns);
+            List<String> removedPaths = GitPathIgnoreMatcher.filterPaths(delta.removedPaths(), ignorePatterns);
             GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
             List<GitFileEntry> upserts = port.fetchFilesByPaths(
                     link.getRepository(),
                     link.getBranch(),
-                    delta.changedPaths()
+                    changedPaths
             );
             if (fetchFileContent) {
                 upserts = port.hydrateFileContents(link.getRepository(), link.getBranch(), upserts);
             }
+            upserts = GitPathIgnoreMatcher.filterFiles(upserts, ignorePatterns);
             int count = codeMetadataService.applyDeltaInternal(
                     link.getProjectId(),
                     upserts,
-                    delta.removedPaths()
+                    removedPaths
             );
             link.setLastSyncedAt(Instant.now());
             link.setLastSyncStatus("success");
@@ -275,6 +286,7 @@ public class ProjectGitSyncService {
             if (fetchFileContent) {
                 files = port.hydrateFileContents(link.getRepository(), link.getBranch(), files);
             }
+            files = GitPathIgnoreMatcher.filterFiles(files, ignorePatterns(link));
             int count = codeMetadataService.replaceFilesInternal(link.getProjectId(), files);
             link.setLastSyncedAt(Instant.now());
             link.setLastSyncStatus("success");
@@ -327,6 +339,10 @@ public class ProjectGitSyncService {
         return minutes.longValue() * 60_000L;
     }
 
+    private List<String> ignorePatterns(ProjectGitLinkEntity link) {
+        return GitPathIgnoreMatcher.normalizePatterns(link.getPathIgnorePatterns());
+    }
+
     private ProjectGitLinkResponse toResponse(ProjectGitLinkEntity entity) {
         return new ProjectGitLinkResponse(
                 entity.getId(),
@@ -342,6 +358,7 @@ public class ProjectGitSyncService {
                 entity.getLastSyncStatus(),
                 entity.getLastSyncError(),
                 entity.getScheduledSyncIntervalMinutes(),
+                ignorePatterns(entity),
                 entity.getUpdatedAt()
         );
     }
@@ -361,6 +378,7 @@ public class ProjectGitSyncService {
                 "never",
                 null,
                 null,
+                List.of(),
                 null
         );
     }

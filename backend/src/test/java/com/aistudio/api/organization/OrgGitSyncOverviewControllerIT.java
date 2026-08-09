@@ -121,6 +121,57 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void overviewFiltersByEnabledState() throws Exception {
+        JsonNode user = register("org-sync-enabled" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID enabledProjectId = createProject(token, orgId, "Enabled Proj", "EN");
+        UUID disabledProjectId = createProject(token, orgId, "Disabled Proj", "DS");
+        UUID unlinkedProjectId = createProject(token, orgId, "Plain Proj", "PL");
+
+        mockMvc.perform(put("/api/v1/projects/" + enabledProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/en","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + disabledProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/dis","branch":"main","enabled":false}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?enabled=true")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalProjects").value(3))
+                .andExpect(jsonPath("$.linkedProjects").value(2))
+                .andExpect(jsonPath("$.enabledLinks").value(1))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(enabledProjectId.toString()));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?enabled=false")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(disabledProjectId.toString()));
+
+        MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/export?format=csv&linked=true&enabled=true")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csv = csvResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains(enabledProjectId.toString()));
+        org.junit.jupiter.api.Assertions.assertFalse(csv.contains(disabledProjectId.toString()));
+        org.junit.jupiter.api.Assertions.assertFalse(csv.contains(unlinkedProjectId.toString()));
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncs() throws Exception {
         JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

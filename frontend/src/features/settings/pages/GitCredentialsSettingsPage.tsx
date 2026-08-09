@@ -40,6 +40,7 @@ export function GitCredentialsSettingsPage() {
   const [apiBaseUrl, setApiBaseUrl] = useState('');
   const [testResult, setTestResult] = useState<GitConnectionTestResult | null>(null);
   const [overviewLinkedFilter, setOverviewLinkedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
+  const [overviewEnabledFilter, setOverviewEnabledFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [overviewProviderFilter, setOverviewProviderFilter] = useState<'all' | 'github' | 'gitlab' | 'bitbucket'>('all');
   const [overviewStatusFilter, setOverviewStatusFilter] = useState<'all' | 'success' | 'failed' | 'never'>('all');
   const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
@@ -77,12 +78,14 @@ export function GitCredentialsSettingsPage() {
       'org-git-sync-overview',
       org?.id,
       overviewLinkedFilter,
+      overviewEnabledFilter,
       overviewProviderFilter,
       overviewStatusFilter,
     ],
     queryFn: () =>
       gitCredentialsApi.getSyncOverview(org!.id, {
         linked: overviewLinkedFilter === 'all' ? undefined : overviewLinkedFilter === 'linked',
+        enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
         provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
         lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
       }),
@@ -161,15 +164,17 @@ export function GitCredentialsSettingsPage() {
 
   async function loadSyncOverview(
     linked = overviewLinkedFilter,
+    enabled = overviewEnabledFilter,
     provider = overviewProviderFilter,
     status = overviewStatusFilter
   ) {
     if (!org?.id) return;
     await queryClient.fetchQuery({
-      queryKey: ['org-git-sync-overview', org.id, linked, provider, status],
+      queryKey: ['org-git-sync-overview', org.id, linked, enabled, provider, status],
       queryFn: () =>
         gitCredentialsApi.getSyncOverview(org.id, {
           linked: linked === 'all' ? undefined : linked === 'linked',
+          enabled: enabled === 'all' ? undefined : enabled === 'enabled',
           provider: provider === 'all' ? undefined : provider,
           lastSyncStatus: status === 'all' ? undefined : status,
         }),
@@ -183,6 +188,7 @@ export function GitCredentialsSettingsPage() {
     try {
       await gitCredentialsApi.downloadSyncOverviewExport(org.id, format, {
         linked: overviewLinkedFilter === 'all' ? undefined : overviewLinkedFilter === 'linked',
+        enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
         provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
         lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
       });
@@ -262,7 +268,19 @@ export function GitCredentialsSettingsPage() {
 
   async function filterOverviewToFailed() {
     setOverviewStatusFilter('failed');
-    await loadSyncOverview(overviewLinkedFilter, overviewProviderFilter, 'failed');
+    await loadSyncOverview(overviewLinkedFilter, overviewEnabledFilter, overviewProviderFilter, 'failed');
+  }
+
+  async function filterOverviewToLinked() {
+    setOverviewLinkedFilter('linked');
+    setOverviewEnabledFilter('all');
+    await loadSyncOverview('linked', 'all', overviewProviderFilter, overviewStatusFilter);
+  }
+
+  async function filterOverviewToEnabled() {
+    setOverviewLinkedFilter('linked');
+    setOverviewEnabledFilter('enabled');
+    await loadSyncOverview('linked', 'enabled', overviewProviderFilter, overviewStatusFilter);
   }
 
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
@@ -343,8 +361,25 @@ export function GitCredentialsSettingsPage() {
         <Stack spacing={1} data-testid="git-sync-overview">
           <Typography variant="subtitle2">Git sync overview</Typography>
           <Typography variant="body2" color="text.secondary">
-            {syncOverviewQuery.data.linkedProjects} of {syncOverviewQuery.data.totalProjects} projects linked
-            · {syncOverviewQuery.data.enabledLinks} enabled
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => void filterOverviewToLinked()}
+              sx={{ verticalAlign: 'baseline' }}
+              data-testid="git-sync-overview-linked-count"
+            >
+              {syncOverviewQuery.data.linkedProjects} of {syncOverviewQuery.data.totalProjects} projects linked
+            </Link>
+            {' · '}
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => void filterOverviewToEnabled()}
+              sx={{ verticalAlign: 'baseline' }}
+              data-testid="git-sync-overview-enabled-count"
+            >
+              {syncOverviewQuery.data.enabledLinks} enabled
+            </Link>
             {syncOverviewQuery.data.failedLastSync > 0 ? (
               <>
                 {' · '}
@@ -370,7 +405,7 @@ export function GitCredentialsSettingsPage() {
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'linked' | 'unlinked';
                 setOverviewLinkedFilter(value);
-                void loadSyncOverview(value, overviewProviderFilter, overviewStatusFilter);
+                void loadSyncOverview(value, overviewEnabledFilter, overviewProviderFilter, overviewStatusFilter);
               }}
               slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-linked-filter' } }}
             >
@@ -380,13 +415,29 @@ export function GitCredentialsSettingsPage() {
             </TextField>
             <TextField
               select
+              label="Enabled"
+              size="small"
+              value={overviewEnabledFilter}
+              onChange={(e) => {
+                const value = e.target.value as 'all' | 'enabled' | 'disabled';
+                setOverviewEnabledFilter(value);
+                void loadSyncOverview(overviewLinkedFilter, value, overviewProviderFilter, overviewStatusFilter);
+              }}
+              slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-enabled-filter' } }}
+            >
+              <MenuItem value="all">All link states</MenuItem>
+              <MenuItem value="enabled">Enabled only</MenuItem>
+              <MenuItem value="disabled">Disabled only</MenuItem>
+            </TextField>
+            <TextField
+              select
               label="Provider"
               size="small"
               value={overviewProviderFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'github' | 'gitlab' | 'bitbucket';
                 setOverviewProviderFilter(value);
-                void loadSyncOverview(overviewLinkedFilter, value, overviewStatusFilter);
+                void loadSyncOverview(overviewLinkedFilter, overviewEnabledFilter, value, overviewStatusFilter);
               }}
               slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-provider-filter' } }}
             >
@@ -403,7 +454,7 @@ export function GitCredentialsSettingsPage() {
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'success' | 'failed' | 'never';
                 setOverviewStatusFilter(value);
-                void loadSyncOverview(overviewLinkedFilter, overviewProviderFilter, value);
+                void loadSyncOverview(overviewLinkedFilter, overviewEnabledFilter, overviewProviderFilter, value);
               }}
               slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-status-filter' } }}
             >

@@ -246,6 +246,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 24. Phase 21 — Org overview enabled filter (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Enabled filter + chips | `enabled` query param, dropdown, linked/enabled summary quick filters ([89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md](89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

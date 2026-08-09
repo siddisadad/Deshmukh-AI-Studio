@@ -143,12 +143,14 @@ export const gitCredentialsApi = {
     orgId: string,
     filters?: {
       linked?: boolean;
+      enabled?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
   ) => {
     const params = new URLSearchParams();
     if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
+    if (filters?.enabled !== undefined) params.set('enabled', String(filters.enabled));
     if (filters?.provider) params.set('provider', filters.provider);
     if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
     const query = params.toString();
@@ -173,12 +175,14 @@ export const gitCredentialsApi = {
     format: 'csv' | 'json',
     filters?: {
       linked?: boolean;
+      enabled?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
   ) => {
     const params: Record<string, string> = { format };
     if (filters?.linked !== undefined) params.linked = String(filters.linked);
+    if (filters?.enabled !== undefined) params.enabled = String(filters.enabled);
     if (filters?.provider) params.provider = filters.provider;
     if (filters?.lastSyncStatus) params.lastSyncStatus = filters.lastSyncStatus;
     const response = await http.get(`/organizations/${orgId}/git-sync-overview/export`, {

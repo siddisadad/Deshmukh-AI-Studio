@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.47-beta] — 2026-08-09
+
+### Added
+
+- AI policy simulation audit trail — `org_ai_policy_simulations` + `GET /organizations/{id}/ai-policy/simulations`
+- Staged rollout gates — `AI_POLICY_SIMULATION_GATE_ENABLED` requires passing `simulationId` on `PUT`
+- Simulate response adds `simulationId` and `gatePassed`; policy response adds `simulationGateEnabled`
+- Settings UI — simulation history, gate note, save blocked until preview passes
+- `docs/52-AI-POLICY-SIMULATION-AUDIT-GATE-GUIDE.md`
+
 ## [0.2.46-beta] — 2026-08-09
 
 ### Added

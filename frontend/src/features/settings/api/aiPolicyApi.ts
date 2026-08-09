@@ -25,12 +25,29 @@ export interface OrgAiPolicySnapshot {
 }
 
 export interface OrgAiPolicySimulation {
+  simulationId: string;
   current: OrgAiPolicySnapshot;
   simulated: OrgAiPolicySnapshot;
   currentEffectiveProviderChain: string[];
   simulatedEffectiveProviderChain: string[];
   missingProviders: string[];
+  gatePassed: boolean;
   wouldRequireApproval: boolean;
+}
+
+export interface OrgAiPolicySimulationRecord {
+  id: string;
+  simulatedByUserId: string;
+  providerChain: string | null;
+  dailyTokenBudget: number | null;
+  modelMap: string | null;
+  deployRegion: string | null;
+  missingProviders: string[];
+  currentEffectiveProviderChain: string[];
+  simulatedEffectiveProviderChain: string[];
+  gatePassed: boolean;
+  appliedChangeId: string | null;
+  createdAt: string;
 }
 
 export interface OrgAiPolicy {
@@ -43,6 +60,7 @@ export interface OrgAiPolicy {
   deployRegion: string | null;
   effectiveDeployRegion: string | null;
   changeApprovalRequired: boolean;
+  simulationGateEnabled: boolean;
   pendingChange: OrgAiPolicyChange | null;
 }
 
@@ -51,6 +69,7 @@ export interface UpdateOrgAiPolicyRequest {
   dailyTokenBudget?: number | null;
   modelMap?: string | null;
   deployRegion?: string | null;
+  simulationId?: string | null;
 }
 
 export const aiPolicyApi = {
@@ -61,6 +80,12 @@ export const aiPolicyApi = {
   simulate: (orgId: string, body: UpdateOrgAiPolicyRequest) =>
     http
       .post<OrgAiPolicySimulation>(`/organizations/${orgId}/ai-policy/simulate`, body)
+      .then((r) => r.data),
+  listSimulations: (orgId: string, limit = 50) =>
+    http
+      .get<OrgAiPolicySimulationRecord[]>(`/organizations/${orgId}/ai-policy/simulations`, {
+        params: { limit },
+      })
       .then((r) => r.data),
   listChanges: (orgId: string, limit = 50) =>
     http

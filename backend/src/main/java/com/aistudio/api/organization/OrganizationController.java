@@ -5,6 +5,7 @@ import com.aistudio.api.organization.dto.MemberResponse;
 import com.aistudio.api.organization.dto.OrganizationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.application.project.OrgAiPolicyService;
@@ -101,6 +102,16 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.simulatePolicy(orgId, user.getId(), request);
+    }
+
+    @GetMapping("/{orgId}/ai-policy/simulations")
+    @Operation(summary = "List AI routing policy simulation audit trail")
+    public List<OrgAiPolicySimulationRecordResponse> listAiPolicySimulations(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "50") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgAiPolicyService.listSimulations(orgId, user.getId(), limit);
     }
 
     @GetMapping("/{orgId}/ai-policy/changes")

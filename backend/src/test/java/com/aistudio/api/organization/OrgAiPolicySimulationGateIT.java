@@ -18,10 +18,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class OrgAiPolicyControllerIT {
+class OrgAiPolicySimulationGateIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
@@ -29,69 +30,55 @@ class OrgAiPolicyControllerIT {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
         IntegrationTestProperties.register(registry);
+        registry.add("aistudio.ai.policy-simulation-gate-enabled", () -> "true");
     }
 
     @Test
-    void ownerCanUpdateAiPolicy() throws Exception {
-        JsonNode auth = register("aipolicy" + System.currentTimeMillis() + "@example.com");
+    void updateRequiresPassingSimulationWhenGateEnabled() throws Exception {
+        JsonNode auth = register("aigate" + System.currentTimeMillis() + "@example.com");
         String token = auth.get("accessToken").asText();
         UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
-
-        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.effectiveDailyTokenBudget").isNumber());
 
         mockMvc.perform(put("/api/v1/organizations/" + orgId + "/ai-policy")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"providerChain":"mock","dailyTokenBudget":50000,"deployRegion":"eu-west"}
+                                {"providerChain":"mock","dailyTokenBudget":40000,"deployRegion":"eu-west"}
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.providerChain").value("mock"))
-                .andExpect(jsonPath("$.dailyTokenBudget").value(50000))
-                .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(50000))
-                .andExpect(jsonPath("$.deployRegion").value("eu-west"));
+                .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy/changes")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("APPLIED"))
-                .andExpect(jsonPath("$[0].providerChain").value("mock"));
-    }
-
-    @Test
-    void ownerCanSimulateAiPolicyWithoutApplying() throws Exception {
-        JsonNode auth = register("aipolicysim" + System.currentTimeMillis() + "@example.com");
-        String token = auth.get("accessToken").asText();
-        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
-
-        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/ai-policy/simulate")
+        MvcResult simulateResult = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/ai-policy/simulate")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"providerChain":"mock","dailyTokenBudget":75000,"deployRegion":"us-east"}
+                                {"providerChain":"mock","dailyTokenBudget":40000,"deployRegion":"eu-west"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.simulated.providerChain").value("mock"))
-                .andExpect(jsonPath("$.simulated.dailyTokenBudget").value(75000))
-                .andExpect(jsonPath("$.simulated.deployRegion").value("us-east"))
-                .andExpect(jsonPath("$.simulatedEffectiveProviderChain").isArray())
-                .andExpect(jsonPath("$.simulationId").isNotEmpty())
                 .andExpect(jsonPath("$.gatePassed").value(true))
-                .andExpect(jsonPath("$.wouldRequireApproval").value(false));
+                .andReturn();
+
+        String simulationId = objectMapper.readTree(simulateResult.getResponse().getContentAsString())
+                .get("simulationId")
+                .asText();
+
+        mockMvc.perform(put("/api/v1/organizations/" + orgId + "/ai-policy")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "providerChain":"mock",
+                                  "dailyTokenBudget":40000,
+                                  "deployRegion":"eu-west",
+                                  "simulationId":"%s"
+                                }
+                                """.formatted(simulationId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dailyTokenBudget").value(40000));
 
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy/simulations")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].gatePassed").value(true))
-                .andExpect(jsonPath("$[0].providerChain").value("mock"));
-
-        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/ai-policy")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.effectiveDailyTokenBudget").value(200000));
+                .andExpect(jsonPath("$[0].appliedChangeId").isNotEmpty());
     }
 
     private JsonNode register(String email) throws Exception {
@@ -99,7 +86,7 @@ class OrgAiPolicyControllerIT {
                         org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
-                                        {"email":"%s","password":"Str0ngPass!","displayName":"Policy User"}
+                                        {"email":"%s","password":"Str0ngPass!","displayName":"Gate User"}
                                         """.formatted(email)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());

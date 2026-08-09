@@ -19,6 +19,7 @@ vi.mock('../api/aiPolicyApi', () => ({
     get: vi.fn(),
     update: vi.fn(),
     simulate: vi.fn(),
+    listSimulations: vi.fn(),
     listChanges: vi.fn(),
     approvePending: vi.fn(),
     rejectPending: vi.fn(),
@@ -55,9 +56,11 @@ describe('AiRoutingSettingsPage', () => {
       deployRegion: 'eu-west',
       effectiveDeployRegion: 'eu-west',
       changeApprovalRequired: false,
+      simulationGateEnabled: false,
       pendingChange: null,
     });
     vi.mocked(aiPolicyApi.listChanges).mockResolvedValue([]);
+    vi.mocked(aiPolicyApi.listSimulations).mockResolvedValue([]);
     useAuthStore.setState({
       organization: { id: 'org-1', name: 'Test Org', slug: 'test' },
     });
@@ -85,6 +88,7 @@ describe('AiRoutingSettingsPage', () => {
       deployRegion: 'us-east',
       effectiveDeployRegion: 'us-east',
       changeApprovalRequired: false,
+      simulationGateEnabled: false,
       pendingChange: null,
     });
 
@@ -103,12 +107,14 @@ describe('AiRoutingSettingsPage', () => {
         dailyTokenBudget: 50000,
         modelMap: '',
         deployRegion: 'eu-west',
+        simulationId: null,
       });
     });
   });
 
   it('previews policy changes without saving', async () => {
     vi.mocked(aiPolicyApi.simulate).mockResolvedValue({
+      simulationId: 'sim-1',
       current: {
         providerChain: 'mock',
         dailyTokenBudget: 50000,
@@ -130,6 +136,7 @@ describe('AiRoutingSettingsPage', () => {
       currentEffectiveProviderChain: ['mock'],
       simulatedEffectiveProviderChain: ['mock', 'openai'],
       missingProviders: [],
+      gatePassed: true,
       wouldRequireApproval: false,
     });
 
@@ -144,6 +151,28 @@ describe('AiRoutingSettingsPage', () => {
       expect(aiPolicyApi.simulate).toHaveBeenCalled();
       expect(screen.getByTestId('ai-policy-preview-panel')).toBeInTheDocument();
       expect(screen.getByText(/Simulated effective chain/)).toBeInTheDocument();
+    });
+  });
+
+  it('blocks save when simulation gate is enabled without passing preview', async () => {
+    vi.mocked(aiPolicyApi.get).mockResolvedValue({
+      providerChain: 'mock',
+      dailyTokenBudget: 50000,
+      effectiveDailyTokenBudget: 50000,
+      tokensUsedToday: 1200,
+      tokenBudgetRemaining: 48800,
+      modelMap: null,
+      deployRegion: 'eu-west',
+      effectiveDeployRegion: 'eu-west',
+      changeApprovalRequired: false,
+      simulationGateEnabled: true,
+      pendingChange: null,
+    });
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('ai-policy-gate-note')).toBeInTheDocument();
+      expect(screen.getByTestId('ai-policy-save')).toBeDisabled();
     });
   });
 });

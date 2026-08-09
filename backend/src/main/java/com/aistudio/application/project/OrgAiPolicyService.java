@@ -2,6 +2,7 @@ package com.aistudio.application.project;
 
 import com.aistudio.api.organization.dto.OrgAiPolicyChangeResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicyResponse;
+import com.aistudio.api.organization.dto.OrgAiPolicySimulationRecordResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.OrgAiPolicySnapshotDto;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
@@ -14,12 +15,15 @@ import com.aistudio.infrastructure.ai.AiProviderCrossRegionRegistry;
 import com.aistudio.infrastructure.billing.AiUsageJdbcRepository;
 import com.aistudio.infrastructure.persistence.entity.MembershipEntity;
 import com.aistudio.infrastructure.persistence.entity.OrgAiPolicyChangeEntity;
+import com.aistudio.infrastructure.persistence.entity.OrgAiPolicySimulationEntity;
 import com.aistudio.infrastructure.persistence.entity.OrganizationSubscriptionEntity;
 import com.aistudio.infrastructure.persistence.entity.PlanEntity;
 import com.aistudio.infrastructure.persistence.repository.OrgAiPolicyChangeRepository;
+import com.aistudio.infrastructure.persistence.repository.OrgAiPolicySimulationRepository;
 import com.aistudio.infrastructure.persistence.repository.OrganizationSubscriptionRepository;
 import com.aistudio.infrastructure.persistence.repository.PlanRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Instant;
@@ -42,9 +46,12 @@ public class OrgAiPolicyService {
     private final BillingService billingService;
     private final AiProviderCrossRegionRegistry crossRegionRegistry;
     private final OrgAiPolicyChangeRepository changeRepository;
+    private final OrgAiPolicySimulationRepository simulationRepository;
     private final OrgAiPolicyRoutingPreview routingPreview;
     private final ObjectMapper objectMapper;
     private final boolean changeApprovalRequired;
+    private final boolean simulationGateEnabled;
+    private final int simulationGateTtlMinutes;
 
     public OrgAiPolicyService(
             ProjectAuthorizationService authorizationService,
@@ -54,9 +61,12 @@ public class OrgAiPolicyService {
             BillingService billingService,
             AiProviderCrossRegionRegistry crossRegionRegistry,
             OrgAiPolicyChangeRepository changeRepository,
+            OrgAiPolicySimulationRepository simulationRepository,
             OrgAiPolicyRoutingPreview routingPreview,
             ObjectMapper objectMapper,
-            @Value("${aistudio.ai.policy-change-approval-enabled:false}") boolean changeApprovalRequired
+            @Value("${aistudio.ai.policy-change-approval-enabled:false}") boolean changeApprovalRequired,
+            @Value("${aistudio.ai.policy-simulation-gate-enabled:false}") boolean simulationGateEnabled,
+            @Value("${aistudio.ai.policy-simulation-gate-ttl-minutes:30}") int simulationGateTtlMinutes
     ) {
         this.authorizationService = authorizationService;
         this.subscriptionRepository = subscriptionRepository;
@@ -65,9 +75,12 @@ public class OrgAiPolicyService {
         this.billingService = billingService;
         this.crossRegionRegistry = crossRegionRegistry;
         this.changeRepository = changeRepository;
+        this.simulationRepository = simulationRepository;
         this.routingPreview = routingPreview;
         this.objectMapper = objectMapper;
         this.changeApprovalRequired = changeApprovalRequired;
+        this.simulationGateEnabled = simulationGateEnabled;
+        this.simulationGateTtlMinutes = simulationGateTtlMinutes;
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +89,7 @@ public class OrgAiPolicyService {
         return toResponse(requireSubscription(organizationId));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OrgAiPolicySimulationResponse simulatePolicy(
             UUID organizationId,
             UUID userId,
@@ -90,15 +103,39 @@ public class OrgAiPolicyService {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         long used = usageRepository.getTokenCount(sub.getOrganizationId(), today);
         OrgAiPolicyRoutingPreview.Preview preview = routingPreview.preview(sub, plan, used, request);
+        boolean gatePassed = preview.missingProviders().isEmpty();
         boolean wouldRequireApproval = changeApprovalRequired && membership.getRole() == OrgRole.ADMIN;
+        OrgAiPolicySimulationEntity audit = persistSimulation(
+                organizationId,
+                userId,
+                request,
+                preview,
+                gatePassed);
         return new OrgAiPolicySimulationResponse(
+                audit.getId(),
                 toSnapshotDto(preview.current()),
                 toSnapshotDto(preview.simulated()),
                 preview.currentEffectiveProviderChain(),
                 preview.simulatedEffectiveProviderChain(),
                 preview.missingProviders(),
+                gatePassed,
                 wouldRequireApproval
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrgAiPolicySimulationRecordResponse> listSimulations(
+            UUID organizationId,
+            UUID userId,
+            int limit
+    ) {
+        authorizationService.requireOrgMember(organizationId, userId);
+        int capped = Math.min(Math.max(limit, 1), 100);
+        return simulationRepository.findByOrganizationIdOrderByCreatedAtDesc(
+                organizationId, PageRequest.of(0, capped))
+                .stream()
+                .map(this::toSimulationRecordResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -116,12 +153,15 @@ public class OrgAiPolicyService {
     public OrgAiPolicyResponse updatePolicy(UUID organizationId, UUID userId, UpdateOrgAiPolicyRequest request) {
         MembershipEntity membership = authorizationService.requireOrgOwner(organizationId, userId);
         validateRequest(request);
+        OrgAiPolicySimulationEntity simulation = requireSimulationGate(organizationId, userId, request);
         OrganizationSubscriptionEntity before = requireSubscription(organizationId);
         if (changeApprovalRequired && membership.getRole() == OrgRole.ADMIN) {
-            createPendingChange(organizationId, userId, before, request);
+            OrgAiPolicyChangeEntity pending = createPendingChange(organizationId, userId, before, request);
+            linkSimulationToChange(simulation, pending.getId());
             return toResponse(before);
         }
-        applyPolicyUpdate(organizationId, userId, userId, before, request);
+        OrgAiPolicyChangeEntity applied = applyPolicyUpdate(organizationId, userId, userId, before, request);
+        linkSimulationToChange(simulation, applied.getId());
         return toResponse(requireSubscription(organizationId));
     }
 
@@ -148,7 +188,7 @@ public class OrgAiPolicyService {
         return toResponse(requireSubscription(organizationId));
     }
 
-    private void applyPolicyUpdate(
+    private OrgAiPolicyChangeEntity applyPolicyUpdate(
             UUID organizationId,
             UUID proposedByUserId,
             UUID reviewedByUserId,
@@ -161,7 +201,7 @@ public class OrgAiPolicyService {
                 request.dailyTokenBudget(),
                 request.modelMap(),
                 request.deployRegion());
-        recordAppliedChange(organizationId, proposedByUserId, reviewedByUserId, before, request);
+        return recordAppliedChange(organizationId, proposedByUserId, reviewedByUserId, before, request);
     }
 
     private void applyFromChangeEntity(UUID organizationId, OrgAiPolicyChangeEntity change) {
@@ -173,7 +213,7 @@ public class OrgAiPolicyService {
                 change.getDeployRegion());
     }
 
-    private void createPendingChange(
+    private OrgAiPolicyChangeEntity createPendingChange(
             UUID organizationId,
             UUID userId,
             OrganizationSubscriptionEntity before,
@@ -191,9 +231,10 @@ public class OrgAiPolicyService {
         pending.setDeployRegion(normalizeDeployRegion(request.deployRegion()));
         pending.setPreviousPolicy(snapshotPolicy(before));
         changeRepository.save(pending);
+        return pending;
     }
 
-    private void recordAppliedChange(
+    private OrgAiPolicyChangeEntity recordAppliedChange(
             UUID organizationId,
             UUID proposedByUserId,
             UUID reviewedByUserId,
@@ -212,6 +253,99 @@ public class OrgAiPolicyService {
         applied.setPreviousPolicy(snapshotPolicy(before));
         applied.setReviewedAt(Instant.now());
         changeRepository.save(applied);
+        return applied;
+    }
+
+    private OrgAiPolicySimulationEntity persistSimulation(
+            UUID organizationId,
+            UUID userId,
+            UpdateOrgAiPolicyRequest request,
+            OrgAiPolicyRoutingPreview.Preview preview,
+            boolean gatePassed
+    ) {
+        OrgAiPolicySimulationEntity entity = new OrgAiPolicySimulationEntity();
+        entity.setOrganizationId(organizationId);
+        entity.setSimulatedByUserId(userId);
+        entity.setProviderChain(normalizeOptionalString(request.providerChain()));
+        entity.setDailyTokenBudget(normalizeTokenBudget(request.dailyTokenBudget()));
+        entity.setModelMap(normalizeOptionalString(request.modelMap()));
+        entity.setDeployRegion(normalizeDeployRegion(request.deployRegion()));
+        entity.setMissingProviders(writeJsonList(preview.missingProviders()));
+        entity.setCurrentEffectiveChain(writeJsonList(preview.currentEffectiveProviderChain()));
+        entity.setSimulatedEffectiveChain(writeJsonList(preview.simulatedEffectiveProviderChain()));
+        entity.setGatePassed(gatePassed);
+        simulationRepository.save(entity);
+        return entity;
+    }
+
+    private OrgAiPolicySimulationEntity requireSimulationGate(
+            UUID organizationId,
+            UUID userId,
+            UpdateOrgAiPolicyRequest request
+    ) {
+        if (!simulationGateEnabled) {
+            return null;
+        }
+        if (request.simulationId() == null) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "simulationId is required when AI policy simulation gate is enabled");
+        }
+        OrgAiPolicySimulationEntity simulation = simulationRepository
+                .findByIdAndOrganizationId(request.simulationId(), organizationId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Policy simulation not found"));
+        if (!simulation.getSimulatedByUserId().equals(userId)) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Policy simulation must be run by the user applying the change");
+        }
+        if (!simulation.isGatePassed()) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Policy simulation did not pass rollout gates (missing providers)");
+        }
+        Instant cutoff = Instant.now().minusSeconds(simulationGateTtlMinutes * 60L);
+        if (simulation.getCreatedAt().isBefore(cutoff)) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Policy simulation expired; run simulate again before applying");
+        }
+        if (!matchesProposedFields(simulation, request)) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Policy fields do not match the recorded simulation");
+        }
+        if (simulation.getAppliedChangeId() != null) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "Policy simulation was already used to apply a change");
+        }
+        return simulation;
+    }
+
+    private void linkSimulationToChange(OrgAiPolicySimulationEntity simulation, UUID changeId) {
+        if (simulation == null) {
+            return;
+        }
+        simulation.setAppliedChangeId(changeId);
+        simulationRepository.save(simulation);
+    }
+
+    private boolean matchesProposedFields(OrgAiPolicySimulationEntity simulation, UpdateOrgAiPolicyRequest request) {
+        return nullableEquals(simulation.getProviderChain(), normalizeOptionalString(request.providerChain()))
+                && nullableEquals(simulation.getDailyTokenBudget(), normalizeTokenBudget(request.dailyTokenBudget()))
+                && nullableEquals(simulation.getModelMap(), normalizeOptionalString(request.modelMap()))
+                && nullableEquals(simulation.getDeployRegion(), normalizeDeployRegion(request.deployRegion()));
+    }
+
+    private static boolean nullableEquals(Object left, Object right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.equals(right);
     }
 
     private OrgAiPolicyResponse toResponse(OrganizationSubscriptionEntity sub) {
@@ -237,6 +371,7 @@ public class OrgAiPolicyService {
                 deployRegion,
                 effectiveDeployRegion,
                 changeApprovalRequired,
+                simulationGateEnabled,
                 pending
         );
     }
@@ -269,6 +404,23 @@ public class OrgAiPolicyService {
         );
     }
 
+    private OrgAiPolicySimulationRecordResponse toSimulationRecordResponse(OrgAiPolicySimulationEntity simulation) {
+        return new OrgAiPolicySimulationRecordResponse(
+                simulation.getId(),
+                simulation.getSimulatedByUserId(),
+                simulation.getProviderChain(),
+                simulation.getDailyTokenBudget(),
+                simulation.getModelMap(),
+                simulation.getDeployRegion(),
+                readJsonList(simulation.getMissingProviders()),
+                readJsonList(simulation.getCurrentEffectiveChain()),
+                readJsonList(simulation.getSimulatedEffectiveChain()),
+                simulation.isGatePassed(),
+                simulation.getAppliedChangeId(),
+                simulation.getCreatedAt()
+        );
+    }
+
     private OrgAiPolicyChangeEntity requirePendingChange(UUID organizationId) {
         return changeRepository.findByOrganizationIdAndStatus(organizationId, OrgAiPolicyChangeStatus.PENDING)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "No pending AI policy change"));
@@ -292,6 +444,22 @@ public class OrgAiPolicyService {
             return objectMapper.writeValueAsString(node);
         } catch (JsonProcessingException ex) {
             return "{}";
+        }
+    }
+
+    private String writeJsonList(List<String> values) {
+        try {
+            return objectMapper.writeValueAsString(values);
+        } catch (JsonProcessingException ex) {
+            return "[]";
+        }
+    }
+
+    private List<String> readJsonList(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException ex) {
+            return List.of();
         }
     }
 

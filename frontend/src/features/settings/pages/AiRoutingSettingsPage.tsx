@@ -46,6 +46,12 @@ export function AiRoutingSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const simulationsQuery = useQuery({
+    queryKey: ['ai-policy-simulations', org?.id],
+    queryFn: () => aiPolicyApi.listSimulations(org!.id, 20),
+    enabled: !!org?.id,
+  });
+
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
     queryFn: () => organizationsApi.get(org!.id),
@@ -67,11 +73,17 @@ export function AiRoutingSettingsPage() {
     );
     setModelMap(policy.modelMap ?? '');
     setDeployRegion(policy.deployRegion ?? '');
+    setPreview(null);
   }, [policyQuery.data]);
+
+  function clearPreview() {
+    setPreview(null);
+  }
 
   async function refreshPolicy() {
     await queryClient.invalidateQueries({ queryKey: ['ai-policy', org?.id] });
     await queryClient.invalidateQueries({ queryKey: ['ai-policy-changes', org?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['ai-policy-simulations', org?.id] });
   }
 
   const save = useMutation({
@@ -83,6 +95,7 @@ export function AiRoutingSettingsPage() {
           : null,
         modelMap: modelMap.trim(),
         deployRegion: deployRegion.trim(),
+        simulationId: preview?.simulationId ?? null,
       }),
     onSuccess: async (policy) => {
       setError(null);
@@ -94,6 +107,7 @@ export function AiRoutingSettingsPage() {
       }
       await queryClient.setQueryData(['ai-policy', org?.id], policy);
       await queryClient.invalidateQueries({ queryKey: ['ai-policy-changes', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['ai-policy-simulations', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -113,6 +127,7 @@ export function AiRoutingSettingsPage() {
       setError(null);
       setMessage(null);
       setPreview(result);
+      queryClient.invalidateQueries({ queryKey: ['ai-policy-simulations', org?.id] });
     },
     onError: (err) => {
       setPreview(null);
@@ -150,6 +165,7 @@ export function AiRoutingSettingsPage() {
 
   const policy = policyQuery.data;
   const pending = policy?.pendingChange;
+  const saveRequiresGate = policy?.simulationGateEnabled && !preview?.gatePassed;
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 720 }} data-testid="ai-routing-settings">
@@ -226,6 +242,11 @@ export function AiRoutingSettingsPage() {
               Admin changes require owner approval before they apply.
             </Typography>
           )}
+          {policy.simulationGateEnabled && (
+            <Typography variant="caption" color="text.secondary" data-testid="ai-policy-gate-note">
+              Simulation gate enabled: preview changes and pass rollout gates before saving.
+            </Typography>
+          )}
         </Stack>
       )}
 
@@ -234,7 +255,10 @@ export function AiRoutingSettingsPage() {
           label="Provider chain"
           placeholder="mock,openai,anthropic"
           value={providerChain}
-          onChange={(e) => setProviderChain(e.target.value)}
+          onChange={(e) => {
+            setProviderChain(e.target.value);
+            clearPreview();
+          }}
           disabled={!canEdit}
           helperText="Comma-separated provider ids. Empty clears the org override."
           fullWidth
@@ -244,7 +268,10 @@ export function AiRoutingSettingsPage() {
           label="Daily token budget override"
           placeholder="500000"
           value={dailyTokenBudget}
-          onChange={(e) => setDailyTokenBudget(e.target.value)}
+          onChange={(e) => {
+            setDailyTokenBudget(e.target.value);
+            clearPreview();
+          }}
           disabled={!canEdit}
           helperText="Optional org override. Empty uses plan default."
           fullWidth
@@ -254,7 +281,10 @@ export function AiRoutingSettingsPage() {
           label="Model map"
           placeholder="DEVELOPER=openai:gpt-4o-mini,QA_ENGINEER=anthropic:claude-sonnet-4-20250514"
           value={modelMap}
-          onChange={(e) => setModelMap(e.target.value)}
+          onChange={(e) => {
+            setModelMap(e.target.value);
+            clearPreview();
+          }}
           disabled={!canEdit}
           helperText="ASSISTANT_ROLE=provider:model pairs, comma-separated."
           fullWidth
@@ -264,7 +294,10 @@ export function AiRoutingSettingsPage() {
           label="Deploy region override"
           placeholder="eu-west"
           value={deployRegion}
-          onChange={(e) => setDeployRegion(e.target.value)}
+          onChange={(e) => {
+            setDeployRegion(e.target.value);
+            clearPreview();
+          }}
           disabled={!canEdit}
           helperText="Overrides platform AISTUDIO_DEPLOY_REGION for cross-region routing."
           fullWidth
@@ -283,7 +316,7 @@ export function AiRoutingSettingsPage() {
             <Button
               variant="contained"
               onClick={() => save.mutate()}
-              disabled={save.isPending || !org?.id}
+              disabled={save.isPending || !org?.id || saveRequiresGate}
               data-testid="ai-policy-save"
             >
               {save.isPending ? 'Saving…' : 'Save policy'}
@@ -297,6 +330,11 @@ export function AiRoutingSettingsPage() {
       {preview && (
         <Stack spacing={1} data-testid="ai-policy-preview-panel">
           <Typography variant="h6">Policy preview (dry-run)</Typography>
+          {preview.gatePassed ? (
+            <Alert severity="success">Rollout gate passed — ready to save.</Alert>
+          ) : (
+            <Alert severity="error">Rollout gate failed — fix missing providers before saving.</Alert>
+          )}
           {preview.wouldRequireApproval && (
             <Alert severity="info">
               This change would require owner approval before it applies.
@@ -323,6 +361,25 @@ export function AiRoutingSettingsPage() {
               Simulated deploy region: {preview.simulated.effectiveDeployRegion}
             </Typography>
           )}
+        </Stack>
+      )}
+
+      {simulationsQuery.data && simulationsQuery.data.length > 0 && (
+        <Stack spacing={1} data-testid="ai-policy-simulation-history">
+          <Typography variant="h6">Simulation history</Typography>
+          {simulationsQuery.data.map((simulation) => (
+            <Box key={simulation.id} sx={{ py: 1, borderTop: 1, borderColor: 'divider' }}>
+              <Typography variant="body2">
+                {simulation.gatePassed ? 'PASSED' : 'FAILED'} ·{' '}
+                {new Date(simulation.createdAt).toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                chain={simulation.providerChain ?? '—'} · budget={simulation.dailyTokenBudget ?? '—'}{' '}
+                · region={simulation.deployRegion ?? '—'}
+                {simulation.appliedChangeId ? ' · applied' : ''}
+              </Typography>
+            </Box>
+          ))}
         </Stack>
       )}
 

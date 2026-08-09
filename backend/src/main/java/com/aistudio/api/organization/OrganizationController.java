@@ -26,6 +26,8 @@ import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
 import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
+import com.aistudio.application.organization.OrgGitSyncOverviewService;
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -61,6 +63,7 @@ public class OrganizationController {
     private final OrgSsoIdpService orgSsoIdpService;
     private final OrgDlpConnectorService orgDlpConnectorService;
     private final OrgGitCredentialService orgGitCredentialService;
+    private final OrgGitSyncOverviewService orgGitSyncOverviewService;
 
     public OrganizationController(
             OrganizationService organizationService,
@@ -68,7 +71,8 @@ public class OrganizationController {
             OrgSloService orgSloService,
             OrgSsoIdpService orgSsoIdpService,
             OrgDlpConnectorService orgDlpConnectorService,
-            OrgGitCredentialService orgGitCredentialService
+            OrgGitCredentialService orgGitCredentialService,
+            OrgGitSyncOverviewService orgGitSyncOverviewService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
@@ -76,6 +80,7 @@ public class OrganizationController {
         this.orgSsoIdpService = orgSsoIdpService;
         this.orgDlpConnectorService = orgDlpConnectorService;
         this.orgGitCredentialService = orgGitCredentialService;
+        this.orgGitSyncOverviewService = orgGitSyncOverviewService;
     }
 
     @GetMapping
@@ -386,5 +391,14 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitCredentialService.test(orgId, provider, user.getId(), repository, branch);
+    }
+
+    @GetMapping("/{orgId}/git-sync-overview")
+    @Operation(summary = "Organization git sync overview across projects")
+    public OrgGitSyncOverviewResponse getGitSyncOverview(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.getOverview(orgId, user.getId());
     }
 }

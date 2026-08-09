@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Link,
   MenuItem,
   Stack,
   TextField,
@@ -9,6 +10,7 @@ import {
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { useAuthStore } from '../../auth/store/authStore';
 import { organizationsApi } from '../../projects/api/organizationsApi';
@@ -46,6 +48,12 @@ export function GitCredentialsSettingsPage() {
   const eventsQuery = useQuery({
     queryKey: ['org-git-credential-events', org?.id],
     queryFn: () => gitCredentialsApi.listEvents(org!.id, 30),
+    enabled: !!org?.id,
+  });
+
+  const syncOverviewQuery = useQuery({
+    queryKey: ['org-git-sync-overview', org?.id],
+    queryFn: () => gitCredentialsApi.getSyncOverview(org!.id),
     enabled: !!org?.id,
   });
 
@@ -123,6 +131,60 @@ export function GitCredentialsSettingsPage() {
 
       {error && <Alert severity="error">{error}</Alert>}
       {message && <Alert severity="success">{message}</Alert>}
+
+      {syncOverviewQuery.data && (
+        <Stack spacing={1} data-testid="git-sync-overview">
+          <Typography variant="subtitle2">Git sync overview</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {syncOverviewQuery.data.linkedProjects} of {syncOverviewQuery.data.totalProjects} projects linked
+            · {syncOverviewQuery.data.enabledLinks} enabled
+            {syncOverviewQuery.data.failedLastSync > 0
+              ? ` · ${syncOverviewQuery.data.failedLastSync} failed last sync`
+              : ''}
+          </Typography>
+          {syncOverviewQuery.data.items.map((item) => (
+            <Stack
+              key={item.projectId}
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{ alignItems: { sm: 'center' } }}
+            >
+              <Typography variant="body2" sx={{ minWidth: 140 }}>
+                {item.projectKey} — {item.projectName}
+              </Typography>
+              {item.linked ? (
+                <Typography
+                  variant="body2"
+                  color={item.lastSyncStatus === 'failed' ? 'error' : 'text.secondary'}
+                >
+                  {item.provider} · {item.repository} ({item.branch})
+                  · {item.enabled ? 'enabled' : 'disabled'}
+                  · last sync {item.lastSyncStatus}
+                  {item.lastSyncedAt ? ` · ${new Date(item.lastSyncedAt).toLocaleString()}` : ''}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No git link</Typography>
+              )}
+              <Link
+                component={RouterLink}
+                to={`/projects/${item.projectId}/settings`}
+                variant="body2"
+                data-testid={`git-sync-overview-link-${item.projectKey}`}
+              >
+                Project settings
+              </Link>
+            </Stack>
+          ))}
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => void syncOverviewQuery.refetch()}
+            data-testid="git-sync-overview-refresh"
+          >
+            Refresh overview
+          </Button>
+        </Stack>
+      )}
 
       <Stack spacing={1}>
         <Typography variant="subtitle2">Configured providers</Typography>

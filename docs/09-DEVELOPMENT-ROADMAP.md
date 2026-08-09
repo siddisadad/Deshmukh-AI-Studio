@@ -180,6 +180,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 16. Phase 13 — Org git sync dashboard (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Sync overview | Org-wide project git link + last sync dashboard ([79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md](79-ORG-GIT-SYNC-OVERVIEW-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

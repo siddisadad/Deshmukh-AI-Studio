@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.80-beta] — 2026-08-09
+
+### Added
+
+- Org git sync run export — `GET .../git-sync-runs/export` with `format=csv|json` and run filters (up to 1000 rows)
+- Git settings — **Export CSV** and **Export JSON** on org-wide sync runs section
+- `docs/85-ORG-GIT-SYNC-RUN-EXPORT-GUIDE.md`, Phase 17 roadmap
+
 ## [0.2.79-beta] — 2026-08-09
 
 ### Added

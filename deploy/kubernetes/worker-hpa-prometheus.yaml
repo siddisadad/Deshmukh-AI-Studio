@@ -1,0 +1,26 @@
+# Prometheus adapter external metric for HPA (requires prometheus-adapter installed).
+# Maps pending job depth to external metric aistudio_jobs_queue_pending.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aistudio-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aistudio-worker
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: aistudio_jobs_queue_pending
+        target:
+          type: AverageValue
+          averageValue: "10"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300

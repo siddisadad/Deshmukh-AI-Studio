@@ -27,7 +27,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/api/v1/exports/siem/run",
             "/api/v1/ops/staging-signoff/submit",
             "/api/v1/ops/staging-signoff/runs",
-            "/api/v1/ops/release-gate"
+            "/api/v1/ops/release-gate",
+            "/api/v1/ops/jobs/queue"
     );
 
     private final JwtService jwtService;

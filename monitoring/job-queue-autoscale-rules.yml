@@ -1,0 +1,7 @@
+# Recording rule for Prometheus adapter / HPA external metrics.
+# Apply alongside monitoring/prometheus.yml when using worker-hpa-prometheus.yaml.
+groups:
+  - name: aistudio_job_autoscale
+    rules:
+      - record: aistudio:jobs_queue_pending:sum
+        expr: sum(aistudio_jobs_queue_depth{status="pending"})

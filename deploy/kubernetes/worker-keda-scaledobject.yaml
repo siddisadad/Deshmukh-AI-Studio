@@ -1,0 +1,22 @@
+# KEDA ScaledObject — polls ops job queue API for pending depth.
+# Requires KEDA + cluster access to API; set BILLING_USAGE_SYNC_TOKEN on scaler or use in-cluster auth.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: aistudio-worker
+spec:
+  scaleTargetRef:
+    name: aistudio-worker
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 6
+  triggers:
+    - type: metrics-api
+      metadata:
+        targetValue: "10"
+        url: "http://aistudio-api:8080/api/v1/ops/jobs/queue"
+        valueLocation: "pending"
+        method: "GET"
+        authMode: "bearer"
+        authToken: "${BILLING_USAGE_SYNC_TOKEN}"

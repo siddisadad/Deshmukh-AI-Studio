@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.79-beta] — 2026-08-09
+
+### Added
+
+- Org-wide git sync run history — `GET .../git-sync-runs` with pagination, source/status filters, optional `projectId`
+- Git settings — **Recent sync runs (org-wide)** with filters, refresh, and load more
+- `docs/84-ORG-GIT-SYNC-RUN-HISTORY-GUIDE.md`, Phase 16 roadmap
+
 ## [0.2.78-beta] — 2026-08-09
 
 ### Added

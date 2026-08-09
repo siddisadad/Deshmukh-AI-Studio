@@ -92,8 +92,9 @@ Read in order; each document builds on the previous.
 | 85 | [85-ORG-GIT-SYNC-RUN-EXPORT-GUIDE.md](85-ORG-GIT-SYNC-RUN-EXPORT-GUIDE.md) | Org git sync run export |
 | 86 | [86-ORG-GIT-SYNC-RUN-PROJECT-FILTER-GUIDE.md](86-ORG-GIT-SYNC-RUN-PROJECT-FILTER-GUIDE.md) | Org sync run project filter UI |
 | 87 | [87-ORG-GIT-SYNC-PROJECT-LINKS-GUIDE.md](87-ORG-GIT-SYNC-PROJECT-LINKS-GUIDE.md) | Org git sync project settings deep links |
+| 88 | [88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md](88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md) | Org overview failed sync actions |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.82-beta** adds org git sync project settings deep links — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.83-beta** adds org overview failed sync actions — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

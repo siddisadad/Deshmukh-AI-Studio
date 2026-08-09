@@ -23,6 +23,7 @@ import {
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 const GIT_SYNC_SECTION_HASH = '#git-repository-sync';
+const ORG_SYNC_RUNS_SECTION_ID = 'org-git-sync-runs';
 
 function projectGitSettingsPath(projectId: string) {
   return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
@@ -51,6 +52,7 @@ export function GitCredentialsSettingsPage() {
   const [runTotalCount, setRunTotalCount] = useState(0);
   const [runLoadingMore, setRunLoadingMore] = useState(false);
   const [runExporting, setRunExporting] = useState<'csv' | 'json' | null>(null);
+  const [retryingProjectId, setRetryingProjectId] = useState<string | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -230,6 +232,39 @@ export function GitCredentialsSettingsPage() {
     },
   });
 
+  async function retryFailedSyncForProject(projectId: string, projectKey: string) {
+    if (!org?.id) return;
+    setRetryingProjectId(projectId);
+    setError(null);
+    try {
+      const result = await gitCredentialsApi.retryFailedSyncForProject(org.id, projectId);
+      setMessage(
+        result.enqueued
+          ? `Enqueued sync for ${projectKey}`
+          : `Skipped ${projectKey} — sync already pending`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to retry sync');
+    } finally {
+      setRetryingProjectId(null);
+    }
+  }
+
+  async function viewFailedRunsForProject(projectId: string) {
+    setRunProjectFilter(projectId);
+    setRunStatusFilter('failed');
+    setRunSourceFilter('all');
+    await loadSyncRuns('all', 'failed', projectId);
+    document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function filterOverviewToFailed() {
+    setOverviewStatusFilter('failed');
+    await loadSyncOverview(overviewLinkedFilter, overviewProviderFilter, 'failed');
+  }
+
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
 
   const upsert = useMutation({
@@ -310,9 +345,20 @@ export function GitCredentialsSettingsPage() {
           <Typography variant="body2" color="text.secondary">
             {syncOverviewQuery.data.linkedProjects} of {syncOverviewQuery.data.totalProjects} projects linked
             · {syncOverviewQuery.data.enabledLinks} enabled
-            {syncOverviewQuery.data.failedLastSync > 0
-              ? ` · ${syncOverviewQuery.data.failedLastSync} failed last sync`
-              : ''}
+            {syncOverviewQuery.data.failedLastSync > 0 ? (
+              <>
+                {' · '}
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => void filterOverviewToFailed()}
+                  sx={{ verticalAlign: 'baseline' }}
+                  data-testid="git-sync-overview-failed-count"
+                >
+                  {syncOverviewQuery.data.failedLastSync} failed last sync
+                </Link>
+              </>
+            ) : null}
             · showing {syncOverviewQuery.data.items.length} matching filter
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
@@ -441,12 +487,38 @@ export function GitCredentialsSettingsPage() {
               >
                 Git settings
               </Link>
+              {item.linked && item.lastSyncStatus === 'failed' && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => void viewFailedRunsForProject(item.projectId)}
+                  data-testid={`git-sync-overview-view-runs-${item.projectKey}`}
+                >
+                  View failed runs
+                </Button>
+              )}
+              {canRetryFailedSyncs
+                && item.linked
+                && item.enabled
+                && item.lastSyncStatus === 'failed' && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="warning"
+                  disabled={retryingProjectId === item.projectId || retryFailedSyncs.isPending}
+                  onClick={() => void retryFailedSyncForProject(item.projectId, item.projectKey)}
+                  data-testid={`git-sync-overview-retry-${item.projectKey}`}
+                >
+                  {retryingProjectId === item.projectId ? 'Retrying…' : 'Retry sync'}
+                </Button>
+              )}
             </Stack>
           ))}
         </Stack>
       )}
 
-      <Stack spacing={1} data-testid="org-git-sync-runs">
+      <Stack spacing={1} id={ORG_SYNC_RUNS_SECTION_ID} data-testid="org-git-sync-runs">
         <Typography variant="subtitle2">Recent sync runs (org-wide)</Typography>
         {runTotalCount > 0 && (
           <Typography variant="body2" color="text.secondary">

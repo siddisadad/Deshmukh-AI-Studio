@@ -238,6 +238,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 23. Phase 20 — Org overview failed actions (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Failed row actions | Per-project retry + view failed runs + clickable failed count ([88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md](88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

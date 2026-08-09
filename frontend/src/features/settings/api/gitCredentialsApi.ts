@@ -91,6 +91,12 @@ export interface OrgGitSyncRetryFailedResult {
   enqueuedProjectIds: string[];
 }
 
+export interface OrgGitSyncRetryProjectResult {
+  projectId: string;
+  enqueued: boolean;
+  skippedPending: boolean;
+}
+
 export interface OrgGitSyncRunItem {
   id: string;
   projectId: string;
@@ -155,6 +161,12 @@ export const gitCredentialsApi = {
   retryFailedSyncs: (orgId: string) =>
     http
       .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
+      .then((r) => r.data),
+  retryFailedSyncForProject: (orgId: string, projectId: string) =>
+    http
+      .post<OrgGitSyncRetryProjectResult>(
+        `/organizations/${orgId}/git-sync-overview/retry-project/${projectId}`
+      )
       .then((r) => r.data),
   downloadSyncOverviewExport: async (
     orgId: string,

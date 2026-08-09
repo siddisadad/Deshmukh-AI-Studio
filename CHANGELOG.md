@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.84-beta] — 2026-08-09
+
+### Added
+
+- Org git sync overview enabled filter — `enabled` query param on overview and export
+- Enabled dropdown plus clickable linked/enabled summary chips on overview
+- `docs/89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md`, Phase 21 roadmap
+
 ## [0.2.83-beta] — 2026-08-09
 
 ### Added

@@ -217,6 +217,28 @@ export function ProjectSettingsPage() {
     }
   }
 
+  async function onTestGitConnection() {
+    if (!projectId) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await gitLinkApi.testConnection(projectId);
+      setMessage(
+        result.ok
+          ? `Connection test passed: ${result.checks.map((c) => c.name).join(', ')}`
+          : `Connection test failed: ${result.message}`
+      );
+      if (!result.ok) {
+        setError(result.checks.map((c) => `${c.name}: ${c.message}`).join(' · '));
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Connection test failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function onSyncGitAsync() {
     if (!projectId) return;
     setSaving(true);
@@ -574,6 +596,9 @@ export function ProjectSettingsPage() {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button type="submit" variant="contained" disabled={saving || !gitRepository.trim()} data-testid="git-link-save">
               Save Git link
+            </Button>
+            <Button variant="outlined" onClick={() => void onTestGitConnection()} disabled={saving || !gitLink?.id} data-testid="git-test-connection">
+              Test connection
             </Button>
             <Button variant="outlined" onClick={() => void onSyncGitNow()} disabled={saving || !gitLink?.id} data-testid="git-sync-now">
               Sync now

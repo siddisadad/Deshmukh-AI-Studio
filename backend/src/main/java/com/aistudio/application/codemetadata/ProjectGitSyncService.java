@@ -1,5 +1,6 @@
 package com.aistudio.application.codemetadata;
 
+import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
 import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
@@ -46,6 +47,8 @@ public class ProjectGitSyncService {
     private final ProjectAuthorizationService authorizationService;
     private final ProjectCodeMetadataService codeMetadataService;
     private final GitMetadataRegistry gitMetadataRegistry;
+    private final GitCredentialResolver gitCredentialResolver;
+    private final GitConnectionProbeService connectionProbeService;
     private final BackgroundJobService backgroundJobService;
     private final GitWebhookPayloadParser webhookPayloadParser;
     private final ObjectMapper objectMapper;
@@ -63,6 +66,8 @@ public class ProjectGitSyncService {
             ProjectAuthorizationService authorizationService,
             ProjectCodeMetadataService codeMetadataService,
             GitMetadataRegistry gitMetadataRegistry,
+            GitCredentialResolver gitCredentialResolver,
+            GitConnectionProbeService connectionProbeService,
             BackgroundJobService backgroundJobService,
             GitWebhookPayloadParser webhookPayloadParser,
             ObjectMapper objectMapper,
@@ -74,6 +79,8 @@ public class ProjectGitSyncService {
         this.authorizationService = authorizationService;
         this.codeMetadataService = codeMetadataService;
         this.gitMetadataRegistry = gitMetadataRegistry;
+        this.gitCredentialResolver = gitCredentialResolver;
+        this.connectionProbeService = connectionProbeService;
         this.backgroundJobService = backgroundJobService;
         this.webhookPayloadParser = webhookPayloadParser;
         this.objectMapper = objectMapper;
@@ -144,6 +151,16 @@ public class ProjectGitSyncService {
                 projectId,
                 PageRequest.of(0, safeLimit)
         ).stream().map(this::toSyncRunResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public GitConnectionTestResponse testConnection(UUID projectId, UUID userId) {
+        authorizationService.requireProjectEdit(projectId, userId);
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Git link not configured"));
+        UUID organizationId = gitCredentialResolver.organizationIdForProject(projectId);
+        GitMetadataPort port = gitMetadataRegistry.requireForOrganization(link.getProvider(), organizationId);
+        return connectionProbeService.probe(port, link.getRepository(), link.getBranch());
     }
 
     @Transactional
@@ -241,7 +258,10 @@ public class ProjectGitSyncService {
         try {
             List<String> changedPaths = filterPaths(link, delta.changedPaths());
             List<String> removedPaths = filterPaths(link, delta.removedPaths());
-            GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
+            GitMetadataPort port = gitMetadataRegistry.requireForOrganization(
+                    link.getProvider(),
+                    gitCredentialResolver.organizationIdForProject(link.getProjectId())
+            );
             List<GitFileEntry> upserts = port.fetchFilesByPaths(
                     link.getRepository(),
                     link.getBranch(),
@@ -309,7 +329,10 @@ public class ProjectGitSyncService {
     private int syncLink(ProjectGitLinkEntity link, String source) {
         Instant startedAt = Instant.now();
         try {
-            GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
+            GitMetadataPort port = gitMetadataRegistry.requireForOrganization(
+                    link.getProvider(),
+                    gitCredentialResolver.organizationIdForProject(link.getProjectId())
+            );
             List<GitFileEntry> files = port.fetchRepositoryFiles(link.getRepository(), link.getBranch());
             if (fetchFileContent) {
                 files = port.hydrateFileContents(link.getRepository(), link.getBranch(), files);

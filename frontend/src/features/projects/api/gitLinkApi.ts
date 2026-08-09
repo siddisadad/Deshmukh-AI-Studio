@@ -58,4 +58,8 @@ export const gitLinkApi = {
     http.post<ProjectGitLink>(`/projects/${projectId}/git-link/sync`).then((r) => r.data),
   syncAsync: (projectId: string) =>
     http.post<BackgroundJob>(`/projects/${projectId}/git-link/sync/async`).then((r) => r.data),
+  testConnection: (projectId: string) =>
+    http.post<{ ok: boolean; message: string; checks: { name: string; status: string; message: string }[] }>(
+      `/projects/${projectId}/git-link/test`
+    ).then((r) => r.data),
 };

@@ -23,6 +23,7 @@ import { AiRoutingSettingsPage } from '../../features/settings/pages/AiRoutingSe
 import { SloSettingsPage } from '../../features/settings/pages/SloSettingsPage';
 import { SsoSettingsPage } from '../../features/settings/pages/SsoSettingsPage';
 import { DlpSettingsPage } from '../../features/settings/pages/DlpSettingsPage';
+import { GitCredentialsSettingsPage } from '../../features/settings/pages/GitCredentialsSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
           { path: '/settings/slo', element: <SloSettingsPage /> },
           { path: '/settings/sso', element: <SsoSettingsPage /> },
           { path: '/settings/dlp', element: <DlpSettingsPage /> },
+          { path: '/settings/git', element: <GitCredentialsSettingsPage /> },
           { path: '/settings/plugins', element: <PluginsSettingsPage /> },
         ],
       },

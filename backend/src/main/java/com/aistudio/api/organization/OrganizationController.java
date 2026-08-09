@@ -20,7 +20,11 @@ import com.aistudio.application.organization.OrgSloService;
 import com.aistudio.api.organization.dto.CreateOrgDlpConnectorRequest;
 import com.aistudio.api.organization.dto.OrgDlpConnectorResponse;
 import com.aistudio.api.organization.dto.ThreadExportDlpEventResponse;
+import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
+import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
+import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
@@ -55,19 +59,22 @@ public class OrganizationController {
     private final OrgSloService orgSloService;
     private final OrgSsoIdpService orgSsoIdpService;
     private final OrgDlpConnectorService orgDlpConnectorService;
+    private final OrgGitCredentialService orgGitCredentialService;
 
     public OrganizationController(
             OrganizationService organizationService,
             OrgAiPolicyService orgAiPolicyService,
             OrgSloService orgSloService,
             OrgSsoIdpService orgSsoIdpService,
-            OrgDlpConnectorService orgDlpConnectorService
+            OrgDlpConnectorService orgDlpConnectorService,
+            OrgGitCredentialService orgGitCredentialService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
         this.orgSloService = orgSloService;
         this.orgSsoIdpService = orgSsoIdpService;
         this.orgDlpConnectorService = orgDlpConnectorService;
+        this.orgGitCredentialService = orgGitCredentialService;
     }
 
     @GetMapping
@@ -325,5 +332,48 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgDlpConnectorService.listEvents(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/git-credentials")
+    @Operation(summary = "List organization git host credentials")
+    public List<OrgGitCredentialResponse> listGitCredentials(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitCredentialService.list(orgId, user.getId());
+    }
+
+    @PutMapping("/{orgId}/git-credentials/{provider}")
+    @Operation(summary = "Upsert organization git credential (OWNER)")
+    public OrgGitCredentialResponse upsertGitCredential(
+            @PathVariable UUID orgId,
+            @PathVariable String provider,
+            @Valid @RequestBody UpsertOrgGitCredentialRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitCredentialService.upsert(orgId, provider, user.getId(), request);
+    }
+
+    @DeleteMapping("/{orgId}/git-credentials/{provider}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete organization git credential (OWNER)")
+    public void deleteGitCredential(
+            @PathVariable UUID orgId,
+            @PathVariable String provider,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        orgGitCredentialService.delete(orgId, provider, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-credentials/{provider}/test")
+    @Operation(summary = "Test organization git credential (OWNER)")
+    public GitConnectionTestResponse testGitCredential(
+            @PathVariable UUID orgId,
+            @PathVariable String provider,
+            @RequestParam(required = false) String repository,
+            @RequestParam(required = false) String branch,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitCredentialService.test(orgId, provider, user.getId(), repository, branch);
     }
 }

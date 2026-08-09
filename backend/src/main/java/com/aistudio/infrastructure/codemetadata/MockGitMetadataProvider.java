@@ -106,6 +106,6 @@ public class MockGitMetadataProvider implements GitMetadataPort {
                 || lower.endsWith(".scss");
     }
 
-    record GitTreeNode(String path, String type, int size) {
+    public record GitTreeNode(String path, String type, int size) {
     }
 }

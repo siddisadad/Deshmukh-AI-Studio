@@ -23,6 +23,7 @@ export METRICS_SCRAPE_TOKEN="$(openssl rand -hex 32)"
 ./scripts/write-grafana-prometheus-regions.sh
 ./scripts/write-grafana-federated-dashboard.sh
 ./scripts/write-grafana-billing-dashboard.sh
+./scripts/write-grafana-slo-dashboard.sh
 ./scripts/sync-loki-ruler-regions.sh   # remote Loki rulers
 ./scripts/write-alertmanager-config.sh
 ./scripts/sync-alertmanager-regions.sh   # regional Alertmanager reload
@@ -98,6 +99,8 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml -f docker-com
 **Logs (Loki ruler):** `monitoring/loki-alerts.yml` defines `ApiErrorLogsHigh`, `ApiWarnLogsHigh`, and `ApiLogsMissing` (prod JSON logs with `level` field).
 
 **Billing (Prometheus):** `monitoring/billing-alerts.yml` defines overage rate, MTD, forecast, and anomaly spike alerts — see [docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md](../docs/41-BILLING-ANOMALY-FORECAST-GUIDE.md).
+
+**SLO (Prometheus):** `monitoring/slo-recording-rules.yml` + `slo-alerts.yml` — availability/latency SLIs and error budget alerts — see [docs/42-SLO-ERROR-BUDGET-GUIDE.md](../docs/42-SLO-ERROR-BUDGET-GUIDE.md).
 
 Both forward to Alertmanager (`monitoring/alertmanager.generated.yml` — generate with `./scripts/write-alertmanager-config.sh`).
 

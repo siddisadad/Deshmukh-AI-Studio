@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.37-beta] — 2026-08-09
+
+### Added
+
+- SLO recording rules — availability (99.5%) and latency (95% <2s) SLIs with 30d windows
+- Error budget alerts — budget low/critical and high burn-rate in `monitoring/slo-alerts.yml`
+- Grafana dashboard **AI Studio SLO** (`uid: aistudio-slo`)
+- `scripts/write-grafana-slo-dashboard.sh`
+- `docs/42-SLO-ERROR-BUDGET-GUIDE.md`
+
 ## [0.2.36-beta] — 2026-08-08
 
 ### Added

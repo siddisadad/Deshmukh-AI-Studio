@@ -1,0 +1,43 @@
+groups:
+  - name: aistudio-slo
+    rules:
+      - alert: ApiSloAvailabilityBudgetLow
+        expr: aistudio_slo:api_availability_error_budget_remaining:30d < 0.25
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: API availability error budget below 25%
+          description: 30-day availability SLO (99.5%) has less than 25% error budget remaining.
+
+      - alert: ApiSloAvailabilityBudgetCritical
+        expr: aistudio_slo:api_availability_error_budget_remaining:30d < 0.1
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: API availability error budget critically low
+          description: 30-day availability SLO (99.5%) has less than 10% error budget remaining.
+
+      - alert: ApiSloLatencyBudgetLow
+        expr: aistudio_slo:api_latency_error_budget_remaining:30d < 0.25
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: API latency error budget below 25%
+          description: 30-day latency SLO (95% under 2s) has less than 25% error budget remaining.
+
+      - alert: ApiSloAvailabilityBurnRateHigh
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="aistudio-api",status=~"5.."}[1h]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[1h])), 1e-9)
+          ) > (14.4 * 0.005)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High API availability error burn rate
+          description: 1h 5xx rate exceeds 14.4× the 99.5% SLO allowance — budget exhausts in ~2 days if sustained.

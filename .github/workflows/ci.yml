@@ -214,6 +214,8 @@ jobs:
         run: |
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-alerts.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/billing-alerts.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/slo-recording-rules.yml'))"
+          python3 -c "import yaml; yaml.safe_load(open('monitoring/slo-alerts.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/loki-config-s3.yml'))"
           python3 -c "import yaml; yaml.safe_load(open('monitoring/grafana/provisioning/datasources/loki-regions.yml'))"
@@ -221,6 +223,9 @@ jobs:
           bash -n scripts/write-grafana-prometheus-regions.sh
           bash -n scripts/write-grafana-federated-dashboard.sh
           bash -n scripts/write-grafana-billing-dashboard.sh
+          bash -n scripts/write-grafana-slo-dashboard.sh
+          ./scripts/write-grafana-slo-dashboard.sh
+          python3 -c "import json; json.load(open('monitoring/grafana/dashboards/aistudio-slo.json'))"
           bash -n scripts/sync-loki-ruler-regions.sh
           bash -n scripts/write-alertmanager-config.sh
           bash -n scripts/sync-alertmanager-regions.sh

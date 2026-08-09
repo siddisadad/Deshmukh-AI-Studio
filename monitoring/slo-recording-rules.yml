@@ -1,0 +1,48 @@
+groups:
+  - name: aistudio-slo-recording
+    interval: 1m
+    rules:
+      - record: aistudio_slo:api_success_ratio:5m
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="aistudio-api",status!~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[5m])), 1e-9)
+          )
+
+      - record: aistudio_slo:api_latency_sli:5m
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_bucket{job="aistudio-api",le="2"}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="aistudio-api"}[5m])), 1e-9)
+          )
+
+      - record: aistudio_slo:api_availability:30d
+        expr: avg_over_time(aistudio_slo:api_success_ratio:5m[30d])
+
+      - record: aistudio_slo:api_latency_sli:30d
+        expr: avg_over_time(aistudio_slo:api_latency_sli:5m[30d])
+
+      - record: aistudio_slo:api_availability_error_budget_remaining:30d
+        expr: |
+          clamp_min(
+            1 - (
+              (1 - avg_over_time(aistudio_slo:api_success_ratio:5m[30d]))
+              / (1 - 0.995)
+            ),
+            0
+          )
+
+      - record: aistudio_slo:api_latency_error_budget_remaining:30d
+        expr: |
+          clamp_max(
+            clamp_min(
+              1 - (
+                (0.95 - avg_over_time(aistudio_slo:api_latency_sli:5m[30d]))
+                / (1 - 0.95)
+              ),
+              0
+            ),
+            1
+          )

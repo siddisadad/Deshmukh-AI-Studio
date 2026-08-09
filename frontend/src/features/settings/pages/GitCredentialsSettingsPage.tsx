@@ -43,6 +43,12 @@ export function GitCredentialsSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const eventsQuery = useQuery({
+    queryKey: ['org-git-credential-events', org?.id],
+    queryFn: () => gitCredentialsApi.listEvents(org!.id, 30),
+    enabled: !!org?.id,
+  });
+
   const isOwner = orgQuery.data?.role === 'OWNER';
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
 
@@ -59,6 +65,7 @@ export function GitCredentialsSettingsPage() {
       setMessage('Git credential saved');
       setApiToken('');
       await queryClient.invalidateQueries({ queryKey: ['org-git-credentials', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-credential-events', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -73,6 +80,7 @@ export function GitCredentialsSettingsPage() {
       setMessage('Org credential removed — platform env fallback applies when configured');
       setTestResult(null);
       await queryClient.invalidateQueries({ queryKey: ['org-git-credentials', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-credential-events', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -205,6 +213,18 @@ export function GitCredentialsSettingsPage() {
         </Stack>
       ) : (
         <Alert severity="info">Only organization owners can manage git credentials.</Alert>
+      )}
+
+      {eventsQuery.data && eventsQuery.data.length > 0 && (
+        <Stack spacing={0.5}>
+          <Typography variant="subtitle2">Rotation audit</Typography>
+          {eventsQuery.data.map((event) => (
+            <Typography key={event.id} variant="body2" color="text.secondary">
+              {new Date(event.createdAt).toLocaleString()} · {event.provider} · {event.action}
+              {event.displayName ? ` · ${event.displayName}` : ''}
+            </Typography>
+          ))}
+        </Stack>
       )}
     </Stack>
   );

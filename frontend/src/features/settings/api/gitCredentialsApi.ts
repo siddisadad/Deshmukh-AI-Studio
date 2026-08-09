@@ -1,5 +1,15 @@
 import { http } from '../../../shared/api/httpClient';
 
+export interface OrgGitCredentialEvent {
+  id: string;
+  provider: string;
+  action: string;
+  actorUserId: string | null;
+  displayName: string | null;
+  apiBaseUrl: string | null;
+  createdAt: string;
+}
+
 export interface OrgGitCredential {
   id: string | null;
   provider: string;
@@ -37,6 +47,8 @@ export interface GitConnectionTestResult {
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
+  listEvents: (orgId: string, limit = 50) =>
+    http.get<OrgGitCredentialEvent[]>(`/organizations/${orgId}/git-credentials/events?limit=${limit}`).then((r) => r.data),
   upsert: (orgId: string, provider: string, body: UpsertOrgGitCredentialBody) =>
     http.put<OrgGitCredential>(`/organizations/${orgId}/git-credentials/${provider}`, body).then((r) => r.data),
   delete: (orgId: string, provider: string) =>

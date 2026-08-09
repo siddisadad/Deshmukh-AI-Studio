@@ -21,8 +21,9 @@ Automated readiness checks for **real** Stripe, OIDC, SAML, and SMTP configurati
 | **SMTP** | `MAIL_PROVIDER=smtp` | TCP connect to `MAIL_HOST:MAIL_PORT` |
 | **Loki regions** | `LOKI_QUERY_REGIONS` set | Each regional Loki `/ready` |
 | **AI providers** | `AI_PROVIDER` not `mock` | `GET /assistants/provider-health?probe=true` — all configured providers `up` |
+| **Git hosts** | `GIT_METADATA_PROVIDER` not `mock` | Platform token `/user` probes + org git credential API test |
 
-Mock billing skips Stripe API calls. Logging mail skips SMTP connect.
+Mock billing skips Stripe API calls. Logging mail skips SMTP connect. Mock git skips live host probes.
 
 ---
 

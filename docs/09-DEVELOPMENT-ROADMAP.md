@@ -159,8 +159,8 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 | Item | Status on `main` | Next depth |
 |---|---|---|
-| Org git credentials | Per-org PAT + API base URL ([75-ORG-GIT-CREDENTIALS-GUIDE.md](75-ORG-GIT-CREDENTIALS-GUIDE.md)) | Token rotation audit |
-| Connection probe | Org + project git link test endpoints | Staging probe script |
+| Org git credentials | Per-org PAT + API base URL ([75-ORG-GIT-CREDENTIALS-GUIDE.md](75-ORG-GIT-CREDENTIALS-GUIDE.md)) | — |
+| Connection probe | Org + project git link test + staging probes ([76-GIT-STAGING-PROBE-GUIDE.md](76-GIT-STAGING-PROBE-GUIDE.md)) | — |
 
 ---
 

@@ -1,6 +1,7 @@
 package com.aistudio.application.organization;
 
 import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.organization.dto.OrgGitCredentialEventResponse;
 import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
 import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.codemetadata.GitConnectionProbeService;
@@ -11,8 +12,11 @@ import com.aistudio.application.codemetadata.ResolvedGitCredentials;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.codemetadata.GitMetadataPortFactory;
+import com.aistudio.infrastructure.persistence.entity.OrgGitCredentialEventEntity;
 import com.aistudio.infrastructure.persistence.entity.OrgGitCredentialEntity;
+import com.aistudio.infrastructure.persistence.repository.OrgGitCredentialEventRepository;
 import com.aistudio.infrastructure.persistence.repository.OrgGitCredentialRepository;
+import org.springframework.data.domain.PageRequest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +32,7 @@ public class OrgGitCredentialService {
     private static final Set<String> ALLOWED_PROVIDERS = Set.of("github", "gitlab", "bitbucket");
 
     private final OrgGitCredentialRepository credentialRepository;
+    private final OrgGitCredentialEventRepository eventRepository;
     private final ProjectAuthorizationService authorizationService;
     private final GitCredentialResolver credentialResolver;
     private final GitMetadataPortFactory portFactory;
@@ -35,12 +40,14 @@ public class OrgGitCredentialService {
 
     public OrgGitCredentialService(
             OrgGitCredentialRepository credentialRepository,
+            OrgGitCredentialEventRepository eventRepository,
             ProjectAuthorizationService authorizationService,
             GitCredentialResolver credentialResolver,
             GitMetadataPortFactory portFactory,
             GitConnectionProbeService probeService
     ) {
         this.credentialRepository = credentialRepository;
+        this.eventRepository = eventRepository;
         this.authorizationService = authorizationService;
         this.credentialResolver = credentialResolver;
         this.portFactory = portFactory;
@@ -57,6 +64,16 @@ public class OrgGitCredentialService {
         return responses;
     }
 
+    @Transactional(readOnly = true)
+    public List<OrgGitCredentialEventResponse> listEvents(UUID organizationId, UUID userId, int limit) {
+        authorizationService.requireOrgMember(organizationId, userId);
+        int safeLimit = limit <= 0 ? 50 : Math.min(limit, 200);
+        return eventRepository.findByOrganizationIdOrderByCreatedAtDesc(
+                organizationId,
+                PageRequest.of(0, safeLimit)
+        ).stream().map(this::toEventResponse).toList();
+    }
+
     @Transactional
     public OrgGitCredentialResponse upsert(
             UUID organizationId,
@@ -66,16 +83,19 @@ public class OrgGitCredentialService {
     ) {
         authorizationService.requireOrgOwner(organizationId, userId);
         String normalized = parseProvider(provider);
-        OrgGitCredentialEntity entity = credentialRepository
+        OrgGitCredentialEntity existing = credentialRepository
                 .findByOrganizationIdAndProvider(organizationId, normalized)
-                .orElseGet(() -> {
-                    OrgGitCredentialEntity created = new OrgGitCredentialEntity();
-                    created.setOrganizationId(organizationId);
-                    created.setProvider(normalized);
-                    return created;
-                });
+                .orElse(null);
+        boolean isNew = existing == null;
+        OrgGitCredentialEntity entity = existing != null ? existing : new OrgGitCredentialEntity();
+        if (isNew) {
+            entity.setOrganizationId(organizationId);
+            entity.setProvider(normalized);
+        }
+        String previousToken = entity.getApiToken();
+        boolean tokenProvided = request.apiToken() != null && !request.apiToken().isBlank();
         entity.setDisplayName(request.displayName().trim());
-        if (request.apiToken() != null && !request.apiToken().isBlank()) {
+        if (tokenProvided) {
             entity.setApiToken(request.apiToken().trim());
         } else if (entity.getApiToken() == null || entity.getApiToken().isBlank()) {
             throw new DomainException("VALIDATION_ERROR", "apiToken is required when creating a credential");
@@ -85,6 +105,9 @@ public class OrgGitCredentialService {
             entity.setEnabled(request.enabled());
         }
         credentialRepository.save(entity);
+        String action = isNew ? "CREATED"
+                : (tokenProvided && !request.apiToken().trim().equals(previousToken) ? "TOKEN_ROTATED" : "UPDATED");
+        recordEvent(organizationId, normalized, userId, action, entity);
         return toStoredResponse(entity, GitCredentialSource.ORG);
     }
 
@@ -92,7 +115,10 @@ public class OrgGitCredentialService {
     public void delete(UUID organizationId, String provider, UUID userId) {
         authorizationService.requireOrgOwner(organizationId, userId);
         String normalized = parseProvider(provider);
-        credentialRepository.deleteByOrganizationIdAndProvider(organizationId, normalized);
+        credentialRepository.findByOrganizationIdAndProvider(organizationId, normalized).ifPresent(entity -> {
+            recordEvent(organizationId, normalized, userId, "DELETED", entity);
+            credentialRepository.delete(entity);
+        });
     }
 
     @Transactional
@@ -210,5 +236,34 @@ public class OrgGitCredentialService {
             default:
                 return provider;
         }
+    }
+
+    private void recordEvent(
+            UUID organizationId,
+            String provider,
+            UUID actorUserId,
+            String action,
+            OrgGitCredentialEntity entity
+    ) {
+        OrgGitCredentialEventEntity event = new OrgGitCredentialEventEntity();
+        event.setOrganizationId(organizationId);
+        event.setProvider(provider);
+        event.setAction(action);
+        event.setActorUserId(actorUserId);
+        event.setDisplayName(entity.getDisplayName());
+        event.setApiBaseUrl(entity.getApiBaseUrl());
+        eventRepository.save(event);
+    }
+
+    private OrgGitCredentialEventResponse toEventResponse(OrgGitCredentialEventEntity event) {
+        return new OrgGitCredentialEventResponse(
+                event.getId(),
+                event.getProvider(),
+                event.getAction(),
+                event.getActorUserId(),
+                event.getDisplayName(),
+                event.getApiBaseUrl(),
+                event.getCreatedAt()
+        );
     }
 }

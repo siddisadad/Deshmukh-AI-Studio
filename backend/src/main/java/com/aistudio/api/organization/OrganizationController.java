@@ -21,6 +21,7 @@ import com.aistudio.api.organization.dto.CreateOrgDlpConnectorRequest;
 import com.aistudio.api.organization.dto.OrgDlpConnectorResponse;
 import com.aistudio.api.organization.dto.ThreadExportDlpEventResponse;
 import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.organization.dto.OrgGitCredentialEventResponse;
 import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
 import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
@@ -332,6 +333,16 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgDlpConnectorService.listEvents(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/git-credentials/events")
+    @Operation(summary = "List organization git credential rotation audit events")
+    public List<OrgGitCredentialEventResponse> listGitCredentialEvents(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "50") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitCredentialService.listEvents(orgId, user.getId(), limit);
     }
 
     @GetMapping("/{orgId}/git-credentials")

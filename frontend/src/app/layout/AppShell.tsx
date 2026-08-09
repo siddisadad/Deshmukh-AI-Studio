@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Badge,
   Box,
   Button,
   Container,
@@ -7,9 +8,11 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom';
 import { authApi } from '../../features/auth/api/authApi';
 import { useAuthStore } from '../../features/auth/store/authStore';
+import { contactInboxApi } from '../../features/settings/api/contactInboxApi';
 import { MAIN_CONTENT_ID, SkipToContent } from '../../shared/ui/SkipToContent';
 
 export function AppShell() {
@@ -17,7 +20,17 @@ export function AppShell() {
   const user = useAuthStore((s) => s.user);
   const organization = useAuthStore((s) => s.organization);
   const refreshToken = useAuthStore((s) => s.refreshToken);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const contactAccessQuery = useQuery({
+    queryKey: ['contact-inbox-access'],
+    queryFn: () => contactInboxApi.access(),
+    enabled: Boolean(accessToken),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const canOpenContactInbox = contactAccessQuery.data?.canAccessInbox === true;
+  const unreadCount = contactAccessQuery.data?.unreadCount ?? 0;
 
   async function logout() {
     try {
@@ -59,6 +72,23 @@ export function AppShell() {
             <Typography variant="body2" color="text.secondary" aria-label="Current organization">
               {organization?.name}
             </Typography>
+            {canOpenContactInbox && (
+              <Button
+                onClick={() => navigate('/settings/contact-inbox')}
+                aria-label={unreadCount > 0 ? `Contact inbox, ${unreadCount} unread` : 'Contact inbox'}
+                data-testid="nav-contact-inbox"
+              >
+                <Badge
+                  color="primary"
+                  badgeContent={unreadCount}
+                  invisible={unreadCount < 1}
+                  max={99}
+                  sx={{ '& .MuiBadge-badge': { right: -10, top: 2 } }}
+                >
+                  Inbox
+                </Badge>
+              </Button>
+            )}
             <Button onClick={() => navigate('/settings/members')} aria-label="Organization members">
               Members
             </Button>

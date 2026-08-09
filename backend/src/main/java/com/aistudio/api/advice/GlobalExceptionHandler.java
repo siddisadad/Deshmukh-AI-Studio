@@ -35,6 +35,7 @@ public class GlobalExceptionHandler {
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
             case "PLAN_LIMIT" -> HttpStatus.PAYMENT_REQUIRED;
+            case "RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
             default -> HttpStatus.BAD_REQUEST;
         };
         return build(status, ex.getCode(), ex.getMessage(), request, List.of());

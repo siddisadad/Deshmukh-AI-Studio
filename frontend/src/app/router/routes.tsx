@@ -6,7 +6,11 @@ import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { SsoCallbackPage } from '../../features/auth/pages/SsoCallbackPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { AboutPage } from '../../features/marketing/pages/AboutPage';
+import { ContactPage } from '../../features/marketing/pages/ContactPage';
 import { HomePage } from '../../features/marketing/pages/HomePage';
+import { PrivacyPage } from '../../features/marketing/pages/PrivacyPage';
+import { ServicesPage } from '../../features/marketing/pages/ServicesPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
 import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
 import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
@@ -20,6 +24,7 @@ import { BillingSettingsPage } from '../../features/settings/pages/BillingSettin
 import { OrgMembersSettingsPage } from '../../features/settings/pages/OrgMembersSettingsPage';
 import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettingsPage';
 import { AiRoutingSettingsPage } from '../../features/settings/pages/AiRoutingSettingsPage';
+import { ContactInboxSettingsPage } from '../../features/settings/pages/ContactInboxSettingsPage';
 import { SloSettingsPage } from '../../features/settings/pages/SloSettingsPage';
 import { SsoSettingsPage } from '../../features/settings/pages/SsoSettingsPage';
 import { DlpSettingsPage } from '../../features/settings/pages/DlpSettingsPage';
@@ -28,6 +33,10 @@ import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 export const router = createBrowserRouter([
   // Public even when a session exists (email reset links must work while logged in).
   { path: '/', element: <HomePage /> },
+  { path: '/about', element: <AboutPage /> },
+  { path: '/services', element: <ServicesPage /> },
+  { path: '/contact', element: <ContactPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {
@@ -54,6 +63,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId/documents', element: <DocumentsPage /> },
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
+          { path: '/settings/contact-inbox', element: <ContactInboxSettingsPage /> },
           { path: '/settings/members', element: <OrgMembersSettingsPage /> },
           { path: '/settings/billing', element: <BillingSettingsPage /> },
           { path: '/settings/ai-routing', element: <AiRoutingSettingsPage /> },

@@ -88,6 +88,7 @@ Read in order; each document builds on the previous.
 | 81 | [81-GIT-SYNC-RUN-PAGINATION-GUIDE.md](81-GIT-SYNC-RUN-PAGINATION-GUIDE.md) | Git sync run offset pagination |
 | 82 | [82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md](82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md) | Org bulk retry failed git syncs |
 | 83 | [83-ORG-GIT-SYNC-OVERVIEW-EXPORT-GUIDE.md](83-ORG-GIT-SYNC-OVERVIEW-EXPORT-GUIDE.md) | Org git sync overview export |
+| 84 | [84-ORG-GIT-SYNC-RUN-HISTORY-GUIDE.md](84-ORG-GIT-SYNC-RUN-HISTORY-GUIDE.md) | Org-wide git sync run history |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.79-beta** adds org-wide git sync run history — see [CHANGELOG.md](../CHANGELOG.md).
 

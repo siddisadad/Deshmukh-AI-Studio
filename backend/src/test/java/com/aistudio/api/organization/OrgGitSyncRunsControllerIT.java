@@ -76,10 +76,10 @@ class OrgGitSyncRunsControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalCount").value(2))
                 .andExpect(jsonPath("$.items.length()").value(2))
-                .andExpect(jsonPath("$.items[0].projectKey").value("AL"))
-                .andExpect(jsonPath("$.items[0].source").value("manual"))
-                .andExpect(jsonPath("$.items[1].projectKey").value("BE"))
-                .andExpect(jsonPath("$.items[1].status").value("failed"));
+                .andExpect(jsonPath("$.items[0].projectKey").value("BE"))
+                .andExpect(jsonPath("$.items[0].status").value("failed"))
+                .andExpect(jsonPath("$.items[1].projectKey").value("AL"))
+                .andExpect(jsonPath("$.items[1].source").value("manual"));
 
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs?status=failed")
                         .header("Authorization", "Bearer " + token))

@@ -1,0 +1,4 @@
+ALTER TABLE background_jobs DROP CONSTRAINT IF EXISTS ck_job_type;
+ALTER TABLE background_jobs ADD CONSTRAINT ck_job_type CHECK (job_type IN (
+    'KNOWLEDGE_REINDEX', 'DOCUMENT_GENERATE', 'CODE_METADATA_SYNC'
+));

@@ -80,6 +80,7 @@ export interface OrgGitSyncOverview {
   totalProjects: number;
   linkedProjects: number;
   enabledLinks: number;
+  scheduledSyncLinks: number;
   failedLastSync: number;
   items: OrgGitSyncOverviewItem[];
 }
@@ -144,6 +145,7 @@ export const gitCredentialsApi = {
     filters?: {
       linked?: boolean;
       enabled?: boolean;
+      scheduledSyncEnabled?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
@@ -151,6 +153,9 @@ export const gitCredentialsApi = {
     const params = new URLSearchParams();
     if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
     if (filters?.enabled !== undefined) params.set('enabled', String(filters.enabled));
+    if (filters?.scheduledSyncEnabled !== undefined) {
+      params.set('scheduledSyncEnabled', String(filters.scheduledSyncEnabled));
+    }
     if (filters?.provider) params.set('provider', filters.provider);
     if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
     const query = params.toString();
@@ -176,6 +181,7 @@ export const gitCredentialsApi = {
     filters?: {
       linked?: boolean;
       enabled?: boolean;
+      scheduledSyncEnabled?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
@@ -183,6 +189,9 @@ export const gitCredentialsApi = {
     const params: Record<string, string> = { format };
     if (filters?.linked !== undefined) params.linked = String(filters.linked);
     if (filters?.enabled !== undefined) params.enabled = String(filters.enabled);
+    if (filters?.scheduledSyncEnabled !== undefined) {
+      params.scheduledSyncEnabled = String(filters.scheduledSyncEnabled);
+    }
     if (filters?.provider) params.provider = filters.provider;
     if (filters?.lastSyncStatus) params.lastSyncStatus = filters.lastSyncStatus;
     const response = await http.get(`/organizations/${orgId}/git-sync-overview/export`, {

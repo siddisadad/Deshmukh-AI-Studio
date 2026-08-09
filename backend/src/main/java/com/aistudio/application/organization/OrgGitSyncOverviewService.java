@@ -62,6 +62,7 @@ public class OrgGitSyncOverviewService {
             UUID userId,
             Boolean linked,
             Boolean enabled,
+            Boolean scheduledSyncEnabled,
             String provider,
             String lastSyncStatus
     ) {
@@ -84,12 +85,16 @@ public class OrgGitSyncOverviewService {
 
         int linkedProjects = 0;
         int enabledLinks = 0;
+        int scheduledSyncLinks = 0;
         int failedLastSync = 0;
         for (OrgGitSyncOverviewItemResponse item : items) {
             if (item.linked()) {
                 linkedProjects++;
                 if (item.enabled()) {
                     enabledLinks++;
+                    if (item.scheduledSyncEnabled()) {
+                        scheduledSyncLinks++;
+                    }
                 }
                 if ("failed".equals(item.lastSyncStatus())) {
                     failedLastSync++;
@@ -98,7 +103,8 @@ public class OrgGitSyncOverviewService {
         }
 
         List<OrgGitSyncOverviewItemResponse> filteredItems = items.stream()
-                .filter(item -> matchesFilters(item, linked, enabled, normalizedProvider, normalizedLastSyncStatus))
+                .filter(item -> matchesFilters(
+                        item, linked, enabled, scheduledSyncEnabled, normalizedProvider, normalizedLastSyncStatus))
                 .toList();
 
         return new OrgGitSyncOverviewResponse(
@@ -106,6 +112,7 @@ public class OrgGitSyncOverviewService {
                 projects.size(),
                 linkedProjects,
                 enabledLinks,
+                scheduledSyncLinks,
                 failedLastSync,
                 filteredItems
         );
@@ -204,11 +211,12 @@ public class OrgGitSyncOverviewService {
             String format,
             Boolean linked,
             Boolean enabled,
+            Boolean scheduledSyncEnabled,
             String provider,
             String lastSyncStatus
     ) {
         OrgGitSyncOverviewResponse overview = getOverview(
-                organizationId, userId, linked, enabled, provider, lastSyncStatus);
+                organizationId, userId, linked, enabled, scheduledSyncEnabled, provider, lastSyncStatus);
         String normalizedFormat = normalizeExportFormat(format);
         if ("json".equals(normalizedFormat)) {
             return exportAsJson(overview);
@@ -220,6 +228,7 @@ public class OrgGitSyncOverviewService {
             OrgGitSyncOverviewItemResponse item,
             Boolean linked,
             Boolean enabled,
+            Boolean scheduledSyncEnabled,
             String provider,
             String lastSyncStatus
     ) {
@@ -231,6 +240,14 @@ public class OrgGitSyncOverviewService {
                 return false;
             }
             if (item.enabled() != enabled) {
+                return false;
+            }
+        }
+        if (scheduledSyncEnabled != null) {
+            if (!item.linked()) {
+                return false;
+            }
+            if (item.scheduledSyncEnabled() != scheduledSyncEnabled) {
                 return false;
             }
         }

@@ -141,6 +141,10 @@ aistudio:
     api-token: ${GITHUB_SYNC_TOKEN:}
     api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
     public-api-base-url: ${API_PUBLIC_BASE_URL:http://localhost:8080}
+    gitlab-api-token: ${GITLAB_SYNC_TOKEN:}
+    gitlab-api-base-url: ${GITLAB_API_BASE_URL:https://gitlab.com/api/v4}
+    bitbucket-api-token: ${BITBUCKET_SYNC_TOKEN:}
+    bitbucket-api-base-url: ${BITBUCKET_API_BASE_URL:https://api.bitbucket.org/2.0}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

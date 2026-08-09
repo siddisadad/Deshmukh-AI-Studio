@@ -31,4 +31,26 @@ public class GitWebhookController {
         gitSyncService.handleGithubWebhook(projectId, signature, payload == null ? "" : payload);
         return ResponseEntity.accepted().build();
     }
+
+    @PostMapping("/api/v1/git/webhook/gitlab/{projectId}")
+    @Operation(summary = "GitLab push webhook — enqueues code metadata sync (no JWT)")
+    public ResponseEntity<Void> gitlab(
+            @PathVariable UUID projectId,
+            @RequestHeader(value = "X-Gitlab-Token", required = false) String token,
+            @RequestBody String payload
+    ) {
+        gitSyncService.handleGitlabWebhook(projectId, token, payload == null ? "" : payload);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/api/v1/git/webhook/bitbucket/{projectId}")
+    @Operation(summary = "Bitbucket push webhook — enqueues code metadata sync (no JWT)")
+    public ResponseEntity<Void> bitbucket(
+            @PathVariable UUID projectId,
+            @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
+            @RequestBody String payload
+    ) {
+        gitSyncService.handleBitbucketWebhook(projectId, signature, payload == null ? "" : payload);
+        return ResponseEntity.accepted().build();
+    }
 }

@@ -40,6 +40,11 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
     }
 
     @Override
+    public String providerId() {
+        return "github";
+    }
+
+    @Override
     public List<GitFileEntry> fetchRepositoryFiles(String repository, String branch) {
         String[] parts = parseRepository(repository);
         String owner = parts[0];

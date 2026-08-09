@@ -49,9 +49,10 @@ class ProjectGitLinkControllerIT {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"repository":"acme/auth-service","branch":"main","enabled":true}
+                                {"provider":"gitlab","repository":"acme/auth-service","branch":"main","enabled":true}
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("gitlab"));
 
         mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
                         .header("Authorization", "Bearer " + token))

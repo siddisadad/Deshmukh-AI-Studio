@@ -29,6 +29,8 @@ import { codeMetadataApi, type CodeMetadataSummary } from '../api/codeMetadataAp
 import { projectsApi, type Project } from '../api/projectsApi';
 
 const ASSET_TYPES: ContextAssetType[] = ['DATABASE_DESIGN', 'API_SPEC', 'SOURCE_METADATA', 'OTHER'];
+const GIT_PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
+type GitProvider = (typeof GIT_PROVIDERS)[number];
 
 export function ProjectSettingsPage() {
   const { projectId } = useParams();
@@ -55,6 +57,7 @@ export function ProjectSettingsPage() {
   const [gitLink, setGitLink] = useState<ProjectGitLink | null>(null);
   const [gitRepository, setGitRepository] = useState('');
   const [gitBranch, setGitBranch] = useState('main');
+  const [gitProvider, setGitProvider] = useState<GitProvider>('github');
   const [gitEnabled, setGitEnabled] = useState(true);
 
   useEffect(() => {
@@ -83,6 +86,9 @@ export function ProjectSettingsPage() {
         setGitLink(link);
         setGitRepository(link.repository || '');
         setGitBranch(link.branch || 'main');
+        setGitProvider(
+          GIT_PROVIDERS.includes(link.provider as GitProvider) ? (link.provider as GitProvider) : 'github',
+        );
         setGitEnabled(link.enabled);
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
@@ -140,12 +146,13 @@ export function ProjectSettingsPage() {
     setMessage(null);
     try {
       const link = await gitLinkApi.upsert(projectId, {
+        provider: gitProvider,
         repository: gitRepository.trim(),
         branch: gitBranch.trim() || 'main',
         enabled: gitEnabled,
       });
       setGitLink(link);
-      setMessage('Git link saved — configure GitHub webhook with the secret below');
+      setMessage(`Git link saved — configure ${gitProvider} webhook with the secret below`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to save Git link');
     } finally {
@@ -434,12 +441,31 @@ export function ProjectSettingsPage() {
         <Stack spacing={2}>
           <Typography variant="h6">Git repository sync</Typography>
           <Typography color="text.secondary">
-            Link a GitHub repository for automatic code metadata sync. Last sync:{' '}
+            Link a Git host repository for automatic code metadata sync. Last sync:{' '}
             {gitLink?.lastSyncStatus || 'never'}
             {gitLink?.lastSyncedAt ? ` · ${new Date(gitLink.lastSyncedAt).toLocaleString()}` : ''}
           </Typography>
           <TextField
-            label="Repository (owner/name)"
+            select
+            label="Provider"
+            value={gitProvider}
+            onChange={(e) => setGitProvider(e.target.value as GitProvider)}
+            slotProps={{ htmlInput: { 'data-testid': 'git-provider' } }}
+          >
+            {GIT_PROVIDERS.map((provider) => (
+              <MenuItem key={provider} value={provider}>
+                {provider}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label={
+              gitProvider === 'bitbucket'
+                ? 'Repository (workspace/slug)'
+                : gitProvider === 'gitlab'
+                  ? 'Repository (namespace/project)'
+                  : 'Repository (owner/name)'
+            }
             value={gitRepository}
             onChange={(e) => setGitRepository(e.target.value)}
             placeholder="acme/platform-api"

@@ -70,6 +70,72 @@ class GitWebhookControllerIT {
                 .andExpect(status().isAccepted());
     }
 
+    @Test
+    void gitlabWebhookEnqueuesCodeMetadataSync() throws Exception {
+        JsonNode auth = register("gitlab-hook" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = createProject(token, orgId, "GL", "GitLab Proj");
+
+        MvcResult linkResult = mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/demo","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("gitlab"))
+                .andReturn();
+        String webhookSecret = objectMapper.readTree(linkResult.getResponse().getContentAsString())
+                .get("webhookSecret").asText();
+        String payload = "{\"object_kind\":\"push\"}";
+
+        mockMvc.perform(post("/api/v1/git/webhook/gitlab/" + projectId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Gitlab-Token", webhookSecret)
+                        .content(payload))
+                .andExpect(status().isAccepted());
+    }
+
+    @Test
+    void bitbucketWebhookEnqueuesCodeMetadataSync() throws Exception {
+        JsonNode auth = register("bitbucket-hook" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = createProject(token, orgId, "BB", "Bitbucket Proj");
+
+        MvcResult linkResult = mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"bitbucket","repository":"acme/demo","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("bitbucket"))
+                .andReturn();
+        String webhookSecret = objectMapper.readTree(linkResult.getResponse().getContentAsString())
+                .get("webhookSecret").asText();
+        String payload = "{\"push\":{\"changes\":[]}}";
+        String signature = sign(webhookSecret, payload);
+
+        mockMvc.perform(post("/api/v1/git/webhook/bitbucket/" + projectId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Hub-Signature-256", signature)
+                        .content(payload))
+                .andExpect(status().isAccepted());
+    }
+
+    private UUID createProject(String token, UUID orgId, String key, String name) throws Exception {
+        return UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"%s","projectKey":"%s","description":"git"}
+                                """.formatted(name, key)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+    }
+
     private static String sign(String secret, String payload) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));

@@ -13,6 +13,11 @@ import org.springframework.stereotype.Component;
 public class MockGitMetadataProvider implements GitMetadataPort {
 
     @Override
+    public String providerId() {
+        return "mock";
+    }
+
+    @Override
     public List<GitFileEntry> fetchRepositoryFiles(String repository, String branch) {
         String repo = repository == null ? "unknown/unknown" : repository.trim();
         String safeBranch = branch == null || branch.isBlank() ? "main" : branch.trim();

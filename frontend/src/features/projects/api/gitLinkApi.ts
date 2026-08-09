@@ -17,6 +17,7 @@ export interface ProjectGitLink {
 }
 
 export interface UpsertProjectGitLinkBody {
+  provider?: string;
   repository: string;
   branch?: string;
   enabled?: boolean;

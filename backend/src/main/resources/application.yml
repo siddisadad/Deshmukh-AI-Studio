@@ -88,10 +88,15 @@ aistudio:
       provider: ${EMBEDDING_PROVIDER:mock}
       model: ${EMBEDDING_MODEL:text-embedding-3-small}
       dimensions: 384
+      batch-size: ${EMBEDDING_BATCH_SIZE:64}
     rag:
       enabled: ${RAG_ENABLED:true}
       top-k: ${RAG_TOP_K:8}
       max-chars: ${RAG_MAX_CHARS:6000}
+      max-chunks-per-project: ${RAG_MAX_CHUNKS_PER_PROJECT:10000}
+      chunk-size: ${RAG_CHUNK_SIZE:900}
+      chunk-overlap: ${RAG_CHUNK_OVERLAP:120}
+      search-max-k: ${RAG_SEARCH_MAX_K:32}
     circuit-breaker:
       enabled: ${AI_CIRCUIT_BREAKER_ENABLED:true}
       failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}

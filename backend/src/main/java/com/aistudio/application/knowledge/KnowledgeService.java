@@ -31,7 +31,9 @@ public class KnowledgeService {
         return new KnowledgeStatusResponse(
                 retrievalService.enabled(),
                 retrievalService.embeddingProviderId(),
-                retrievalService.indexedChunkCount(projectId)
+                retrievalService.indexedChunkCount(projectId),
+                retrievalService.maxChunksPerProject(),
+                retrievalService.corpusLimitReached(projectId)
         );
     }
 
@@ -39,7 +41,13 @@ public class KnowledgeService {
     public KnowledgeReindexResponse reindex(UUID projectId, UUID userId) {
         authorizationService.requireProjectEdit(projectId, userId);
         KnowledgeIndexService.ReindexResult result = indexService.reindexProject(projectId);
-        return new KnowledgeReindexResponse(result.chunkCount(), result.embeddingProvider(), result.enabled());
+        return new KnowledgeReindexResponse(
+                result.chunkCount(),
+                result.embeddingProvider(),
+                result.enabled(),
+                result.maxChunksPerProject(),
+                result.corpusLimitReached()
+        );
     }
 
     @Transactional(readOnly = true)

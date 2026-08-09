@@ -128,7 +128,9 @@ public class BackgroundJobWorker {
                 yield objectMapper.writeValueAsString(Map.of(
                         "chunkCount", result.chunkCount(),
                         "embeddingProvider", result.embeddingProvider(),
-                        "enabled", result.enabled()
+                        "enabled", result.enabled(),
+                        "maxChunksPerProject", result.maxChunksPerProject(),
+                        "corpusLimitReached", result.corpusLimitReached()
                 ));
             }
             case DOCUMENT_GENERATE -> {

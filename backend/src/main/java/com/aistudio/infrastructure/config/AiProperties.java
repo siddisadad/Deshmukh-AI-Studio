@@ -33,10 +33,18 @@ public record AiProperties(
     public record RateLimit(int aiPerMinute) {
     }
 
-    public record Embedding(String provider, String model, int dimensions) {
+    public record Embedding(String provider, String model, int dimensions, int batchSize) {
     }
 
-    public record Rag(boolean enabled, int topK, int maxChars) {
+    public record Rag(
+            boolean enabled,
+            int topK,
+            int maxChars,
+            int maxChunksPerProject,
+            int chunkSize,
+            int chunkOverlap,
+            int searchMaxK
+    ) {
     }
 
     public record CircuitBreaker(boolean enabled, int failureThreshold, int openSeconds) {

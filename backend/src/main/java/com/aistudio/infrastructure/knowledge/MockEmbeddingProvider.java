@@ -1,6 +1,7 @@
 package com.aistudio.infrastructure.knowledge;
 
 import com.aistudio.application.knowledge.EmbeddingPort;
+import com.aistudio.infrastructure.config.AiProperties;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,14 @@ import org.springframework.stereotype.Component;
 public class MockEmbeddingProvider implements EmbeddingPort {
 
     public static final int DIMENSIONS = 384;
+
+    private final int batchSize;
+
+    public MockEmbeddingProvider(AiProperties properties) {
+        this.batchSize = properties.embedding() == null || properties.embedding().batchSize() <= 0
+                ? 64
+                : properties.embedding().batchSize();
+    }
 
     @Override
     public float[] embed(String text) {
@@ -47,9 +56,15 @@ public class MockEmbeddingProvider implements EmbeddingPort {
 
     @Override
     public List<float[]> embedAll(List<String> texts) {
+        if (texts.isEmpty()) {
+            return List.of();
+        }
         List<float[]> out = new ArrayList<>(texts.size());
-        for (String text : texts) {
-            out.add(embed(text));
+        for (int start = 0; start < texts.size(); start += batchSize) {
+            int end = Math.min(texts.size(), start + batchSize);
+            for (int i = start; i < end; i++) {
+                out.add(embed(texts.get(i)));
+            }
         }
         return out;
     }

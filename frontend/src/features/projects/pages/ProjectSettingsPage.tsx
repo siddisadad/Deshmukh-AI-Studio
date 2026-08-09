@@ -159,7 +159,11 @@ export function ProjectSettingsPage() {
           if (latest.status === 'SUCCEEDED') {
             const status = await knowledgeApi.status(projectId);
             setKnowledge(status);
-            setMessage(`Reindex succeeded · ${status.indexedChunks} chunks indexed`);
+            setMessage(
+              status.corpusLimitReached
+                ? `Reindex succeeded · ${status.indexedChunks} chunks (corpus limit reached)`
+                : `Reindex succeeded · ${status.indexedChunks} chunks indexed`
+            );
           } else {
             setMessage(`Reindex failed: ${latest.errorMessage || 'unknown error'}`);
           }
@@ -181,11 +185,14 @@ export function ProjectSettingsPage() {
     try {
       const result = await knowledgeApi.search(projectId, knowledgeQuery.trim());
       setKnowledgeHits(result.hits);
-      setKnowledge({
+      setKnowledge((prev) => ({
         enabled: true,
         embeddingProvider: result.embeddingProvider,
         indexedChunks: result.indexedChunks,
-      });
+        maxChunksPerProject: prev?.maxChunksPerProject ?? 10000,
+        corpusLimitReached:
+          prev?.corpusLimitReached ?? result.indexedChunks >= (prev?.maxChunksPerProject ?? 10000),
+      }));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Search failed');
     } finally {
@@ -331,8 +338,15 @@ export function ProjectSettingsPage() {
           <Typography variant="h6">Knowledge index (RAG)</Typography>
           <Typography color="text.secondary">
             Embeddings power semantic retrieval into chat and AI actions. Provider:{' '}
-            {knowledge?.embeddingProvider || 'mock'} · {knowledge?.indexedChunks ?? 0} chunks indexed.
+            {knowledge?.embeddingProvider || 'mock'} · {knowledge?.indexedChunks ?? 0} /{' '}
+            {knowledge?.maxChunksPerProject ?? 10000} chunks indexed.
           </Typography>
+          {knowledge?.corpusLimitReached && (
+            <Typography color="warning.main" variant="body2">
+              Corpus limit reached — reindex truncated content. Raise RAG_MAX_CHUNKS_PER_PROJECT or prune
+              sources.
+            </Typography>
+          )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button
               variant="outlined"

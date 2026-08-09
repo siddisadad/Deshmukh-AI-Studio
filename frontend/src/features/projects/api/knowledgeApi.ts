@@ -4,6 +4,8 @@ export interface KnowledgeStatus {
   enabled: boolean;
   embeddingProvider: string;
   indexedChunks: number;
+  maxChunksPerProject: number;
+  corpusLimitReached: boolean;
 }
 
 export interface KnowledgeHit {
@@ -26,6 +28,8 @@ export interface KnowledgeReindexResult {
   chunkCount: number;
   embeddingProvider: string;
   enabled: boolean;
+  maxChunksPerProject: number;
+  corpusLimitReached: boolean;
 }
 
 export const knowledgeApi = {

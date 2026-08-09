@@ -6,6 +6,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.57-beta] — 2026-08-09
+
+### Added
+
+- RAG large corpus — V33 HNSW index on `knowledge_chunks.embedding`
+- Configurable chunking — `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `RAG_MAX_CHUNKS_PER_PROJECT`
+- Batched embeddings — `EMBEDDING_BATCH_SIZE` for OpenAI and mock providers
+- Corpus limits — `maxChunksPerProject` and `corpusLimitReached` on knowledge status/reindex APIs
+- Higher search limit — `RAG_SEARCH_MAX_K` (default 32) for semantic search
+- Prometheus metrics — `aistudio.knowledge.embeddings.texts` and `aistudio.knowledge.embeddings.batches`
+- Project settings UI — indexed/max chunk display and corpus limit warning
+- `docs/62-RAG-LARGE-CORPUS-EMBEDDING-GUIDE.md`
+
 ## [0.2.56-beta] — 2026-08-09
 
 ### Added

@@ -22,6 +22,7 @@ public class OpenAiEmbeddingProvider implements EmbeddingPort {
 
     private final RestClient client;
     private final String model;
+    private final int batchSize;
     private final ObjectMapper objectMapper;
 
     public OpenAiEmbeddingProvider(AiProperties properties, ObjectMapper objectMapper) {
@@ -36,6 +37,9 @@ public class OpenAiEmbeddingProvider implements EmbeddingPort {
                 || properties.embedding().model().isBlank()
                 ? "text-embedding-3-small"
                 : properties.embedding().model();
+        this.batchSize = properties.embedding() == null || properties.embedding().batchSize() <= 0
+                ? 64
+                : properties.embedding().batchSize();
         this.objectMapper = objectMapper;
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
@@ -50,6 +54,18 @@ public class OpenAiEmbeddingProvider implements EmbeddingPort {
 
     @Override
     public List<float[]> embedAll(List<String> texts) {
+        if (texts.isEmpty()) {
+            return List.of();
+        }
+        List<float[]> all = new ArrayList<>(texts.size());
+        for (int start = 0; start < texts.size(); start += batchSize) {
+            int end = Math.min(texts.size(), start + batchSize);
+            all.addAll(embedBatch(texts.subList(start, end)));
+        }
+        return all;
+    }
+
+    private List<float[]> embedBatch(List<String> texts) {
         try {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", model);

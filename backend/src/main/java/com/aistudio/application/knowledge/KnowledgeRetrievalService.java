@@ -14,10 +14,13 @@ public class KnowledgeRetrievalService {
     private final boolean enabled;
     private final int topK;
     private final int maxChars;
+    private final int searchMaxK;
+    private final int maxChunksPerProject;
 
     public KnowledgeRetrievalService(
             EmbeddingPort embeddingPort,
             KnowledgeChunkJdbcRepository chunkRepository,
+            KnowledgeIndexService indexService,
             AiProperties aiProperties
     ) {
         this.embeddingPort = embeddingPort;
@@ -27,6 +30,10 @@ public class KnowledgeRetrievalService {
         this.maxChars = aiProperties.rag() == null || aiProperties.rag().maxChars() <= 0
                 ? 6000
                 : aiProperties.rag().maxChars();
+        this.searchMaxK = aiProperties.rag() == null || aiProperties.rag().searchMaxK() <= 0
+                ? 32
+                : aiProperties.rag().searchMaxK();
+        this.maxChunksPerProject = indexService.maxChunksPerProject();
     }
 
     public List<KnowledgeChunkHit> search(UUID projectId, String query, Integer limit) {
@@ -36,7 +43,7 @@ public class KnowledgeRetrievalService {
         if (chunkRepository.countByProjectId(projectId) == 0) {
             return List.of();
         }
-        int k = limit == null || limit <= 0 ? topK : Math.min(limit, 20);
+        int k = limit == null || limit <= 0 ? topK : Math.min(limit, searchMaxK);
         float[] embedding = embeddingPort.embed(query);
         return chunkRepository.search(projectId, embedding, k);
     }
@@ -72,5 +79,13 @@ public class KnowledgeRetrievalService {
 
     public int indexedChunkCount(UUID projectId) {
         return chunkRepository.countByProjectId(projectId);
+    }
+
+    public int maxChunksPerProject() {
+        return maxChunksPerProject;
+    }
+
+    public boolean corpusLimitReached(UUID projectId) {
+        return indexedChunkCount(projectId) >= maxChunksPerProject;
     }
 }

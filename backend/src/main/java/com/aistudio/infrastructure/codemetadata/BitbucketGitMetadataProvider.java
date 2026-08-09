@@ -40,9 +40,40 @@ public class BitbucketGitMetadataProvider implements GitMetadataPort {
                 .build();
     }
 
+    BitbucketGitMetadataProvider(
+            String token,
+            String baseUrl,
+            ObjectMapper objectMapper,
+            int maxSnippetBytes,
+            int maxContentFetchBytes
+    ) {
+        this.objectMapper = objectMapper;
+        this.maxSnippetBytes = maxSnippetBytes;
+        this.maxContentFetchBytes = maxContentFetchBytes;
+        this.client = RestClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("Authorization", "Bearer " + token)
+                .build();
+    }
+
     @Override
     public String providerId() {
         return "bitbucket";
+    }
+
+    @Override
+    public void probeCredential() {
+        try {
+            client.get().uri("/user").retrieve().toBodilessEntity();
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "Bitbucket credential check failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public void probeRepository(String repository, String branch) {
+        String[] parts = parseRepository(repository);
+        resolveCommit(parts[0], parts[1], branch == null || branch.isBlank() ? "main" : branch.trim());
     }
 
     @Override

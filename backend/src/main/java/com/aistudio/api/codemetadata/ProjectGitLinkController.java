@@ -1,5 +1,6 @@
 package com.aistudio.api.codemetadata;
 
+import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
 import com.aistudio.api.codemetadata.dto.GitSyncRunResponse;
 import com.aistudio.api.codemetadata.dto.ProjectGitLinkResponse;
 import com.aistudio.api.codemetadata.dto.UpsertProjectGitLinkRequest;
@@ -66,6 +67,15 @@ public class ProjectGitLinkController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return gitSyncService.listSyncRuns(projectId, user.getId(), limit);
+    }
+
+    @PostMapping("/api/v1/projects/{projectId}/git-link/test")
+    @Operation(summary = "Test git credential and repository access for linked repository")
+    public GitConnectionTestResponse testConnection(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return gitSyncService.testConnection(projectId, user.getId());
     }
 
     @PostMapping("/api/v1/projects/{projectId}/git-link/sync")

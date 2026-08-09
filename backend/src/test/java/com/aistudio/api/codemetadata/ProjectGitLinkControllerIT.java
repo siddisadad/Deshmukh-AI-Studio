@@ -169,6 +169,35 @@ class ProjectGitLinkControllerIT {
                 .andExpect(jsonPath("$[0].fileCount").value(org.hamcrest.Matchers.greaterThan(0)));
     }
 
+    @Test
+    void testConnectionReturnsOkForMockLink() throws Exception {
+        JsonNode auth = register("git-test" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Test Proj","projectKey":"TP","description":"test"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/app","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/test")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.checks[0].name").value("credential"));
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

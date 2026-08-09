@@ -15,4 +15,11 @@ public interface GitMetadataPort {
     default List<GitFileEntry> fetchFilesByPaths(String repository, String branch, List<String> paths) {
         return List.of();
     }
+
+    default void probeCredential() {
+    }
+
+    default void probeRepository(String repository, String branch) {
+        fetchRepositoryFiles(repository, branch);
+    }
 }

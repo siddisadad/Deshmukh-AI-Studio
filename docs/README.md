@@ -79,8 +79,9 @@ Read in order; each document builds on the previous.
 | 72 | [72-GIT-SYNC-FAILED-SCHEDULED-RETRY-GUIDE.md](72-GIT-SYNC-FAILED-SCHEDULED-RETRY-GUIDE.md) | Git sync failed scheduled retry |
 | 73 | [73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md](73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md) | Git path include patterns |
 | 74 | [74-GIT-SYNC-RUN-HISTORY-GUIDE.md](74-GIT-SYNC-RUN-HISTORY-GUIDE.md) | Git sync run history |
+| 75 | [75-ORG-GIT-CREDENTIALS-GUIDE.md](75-ORG-GIT-CREDENTIALS-GUIDE.md) | Organization git host credentials |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.69-beta** adds git sync run history — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.70-beta** adds org git credentials — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

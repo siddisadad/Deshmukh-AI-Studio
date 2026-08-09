@@ -36,7 +36,25 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
         this.maxSnippetBytes = properties.effectiveMaxSnippetBytes();
         this.maxContentFetchBytes = properties.effectiveMaxContentFetchBytes();
         this.client = RestClient.builder()
-                .baseUrl(baseUrl)
+                .baseUrl(baseUrl.trim().replaceAll("/+$", ""))
+                .defaultHeader("Authorization", "Bearer " + token)
+                .defaultHeader("Accept", "application/vnd.github+json")
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+                .build();
+    }
+
+    GithubGitMetadataProvider(
+            String token,
+            String baseUrl,
+            ObjectMapper objectMapper,
+            int maxSnippetBytes,
+            int maxContentFetchBytes
+    ) {
+        this.objectMapper = objectMapper;
+        this.maxSnippetBytes = maxSnippetBytes;
+        this.maxContentFetchBytes = maxContentFetchBytes;
+        this.client = RestClient.builder()
+                .baseUrl(baseUrl.trim().replaceAll("/+$", ""))
                 .defaultHeader("Authorization", "Bearer " + token)
                 .defaultHeader("Accept", "application/vnd.github+json")
                 .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
@@ -46,6 +64,31 @@ public class GithubGitMetadataProvider implements GitMetadataPort {
     @Override
     public String providerId() {
         return "github";
+    }
+
+    @Override
+    public void probeCredential() {
+        try {
+            client.get().uri("/user").retrieve().toBodilessEntity();
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "GitHub credential check failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public void probeRepository(String repository, String branch) {
+        String[] parts = parseRepository(repository);
+        String owner = parts[0];
+        String repo = parts[1];
+        String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
+        try {
+            client.get()
+                    .uri("/repos/{owner}/{repo}/branches/{branch}", owner, repo, branchName)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "GitHub repository check failed: " + ex.getMessage());
+        }
     }
 
     @Override

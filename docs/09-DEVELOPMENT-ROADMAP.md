@@ -155,6 +155,15 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 13. Phase 10 — Git tenancy (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Org git credentials | Per-org PAT + API base URL ([75-ORG-GIT-CREDENTIALS-GUIDE.md](75-ORG-GIT-CREDENTIALS-GUIDE.md)) | Token rotation audit |
+| Connection probe | Org + project git link test endpoints | Staging probe script |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -98,6 +98,13 @@ export function AppShell() {
               DLP
             </Button>
             <Button
+              onClick={() => navigate('/settings/git')}
+              aria-label="Git host credentials"
+              data-testid="nav-git"
+            >
+              Git
+            </Button>
+            <Button
               onClick={() => navigate('/settings/plugins')}
               aria-label="Plugins and assistants"
               data-testid="nav-plugins"

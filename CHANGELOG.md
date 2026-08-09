@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.70-beta] — 2026-08-09
+
+### Added
+
+- Organization git credentials — per-org PATs with optional API base URL (self-managed GitLab)
+- Credential resolution: org credential → platform env token
+- Connection test — `POST .../git-credentials/{provider}/test` and `POST .../git-link/test`
+- Settings UI — Git credentials page (`/settings/git`)
+- Project settings — Test connection button
+- `docs/75-ORG-GIT-CREDENTIALS-GUIDE.md` — Phase 10 git tenancy opener
+
 ## [0.2.69-beta] — 2026-08-09
 
 ### Added

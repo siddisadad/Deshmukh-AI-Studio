@@ -42,9 +42,50 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
                 .build();
     }
 
+    GitlabGitMetadataProvider(
+            String token,
+            String baseUrl,
+            ObjectMapper objectMapper,
+            int maxSnippetBytes,
+            int maxContentFetchBytes
+    ) {
+        this.objectMapper = objectMapper;
+        this.maxSnippetBytes = maxSnippetBytes;
+        this.maxContentFetchBytes = maxContentFetchBytes;
+        this.client = RestClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("PRIVATE-TOKEN", token)
+                .build();
+    }
+
     @Override
     public String providerId() {
         return "gitlab";
+    }
+
+    @Override
+    public void probeCredential() {
+        try {
+            client.get().uri("/user").retrieve().toBodilessEntity();
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "GitLab credential check failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public void probeRepository(String repository, String branch) {
+        String projectPath = encodeProjectPath(repository);
+        String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
+        try {
+            client.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/projects/{project}/repository/branches/{branch}")
+                            .build(projectPath, branchName))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "GitLab repository check failed: " + ex.getMessage());
+        }
     }
 
     @Override

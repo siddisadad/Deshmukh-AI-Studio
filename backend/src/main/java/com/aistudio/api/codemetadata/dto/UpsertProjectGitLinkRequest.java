@@ -10,6 +10,7 @@ public record UpsertProjectGitLinkRequest(
         @NotBlank @Size(max = 200) String repository,
         @Size(max = 100) String branch,
         Boolean enabled,
+        Boolean scheduledSyncEnabled,
         Boolean regenerateWebhookSecret,
         @Min(15) @Max(10080) Integer scheduledSyncIntervalMinutes,
         Boolean clearScheduledSyncInterval

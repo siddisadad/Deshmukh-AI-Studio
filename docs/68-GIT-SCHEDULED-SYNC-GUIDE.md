@@ -9,7 +9,7 @@ Complements [64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE
 
 ## Overview
 
-A scheduler runs on a fixed delay and enqueues **full** code metadata sync jobs (`source=scheduled`) for every project with an **enabled** git link that is **due** for sync. Per-project `scheduled_sync_interval_minutes` overrides the platform interval; see [69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md). Jobs skip projects that already have a **pending** `CODE_METADATA_SYNC` job.
+A scheduler runs on a fixed delay and enqueues **full** code metadata sync jobs (`source=scheduled`) for every project with an **enabled** git link that is **due** for sync. Per-project `scheduled_sync_interval_minutes` overrides the platform interval; see [69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md). Per-project `scheduled_sync_enabled` can disable cron while keeping webhooks/manual sync; see [70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md). Jobs skip projects that already have a **pending** `CODE_METADATA_SYNC` job.
 
 Webhook delta sync and manual sync paths are unchanged.
 

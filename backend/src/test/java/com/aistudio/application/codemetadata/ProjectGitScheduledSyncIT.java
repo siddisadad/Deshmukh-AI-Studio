@@ -106,6 +106,34 @@ class ProjectGitScheduledSyncIT {
         assertThat(enqueued).isGreaterThanOrEqualTo(0);
     }
 
+    @Test
+    void enqueueScheduledSyncsSkipsLinksWithScheduledSyncDisabled() throws Exception {
+        JsonNode auth = register("git-toggle" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Toggle Proj","projectKey":"TG","description":"toggle"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/toggle-service","branch":"main","enabled":true,"scheduledSyncEnabled":false}
+                                """))
+                .andExpect(status().isOk());
+
+        gitSyncService.enqueueScheduledSyncsForEnabledLinks();
+        assertThat(jobRepository.countByProjectIdAndJobTypeAndStatus(
+                projectId, JobType.CODE_METADATA_SYNC, com.aistudio.domain.job.JobStatus.PENDING
+        )).isZero();
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

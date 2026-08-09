@@ -102,6 +102,9 @@ public class ProjectGitSyncService {
         entity.setRepository(repository);
         entity.setBranch(request.branch() == null || request.branch().isBlank() ? "main" : request.branch().trim());
         entity.setEnabled(request.enabled() == null || request.enabled());
+        if (request.scheduledSyncEnabled() != null) {
+            entity.setScheduledSyncEnabled(request.scheduledSyncEnabled());
+        }
         if (request.regenerateWebhookSecret() != null && request.regenerateWebhookSecret()) {
             entity.setWebhookSecret(generateSecret());
         }
@@ -148,6 +151,9 @@ public class ProjectGitSyncService {
         }
         int enqueued = 0;
         for (ProjectGitLinkEntity link : gitLinkRepository.findByEnabledTrue()) {
+            if (!link.isScheduledSyncEnabled()) {
+                continue;
+            }
             if (!isDueForScheduledSync(link)) {
                 continue;
             }
@@ -329,6 +335,7 @@ public class ProjectGitSyncService {
                 entity.getRepository(),
                 entity.getBranch(),
                 entity.isEnabled(),
+                entity.isScheduledSyncEnabled(),
                 webhookUrl(entity.getProvider(), entity.getProjectId()),
                 entity.getWebhookSecret(),
                 entity.getLastSyncedAt(),
@@ -347,6 +354,7 @@ public class ProjectGitSyncService {
                 "",
                 "main",
                 false,
+                true,
                 webhookUrl("github", projectId),
                 null,
                 null,

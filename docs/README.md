@@ -74,8 +74,9 @@ Read in order; each document builds on the previous.
 | 67 | [67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md](67-GIT-WEBHOOK-DELTA-SYNC-GUIDE.md) | Webhook incremental delta sync |
 | 68 | [68-GIT-SCHEDULED-SYNC-GUIDE.md](68-GIT-SCHEDULED-SYNC-GUIDE.md) | Scheduled git sync cron |
 | 69 | [69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md](69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md) | Per-project git sync interval |
+| 70 | [70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md](70-GIT-PER-PROJECT-SCHEDULED-SYNC-TOGGLE-GUIDE.md) | Per-project scheduled sync toggle |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.64-beta** adds per-project git sync interval — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.65-beta** adds per-project scheduled sync toggle — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

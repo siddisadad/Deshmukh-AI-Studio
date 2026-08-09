@@ -22,6 +22,8 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
 
     private final RestClient client;
     private final ObjectMapper objectMapper;
+    private final int maxSnippetBytes;
+    private final int maxContentFetchBytes;
 
     public GitlabGitMetadataProvider(GitProperties properties, ObjectMapper objectMapper) {
         String token = properties.gitlabApiToken();
@@ -32,6 +34,8 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
                 ? "https://gitlab.com/api/v4"
                 : properties.gitlabApiBaseUrl().trim().replaceAll("/+$", "");
         this.objectMapper = objectMapper;
+        this.maxSnippetBytes = properties.effectiveMaxSnippetBytes();
+        this.maxContentFetchBytes = properties.effectiveMaxContentFetchBytes();
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("PRIVATE-TOKEN", token)
@@ -88,6 +92,45 @@ public class GitlabGitMetadataProvider implements GitMetadataPort {
         } catch (Exception ex) {
             throw new DomainException("GIT_ERROR", "GitLab repository sync failed: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public List<GitFileEntry> hydrateFileContents(String repository, String branch, List<GitFileEntry> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        String projectPath = encodeProjectPath(repository);
+        String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
+        List<GitFileEntry> hydrated = new ArrayList<>();
+        for (GitFileEntry file : files) {
+            if (!GitSnippetUtils.shouldFetchContent(file.sizeBytes(), maxContentFetchBytes)) {
+                hydrated.add(file);
+                continue;
+            }
+            if (file.snippet() != null && !file.snippet().isBlank()) {
+                hydrated.add(file);
+                continue;
+            }
+            try {
+                String encodedPath = URLEncoder.encode(file.path(), StandardCharsets.UTF_8).replace("+", "%20");
+                String raw = client.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/projects/{project}/repository/files/{filePath}/raw")
+                                .queryParam("ref", branchName)
+                                .build(projectPath, encodedPath))
+                        .retrieve()
+                        .body(String.class);
+                hydrated.add(new GitFileEntry(
+                        file.path(),
+                        file.language(),
+                        GitSnippetUtils.truncateToUtf8Bytes(raw == null ? "" : raw, maxSnippetBytes),
+                        file.sizeBytes()
+                ));
+            } catch (Exception ex) {
+                hydrated.add(file);
+            }
+        }
+        return hydrated;
     }
 
     private static String encodeProjectPath(String repository) {

@@ -11,6 +11,21 @@ public record GitProperties(
         String gitlabApiToken,
         String gitlabApiBaseUrl,
         String bitbucketApiToken,
-        String bitbucketApiBaseUrl
+        String bitbucketApiBaseUrl,
+        Boolean fetchFileContent,
+        Integer maxSnippetBytes,
+        Integer maxContentFetchBytes
 ) {
+
+    public boolean fetchFileContentEnabled() {
+        return fetchFileContent == null || fetchFileContent;
+    }
+
+    public int effectiveMaxSnippetBytes() {
+        return maxSnippetBytes == null || maxSnippetBytes <= 0 ? 4000 : maxSnippetBytes;
+    }
+
+    public int effectiveMaxContentFetchBytes() {
+        return maxContentFetchBytes == null || maxContentFetchBytes <= 0 ? 512000 : maxContentFetchBytes;
+    }
 }

@@ -20,6 +20,8 @@ public class BitbucketGitMetadataProvider implements GitMetadataPort {
 
     private final RestClient client;
     private final ObjectMapper objectMapper;
+    private final int maxSnippetBytes;
+    private final int maxContentFetchBytes;
 
     public BitbucketGitMetadataProvider(GitProperties properties, ObjectMapper objectMapper) {
         String token = properties.bitbucketApiToken();
@@ -30,6 +32,8 @@ public class BitbucketGitMetadataProvider implements GitMetadataPort {
                 ? "https://api.bitbucket.org/2.0"
                 : properties.bitbucketApiBaseUrl().trim().replaceAll("/+$", "");
         this.objectMapper = objectMapper;
+        this.maxSnippetBytes = properties.effectiveMaxSnippetBytes();
+        this.maxContentFetchBytes = properties.effectiveMaxContentFetchBytes();
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + token)
@@ -48,15 +52,7 @@ public class BitbucketGitMetadataProvider implements GitMetadataPort {
         String repoSlug = parts[1];
         String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
         try {
-            String branchJson = client.get()
-                    .uri("/repositories/{workspace}/{repo}/refs/branches/{branch}", workspace, repoSlug, branchName)
-                    .retrieve()
-                    .body(String.class);
-            JsonNode branchNode = objectMapper.readTree(branchJson);
-            String commit = branchNode.path("target").path("hash").asText(null);
-            if (commit == null || commit.isBlank()) {
-                throw new DomainException("GIT_ERROR", "Bitbucket branch commit hash missing");
-            }
+            String commit = resolveCommit(workspace, repoSlug, branchName);
             String srcJson = client.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/repositories/{workspace}/{repo}/src/{commit}/")
@@ -73,6 +69,63 @@ public class BitbucketGitMetadataProvider implements GitMetadataPort {
             throw ex;
         } catch (Exception ex) {
             throw new DomainException("GIT_ERROR", "Bitbucket repository sync failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public List<GitFileEntry> hydrateFileContents(String repository, String branch, List<GitFileEntry> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = parseRepository(repository);
+        String workspace = parts[0];
+        String repoSlug = parts[1];
+        String branchName = branch == null || branch.isBlank() ? "main" : branch.trim();
+        String commit = resolveCommit(workspace, repoSlug, branchName);
+        List<GitFileEntry> hydrated = new ArrayList<>();
+        for (GitFileEntry file : files) {
+            if (!GitSnippetUtils.shouldFetchContent(file.sizeBytes(), maxContentFetchBytes)) {
+                hydrated.add(file);
+                continue;
+            }
+            if (file.snippet() != null && !file.snippet().isBlank()) {
+                hydrated.add(file);
+                continue;
+            }
+            try {
+                String raw = client.get()
+                        .uri("/repositories/{workspace}/{repo}/src/{commit}/{path}", workspace, repoSlug, commit, file.path())
+                        .retrieve()
+                        .body(String.class);
+                hydrated.add(new GitFileEntry(
+                        file.path(),
+                        file.language(),
+                        GitSnippetUtils.truncateToUtf8Bytes(raw == null ? "" : raw, maxSnippetBytes),
+                        file.sizeBytes()
+                ));
+            } catch (Exception ex) {
+                hydrated.add(file);
+            }
+        }
+        return hydrated;
+    }
+
+    private String resolveCommit(String workspace, String repoSlug, String branchName) {
+        try {
+            String branchJson = client.get()
+                    .uri("/repositories/{workspace}/{repo}/refs/branches/{branch}", workspace, repoSlug, branchName)
+                    .retrieve()
+                    .body(String.class);
+            JsonNode branchNode = objectMapper.readTree(branchJson);
+            String commit = branchNode.path("target").path("hash").asText(null);
+            if (commit == null || commit.isBlank()) {
+                throw new DomainException("GIT_ERROR", "Bitbucket branch commit hash missing");
+            }
+            return commit;
+        } catch (DomainException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new DomainException("GIT_ERROR", "Bitbucket branch lookup failed: " + ex.getMessage());
         }
     }
 

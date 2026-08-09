@@ -62,7 +62,8 @@ class ProjectGitLinkControllerIT {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/projects/" + projectId + "/code-metadata")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileCount").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$.fileCount").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.files[0].snippet").isNotEmpty());
     }
 
     private JsonNode register(String email) throws Exception {

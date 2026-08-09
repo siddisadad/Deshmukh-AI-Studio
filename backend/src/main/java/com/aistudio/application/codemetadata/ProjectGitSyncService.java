@@ -35,6 +35,7 @@ public class ProjectGitSyncService {
     private final GitMetadataRegistry gitMetadataRegistry;
     private final BackgroundJobService backgroundJobService;
     private final String publicApiBaseUrl;
+    private final boolean fetchFileContent;
 
     public ProjectGitSyncService(
             ProjectGitLinkRepository gitLinkRepository,
@@ -52,6 +53,7 @@ public class ProjectGitSyncService {
         this.publicApiBaseUrl = gitProperties.publicApiBaseUrl() == null || gitProperties.publicApiBaseUrl().isBlank()
                 ? "http://localhost:8080"
                 : gitProperties.publicApiBaseUrl().trim().replaceAll("/+$", "");
+        this.fetchFileContent = gitProperties.fetchFileContentEnabled();
     }
 
     @Transactional(readOnly = true)
@@ -130,8 +132,11 @@ public class ProjectGitSyncService {
 
     private int syncLink(ProjectGitLinkEntity link) {
         try {
-            List<GitFileEntry> files = gitMetadataRegistry.require(link.getProvider())
-                    .fetchRepositoryFiles(link.getRepository(), link.getBranch());
+            GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
+            List<GitFileEntry> files = port.fetchRepositoryFiles(link.getRepository(), link.getBranch());
+            if (fetchFileContent) {
+                files = port.hydrateFileContents(link.getRepository(), link.getBranch(), files);
+            }
             int count = codeMetadataService.replaceFilesInternal(link.getProjectId(), files);
             link.setLastSyncedAt(Instant.now());
             link.setLastSyncStatus("success");

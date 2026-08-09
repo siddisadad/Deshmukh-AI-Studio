@@ -239,6 +239,7 @@ jobs:
           bash -n scripts/worker-scale-hint.sh
           bash -n scripts/staging-dogfood.sh
           bash -n scripts/staging-signoff.sh
+          bash -n scripts/staging-signoff-matrix.sh
           bash -n scripts/sync-stripe-metered-prices.sh
           bash -n scripts/scheduled-stripe-usage-sync.sh
           bash -n scripts/staging-provider-probes.sh

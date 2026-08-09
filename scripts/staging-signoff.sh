@@ -14,6 +14,7 @@ set -euo pipefail
 #   STAGING_SIGNOFF_SKIP_DOGFOOD — skip staging-dogfood.sh (when invoked from dogfood step 7)
 #   STAGING_SIGNOFF_REQUIRE_HTTPS — fail when edge URL is not https (default 1 on prod-shaped hosts)
 #   STAGING_SIGNOFF_STREAM — run SSE chat stream probe (default 1)
+#   STAGING_SIGNOFF_LABEL — optional environment label (recorded in report; used by sign-off matrix)
 #   IMAGE_TAG — recorded in sign-off report
 #   API_URL — direct API for metrics / probes when set
 
@@ -26,6 +27,7 @@ sso_provider="${SSO_PROVIDER:-mock}"
 mail_provider="${MAIL_PROVIDER:-logging}"
 image_tag="${IMAGE_TAG:-unknown}"
 api_url="${API_URL:-}"
+signoff_label="${STAGING_SIGNOFF_LABEL:-}"
 
 if [[ -f "${ROOT_DIR}/.env" ]]; then
   set -a
@@ -37,6 +39,7 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
   mail_provider="${MAIL_PROVIDER:-logging}"
   image_tag="${IMAGE_TAG:-unknown}"
   api_url="${API_URL:-}"
+  signoff_label="${STAGING_SIGNOFF_LABEL:-}"
 fi
 
 if [[ -n "$api_url" ]]; then
@@ -271,12 +274,12 @@ fi
 
 mkdir -p "${report_dir}"
 python3 - "${report_json}" "${report_md}" "${timestamp}" "${EDGE_URL}" "${image_tag}" \
-  "${billing_provider}" "${sso_provider}" "${mail_provider}" "${checks_ndjson}" <<'PY'
+  "${billing_provider}" "${sso_provider}" "${mail_provider}" "${checks_ndjson}" "${signoff_label}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-report_json, report_md, timestamp, edge_url, image_tag, billing, sso, mail, checks_path = sys.argv[1:10]
+report_json, report_md, timestamp, edge_url, image_tag, billing, sso, mail, checks_path, label = sys.argv[1:11]
 checks = []
 with open(checks_path) as f:
     for line in f:
@@ -301,6 +304,8 @@ payload = {
     "summary": {"pass": passed, "fail": failed, "skip": skipped, "overall": overall},
     "checks": checks,
 }
+if label:
+    payload["environment"] = label
 
 Path(report_json).write_text(json.dumps(payload, indent=2) + "\n")
 
@@ -311,13 +316,17 @@ lines = [
     f"|---|---|",
     f"| Timestamp | `{timestamp}` |",
     f"| Host | `{edge_url}` |",
+]
+if label:
+    lines.append(f"| Environment | `{label}` |")
+lines.extend([
     f"| IMAGE_TAG | `{image_tag}` |",
     f"| Providers | billing={billing}, sso={sso}, mail={mail} |",
     f"| Overall | **{overall}** ({passed} pass / {failed} fail / {skipped} skip) |",
     "",
     "## Checks",
     "",
-]
+])
 for c in checks:
     lines.append(f"- [{c['status']}] **{c['name']}** — {c['detail']}")
 lines.append("")

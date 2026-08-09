@@ -61,7 +61,7 @@ Read in order; each document builds on the previous.
 | 54 | [54-AI-POLICY-CANARY-HOOKS-GUIDE.md](54-AI-POLICY-CANARY-HOOKS-GUIDE.md) | Automated canary promotion / rollback hooks |
 | 55 | [55-SLO-MULTI-WINDOW-TENANT-GUIDE.md](55-SLO-MULTI-WINDOW-TENANT-GUIDE.md) | Multi-window burn-rate policies / SLO per tenant |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.51-beta** adds Stripe reconciliation + dunning — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.52-beta** adds SSO multi-IdP + metadata refresh — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

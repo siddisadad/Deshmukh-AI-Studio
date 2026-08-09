@@ -46,8 +46,9 @@ Read in order; each document builds on the previous.
 | 39 | [39-ALERTMANAGER-ONCALL-GUIDE.md](39-ALERTMANAGER-ONCALL-GUIDE.md) | Alertmanager on-call routing and cross-cluster alerts |
 | 40 | [40-ADAPTIVE-AI-ROUTING-GUIDE.md](40-ADAPTIVE-AI-ROUTING-GUIDE.md) | Adaptive latency-based AI provider routing |
 | 41 | [41-BILLING-ANOMALY-FORECAST-GUIDE.md](41-BILLING-ANOMALY-FORECAST-GUIDE.md) | Billing anomaly alerts and cost forecasting |
+| 42 | [42-SLO-ERROR-BUDGET-GUIDE.md](42-SLO-ERROR-BUDGET-GUIDE.md) | SLO dashboards and error budget alerts |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.36-beta** adds billing anomaly alerts — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.37-beta** adds SLO dashboards and error budget alerts — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

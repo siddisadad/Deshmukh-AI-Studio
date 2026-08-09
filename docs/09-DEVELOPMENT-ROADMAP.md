@@ -172,6 +172,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 15. Phase 12 — Git sync visibility (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Run filters | Source/status filters + refresh UI ([78-GIT-SYNC-RUN-FILTERS-GUIDE.md](78-GIT-SYNC-RUN-FILTERS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

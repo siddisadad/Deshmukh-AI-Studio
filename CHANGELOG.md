@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.73-beta] — 2026-08-09
+
+### Added
+
+- Git sync run filters — `source` and `status` query params on `GET .../git-link/sync-runs`
+- Project settings — source/status filters, refresh button, failed-run highlighting
+- `docs/78-GIT-SYNC-RUN-FILTERS-GUIDE.md`
+
 ## [0.2.72-beta] — 2026-08-09
 
 ### Added

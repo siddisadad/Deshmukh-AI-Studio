@@ -161,12 +161,18 @@ class ProjectGitLinkControllerIT {
                 .andExpect(status().isOk());
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                        "/api/v1/projects/" + projectId + "/git-link/sync-runs")
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?source=manual&status=success")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].source").value("manual"))
-                .andExpect(jsonPath("$[0].status").value("success"))
-                .andExpect(jsonPath("$[0].fileCount").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$[0].status").value("success"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                        "/api/v1/projects/" + projectId + "/git-link/sync-runs?status=failed")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test

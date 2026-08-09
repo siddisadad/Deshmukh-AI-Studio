@@ -86,9 +86,11 @@ public class ProjectGitLinkController {
     public List<GitSyncRunResponse> listSyncRuns(
             @PathVariable UUID projectId,
             @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String status,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return gitSyncService.listSyncRuns(projectId, user.getId(), limit);
+        return gitSyncService.listSyncRuns(projectId, user.getId(), limit, source, status);
     }
 
     @PostMapping("/api/v1/projects/{projectId}/git-link/test")

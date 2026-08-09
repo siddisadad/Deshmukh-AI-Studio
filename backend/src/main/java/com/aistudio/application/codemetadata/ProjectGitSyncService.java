@@ -162,13 +162,59 @@ public class ProjectGitSyncService {
     }
 
     @Transactional(readOnly = true)
-    public List<GitSyncRunResponse> listSyncRuns(UUID projectId, UUID userId, int limit) {
+    public List<GitSyncRunResponse> listSyncRuns(
+            UUID projectId,
+            UUID userId,
+            int limit,
+            String source,
+            String status
+    ) {
         authorizationService.requireProjectAccess(projectId, userId);
         int safeLimit = limit <= 0 ? 20 : Math.min(limit, 100);
-        return syncRunRepository.findByProjectIdOrderByFinishedAtDesc(
-                projectId,
-                PageRequest.of(0, safeLimit)
-        ).stream().map(this::toSyncRunResponse).toList();
+        String normalizedSource = normalizeSyncRunFilter(source, "source");
+        String normalizedStatus = normalizeSyncRunFilter(status, "status");
+        PageRequest page = PageRequest.of(0, safeLimit);
+        List<ProjectGitSyncRunEntity> runs;
+        if (normalizedSource != null && normalizedStatus != null) {
+            runs = syncRunRepository.findByProjectIdAndSourceAndStatusOrderByFinishedAtDesc(
+                    projectId,
+                    normalizedSource,
+                    normalizedStatus,
+                    page
+            );
+        } else if (normalizedSource != null) {
+            runs = syncRunRepository.findByProjectIdAndSourceOrderByFinishedAtDesc(
+                    projectId,
+                    normalizedSource,
+                    page
+            );
+        } else if (normalizedStatus != null) {
+            runs = syncRunRepository.findByProjectIdAndStatusOrderByFinishedAtDesc(
+                    projectId,
+                    normalizedStatus,
+                    page
+            );
+        } else {
+            runs = syncRunRepository.findByProjectIdOrderByFinishedAtDesc(projectId, page);
+        }
+        return runs.stream().map(this::toSyncRunResponse).toList();
+    }
+
+    private static String normalizeSyncRunFilter(String value, String field) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if ("source".equals(field)) {
+            if ("manual".equals(normalized) || "scheduled".equals(normalized) || "webhook".equals(normalized)) {
+                return normalized;
+            }
+            throw new DomainException("VALIDATION_ERROR", "source filter must be manual, scheduled, or webhook");
+        }
+        if ("success".equals(normalized) || "failed".equals(normalized)) {
+            return normalized;
+        }
+        throw new DomainException("VALIDATION_ERROR", "status filter must be success or failed");
     }
 
     @Transactional(readOnly = true)

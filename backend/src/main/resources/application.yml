@@ -80,6 +80,8 @@ aistudio:
   exports:
     siem-export-enabled: ${EXPORT_SIEM_EXPORT_ENABLED:false}
     siem-export-interval-ms: ${EXPORT_SIEM_EXPORT_INTERVAL_MS:300000}
+  ops:
+    release-gate-max-age-hours: ${RELEASE_GATE_MAX_AGE_HOURS:48}
     rate-limit:
       ai-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
     embedding:

@@ -246,6 +246,8 @@ jobs:
           bash -n scripts/scheduled-stripe-reconciliation.sh
           bash -n scripts/scheduled-billing-dunning.sh
           bash -n scripts/scheduled-siem-export.sh
+          bash -n scripts/scheduled-staging-signoff.sh
+          bash -n scripts/release-gate-check.sh
           bash -n scripts/staging-provider-probes.sh
           bash -n scripts/scheduled-chat-retention.sh
           bash -n scripts/write-prometheus-token.sh

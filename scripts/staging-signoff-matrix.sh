@@ -162,6 +162,8 @@ lines.append("")
 Path(matrix_md).write_text("\n".join(lines))
 PY
 
+cp -f "${matrix_json}" "${base_report_dir}/latest-signoff-matrix.json"
+
 rm -f "${env_reports_ndjson}"
 
 echo ""

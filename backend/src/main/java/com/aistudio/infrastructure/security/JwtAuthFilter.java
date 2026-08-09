@@ -24,7 +24,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/api/v1/billing/stripe/sync-metered-usage",
             "/api/v1/billing/stripe/reconcile",
             "/api/v1/billing/stripe/dunning/run",
-            "/api/v1/exports/siem/run"
+            "/api/v1/exports/siem/run",
+            "/api/v1/ops/staging-signoff/submit",
+            "/api/v1/ops/staging-signoff/runs",
+            "/api/v1/ops/release-gate"
     );
 
     private final JwtService jwtService;

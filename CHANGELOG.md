@@ -6,6 +6,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.54-beta] — 2026-08-09
+
+### Added
+
+- Staging sign-off run store — V31 migration, `staging_signoff_runs` audit table
+- `POST /api/v1/ops/staging-signoff/submit` — submit sign-off JSON for release gate
+- `GET /api/v1/ops/release-gate?imageTag=` — evaluate passing sign-off within max age
+- `GET /api/v1/ops/staging-signoff/runs` — recent sign-off history
+- Cron script `scheduled-staging-signoff.sh` — single-host or matrix + optional API submit
+- Release gate script `release-gate-check.sh` — pre-tag validation
+- `latest-signoff.json` / `latest-signoff-matrix.json` pointers from sign-off scripts
+- `docs/59-STAGING-SIGNOFF-RELEASE-GATE-GUIDE.md`
+
 ## [0.2.53-beta] — 2026-08-09
 
 ### Added

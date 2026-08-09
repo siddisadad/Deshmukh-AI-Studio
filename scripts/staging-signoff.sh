@@ -333,6 +333,8 @@ lines.append("")
 Path(report_md).write_text("\n".join(lines))
 PY
 
+cp -f "${report_json}" "${report_dir}/latest-signoff.json"
+
 rm -f "${checks_ndjson}"
 
 echo ""

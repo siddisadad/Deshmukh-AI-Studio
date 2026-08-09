@@ -67,7 +67,9 @@ class KnowledgeControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.embeddingProvider").value("mock"))
-                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.maxChunksPerProject").value(10000))
+                .andExpect(jsonPath("$.corpusLimitReached").value(false));
 
         mockMvc.perform(get("/api/v1/projects/" + projectId + "/knowledge/search")
                         .param("q", "password reset email token")
@@ -79,7 +81,8 @@ class KnowledgeControllerIT {
         mockMvc.perform(get("/api/v1/projects/" + projectId + "/knowledge")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.indexedChunks").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$.indexedChunks").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.maxChunksPerProject").value(10000));
     }
 
     private JsonNode register(String email) throws Exception {

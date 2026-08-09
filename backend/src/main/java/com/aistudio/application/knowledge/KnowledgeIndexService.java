@@ -3,6 +3,7 @@ package com.aistudio.application.knowledge;
 import com.aistudio.domain.knowledge.KnowledgeSourceType;
 import com.aistudio.infrastructure.config.AiProperties;
 import com.aistudio.infrastructure.knowledge.KnowledgeChunkJdbcRepository;
+import com.aistudio.infrastructure.metrics.KnowledgeEmbeddingMetrics;
 import com.aistudio.infrastructure.persistence.entity.ContextAssetEntity;
 import com.aistudio.infrastructure.persistence.entity.DocumentEntity;
 import com.aistudio.infrastructure.persistence.entity.RequirementEntity;
@@ -20,16 +21,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class KnowledgeIndexService {
 
-    private static final int CHUNK_SIZE = 900;
-    private static final int CHUNK_OVERLAP = 120;
-
     private final EmbeddingPort embeddingPort;
     private final KnowledgeChunkJdbcRepository chunkRepository;
     private final RequirementRepository requirementRepository;
     private final DocumentRepository documentRepository;
     private final ContextAssetRepository contextAssetRepository;
     private final TaskRepository taskRepository;
+    private final KnowledgeEmbeddingMetrics embeddingMetrics;
     private final boolean ragEnabled;
+    private final int maxChunksPerProject;
+    private final int chunkSize;
+    private final int chunkOverlap;
 
     public KnowledgeIndexService(
             EmbeddingPort embeddingPort,
@@ -38,6 +40,7 @@ public class KnowledgeIndexService {
             DocumentRepository documentRepository,
             ContextAssetRepository contextAssetRepository,
             TaskRepository taskRepository,
+            KnowledgeEmbeddingMetrics embeddingMetrics,
             AiProperties aiProperties
     ) {
         this.embeddingPort = embeddingPort;
@@ -46,53 +49,100 @@ public class KnowledgeIndexService {
         this.documentRepository = documentRepository;
         this.contextAssetRepository = contextAssetRepository;
         this.taskRepository = taskRepository;
+        this.embeddingMetrics = embeddingMetrics;
         this.ragEnabled = aiProperties.rag() == null || aiProperties.rag().enabled();
+        this.maxChunksPerProject = aiProperties.rag() == null || aiProperties.rag().maxChunksPerProject() <= 0
+                ? 10000
+                : aiProperties.rag().maxChunksPerProject();
+        this.chunkSize = aiProperties.rag() == null || aiProperties.rag().chunkSize() <= 0
+                ? 900
+                : aiProperties.rag().chunkSize();
+        this.chunkOverlap = aiProperties.rag() == null || aiProperties.rag().chunkOverlap() < 0
+                ? 120
+                : aiProperties.rag().chunkOverlap();
     }
 
     @Transactional
     public ReindexResult reindexProject(UUID projectId) {
         if (!ragEnabled) {
-            return new ReindexResult(0, embeddingPort.providerId(), false);
+            return new ReindexResult(0, embeddingPort.providerId(), false, maxChunksPerProject, false);
         }
         chunkRepository.deleteByProjectId(projectId);
         int chunks = 0;
+        boolean corpusLimitReached = false;
         for (RequirementEntity req : requirementRepository.findByProjectIdOrderBySortOrderAscCreatedAtAsc(projectId)) {
-            chunks += indexText(
+            IndexSlice slice = indexText(
                     projectId,
                     KnowledgeSourceType.REQUIREMENT,
                     req.getId(),
                     req.getTitle(),
-                    req.getTitle() + "\n" + nullToEmpty(req.getDescription())
+                    req.getTitle() + "\n" + nullToEmpty(req.getDescription()),
+                    chunks
             );
+            chunks += slice.chunksIndexed();
+            if (slice.corpusLimitReached()) {
+                corpusLimitReached = true;
+                break;
+            }
         }
-        for (DocumentEntity doc : documentRepository.findByProjectIdOrderByUpdatedAtDesc(projectId)) {
-            chunks += indexText(
-                    projectId,
-                    KnowledgeSourceType.DOCUMENT,
-                    doc.getId(),
-                    doc.getTitle(),
-                    doc.getTitle() + "\n" + nullToEmpty(doc.getContentMd())
-            );
+        if (!corpusLimitReached) {
+            for (DocumentEntity doc : documentRepository.findByProjectIdOrderByUpdatedAtDesc(projectId)) {
+                IndexSlice slice = indexText(
+                        projectId,
+                        KnowledgeSourceType.DOCUMENT,
+                        doc.getId(),
+                        doc.getTitle(),
+                        doc.getTitle() + "\n" + nullToEmpty(doc.getContentMd()),
+                        chunks
+                );
+                chunks += slice.chunksIndexed();
+                if (slice.corpusLimitReached()) {
+                    corpusLimitReached = true;
+                    break;
+                }
+            }
         }
-        for (ContextAssetEntity asset : contextAssetRepository.findByProjectIdOrderByAssetTypeAsc(projectId)) {
-            chunks += indexText(
-                    projectId,
-                    KnowledgeSourceType.CONTEXT_ASSET,
-                    asset.getId(),
-                    asset.getTitle(),
-                    asset.getAssetType() + " " + asset.getTitle() + "\n" + nullToEmpty(asset.getContent())
-            );
+        if (!corpusLimitReached) {
+            for (ContextAssetEntity asset : contextAssetRepository.findByProjectIdOrderByAssetTypeAsc(projectId)) {
+                IndexSlice slice = indexText(
+                        projectId,
+                        KnowledgeSourceType.CONTEXT_ASSET,
+                        asset.getId(),
+                        asset.getTitle(),
+                        asset.getAssetType() + " " + asset.getTitle() + "\n" + nullToEmpty(asset.getContent()),
+                        chunks
+                );
+                chunks += slice.chunksIndexed();
+                if (slice.corpusLimitReached()) {
+                    corpusLimitReached = true;
+                    break;
+                }
+            }
         }
-        for (TaskEntity task : taskRepository.findByProjectIdOrderBySortOrderAscCreatedAtAsc(projectId)) {
-            chunks += indexText(
-                    projectId,
-                    KnowledgeSourceType.TASK,
-                    task.getId(),
-                    task.getTitle(),
-                    task.getTitle() + "\n" + nullToEmpty(task.getDescription())
-            );
+        if (!corpusLimitReached) {
+            for (TaskEntity task : taskRepository.findByProjectIdOrderBySortOrderAscCreatedAtAsc(projectId)) {
+                IndexSlice slice = indexText(
+                        projectId,
+                        KnowledgeSourceType.TASK,
+                        task.getId(),
+                        task.getTitle(),
+                        task.getTitle() + "\n" + nullToEmpty(task.getDescription()),
+                        chunks
+                );
+                chunks += slice.chunksIndexed();
+                if (slice.corpusLimitReached()) {
+                    corpusLimitReached = true;
+                    break;
+                }
+            }
         }
-        return new ReindexResult(chunks, embeddingPort.providerId(), true);
+        return new ReindexResult(
+                chunks,
+                embeddingPort.providerId(),
+                true,
+                maxChunksPerProject,
+                corpusLimitReached
+        );
     }
 
     @Transactional
@@ -101,47 +151,58 @@ public class KnowledgeIndexService {
             return;
         }
         chunkRepository.deleteBySource(projectId, sourceType, sourceId);
-        indexText(projectId, sourceType, sourceId, title, title + "\n" + nullToEmpty(body));
+        int existing = chunkRepository.countByProjectId(projectId);
+        indexText(projectId, sourceType, sourceId, title, title + "\n" + nullToEmpty(body), existing);
     }
 
-    private int indexText(
+    private IndexSlice indexText(
             UUID projectId,
             KnowledgeSourceType sourceType,
             UUID sourceId,
             String title,
-            String body
+            String body,
+            int existingChunks
     ) {
-        List<String> chunks = chunk(body);
+        if (existingChunks >= maxChunksPerProject) {
+            return new IndexSlice(0, true);
+        }
+        List<String> chunks = chunk(body, chunkSize, chunkOverlap);
         if (chunks.isEmpty()) {
-            return 0;
+            return new IndexSlice(0, false);
+        }
+        int remaining = maxChunksPerProject - existingChunks;
+        boolean truncated = chunks.size() > remaining;
+        if (truncated) {
+            chunks = chunks.subList(0, remaining);
         }
         List<String> titles = new ArrayList<>(chunks.size());
         for (int i = 0; i < chunks.size(); i++) {
             titles.add(title == null || title.isBlank() ? sourceType.name() : title);
         }
         List<float[]> embeddings = embeddingPort.embedAll(chunks);
+        embeddingMetrics.recordEmbeddings(embeddings.size());
         chunkRepository.insertChunks(projectId, sourceType, sourceId, titles, chunks, embeddings);
-        return chunks.size();
+        return new IndexSlice(chunks.size(), truncated);
     }
 
-    static List<String> chunk(String text) {
+    static List<String> chunk(String text, int chunkSize, int chunkOverlap) {
         String normalized = nullToEmpty(text).trim().replace("\r\n", "\n");
         if (normalized.isBlank()) {
             return List.of();
         }
-        if (normalized.length() <= CHUNK_SIZE) {
+        if (normalized.length() <= chunkSize) {
             return List.of(normalized);
         }
         List<String> chunks = new ArrayList<>();
         int start = 0;
         while (start < normalized.length()) {
-            int end = Math.min(normalized.length(), start + CHUNK_SIZE);
+            int end = Math.min(normalized.length(), start + chunkSize);
             if (end < normalized.length()) {
                 int breakAt = normalized.lastIndexOf('\n', end);
-                if (breakAt <= start + CHUNK_SIZE / 2) {
+                if (breakAt <= start + chunkSize / 2) {
                     breakAt = normalized.lastIndexOf(' ', end);
                 }
-                if (breakAt > start + CHUNK_SIZE / 2) {
+                if (breakAt > start + chunkSize / 2) {
                     end = breakAt;
                 }
             }
@@ -152,7 +213,7 @@ public class KnowledgeIndexService {
             if (end >= normalized.length()) {
                 break;
             }
-            start = Math.max(end - CHUNK_OVERLAP, start + 1);
+            start = Math.max(end - chunkOverlap, start + 1);
         }
         return chunks;
     }
@@ -161,6 +222,19 @@ public class KnowledgeIndexService {
         return value == null ? "" : value;
     }
 
-    public record ReindexResult(int chunkCount, String embeddingProvider, boolean enabled) {
+    public int maxChunksPerProject() {
+        return maxChunksPerProject;
+    }
+
+    private record IndexSlice(int chunksIndexed, boolean corpusLimitReached) {
+    }
+
+    public record ReindexResult(
+            int chunkCount,
+            String embeddingProvider,
+            boolean enabled,
+            int maxChunksPerProject,
+            boolean corpusLimitReached
+    ) {
     }
 }

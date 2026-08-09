@@ -96,6 +96,11 @@ aistudio:
       enabled: ${AI_COST_AWARE_ROUTING_ENABLED:false}
     provider-quotas: ${AI_PROVIDER_QUOTAS:}
     provider-cost-tiers: ${AI_PROVIDER_COST_TIERS:}
+    assistant-model-map: ${AI_ASSISTANT_MODEL_MAP:}
+    prompt-cache:
+      enabled: ${AI_PROMPT_CACHE_ENABLED:false}
+      ttl-seconds: ${AI_PROMPT_CACHE_TTL_SECONDS:300}
+      max-entries: ${AI_PROMPT_CACHE_MAX_ENTRIES:500}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}

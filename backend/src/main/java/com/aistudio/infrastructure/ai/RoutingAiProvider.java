@@ -1,5 +1,6 @@
 package com.aistudio.infrastructure.ai;
 
+import com.aistudio.application.ai.AiModelRoute;
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.application.ai.OrgAiRoutingContext;
 import com.aistudio.application.ai.OrgAiRoutingPolicyService;
@@ -189,14 +190,31 @@ public class RoutingAiProvider implements AiProviderPort {
     }
 
     private List<String> effectiveChain() {
+        List<String> base;
         UUID orgId = OrgAiRoutingContext.organizationId();
         if (routingPolicyService != null && orgId != null) {
             var orgChain = routingPolicyService.resolveChain(orgId);
             if (orgChain.isPresent() && !orgChain.get().isEmpty()) {
-                return orgChain.get();
+                base = orgChain.get();
+            } else {
+                base = chain;
             }
+        } else {
+            base = chain;
         }
-        return chain;
+        AiModelRoute modelRoute = OrgAiRoutingContext.modelRoute();
+        if (modelRoute != null && modelRoute.providerId() != null && !modelRoute.providerId().isBlank()) {
+            String preferred = modelRoute.providerId().trim().toLowerCase();
+            List<String> reordered = new ArrayList<>();
+            reordered.add(preferred);
+            for (String providerId : base) {
+                if (!providerId.equals(preferred)) {
+                    reordered.add(providerId);
+                }
+            }
+            return reordered;
+        }
+        return base;
     }
 
     private List<String> orderedChain() {

@@ -51,6 +51,7 @@ Read in order; each document builds on the previous.
 | 44 | [44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md](44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md) | Export watermarking and DLP scanning |
 | 45 | [45-COST-AWARE-AI-ROUTING-GUIDE.md](45-COST-AWARE-AI-ROUTING-GUIDE.md) | Cost-aware routing and provider quotas |
 | 46 | [46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md](46-TOKEN-BUDGET-ORG-ROUTING-GUIDE.md) | Token budget caps and org routing policies |
+| 47 | [47-MODEL-ROUTING-PROMPT-CACHE-GUIDE.md](47-MODEL-ROUTING-PROMPT-CACHE-GUIDE.md) | Model-specific routing and prompt cache |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.41-beta** adds token budget caps and org-level AI routing — see [CHANGELOG.md](../CHANGELOG.md).
 

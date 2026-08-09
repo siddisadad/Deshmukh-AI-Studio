@@ -17,7 +17,8 @@ public record AiProperties(
         AdaptiveRouting adaptiveRouting,
         CostAwareRouting costAwareRouting,
         String providerQuotas,
-        String providerCostTiers
+        String providerCostTiers,
+        String assistantModelMap
 ) {
     public record OpenAi(String apiKey, String model, String baseUrl) {
     }

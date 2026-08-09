@@ -3,7 +3,9 @@ package com.aistudio.infrastructure.ai;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.aistudio.application.ai.AiModelRoute;
 import com.aistudio.application.ai.AiProviderPort;
+import com.aistudio.application.ai.OrgAiRoutingContext;
 import com.aistudio.domain.common.AiProviderException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,6 +146,28 @@ class RoutingAiProviderTest {
         AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
         assertThat(result.text()).contains("Mock AI response");
         assertThat(routing.providerId()).isEqualTo("mock");
+    }
+
+    @Test
+    void modelRoutePrefersMappedProvider() {
+        AiProviderRegistry registry = new AiProviderRegistry();
+        registry.register("openai", new FastProvider("openai"));
+        registry.register("mock", new MockAiProvider());
+
+        OrgAiRoutingContext.setModelRoute(new AiModelRoute("openai", "gpt-4o-mini"));
+
+        RoutingAiProvider routing = new RoutingAiProvider(
+                registry,
+                List.of("mock", "openai"),
+                disabledBreaker()
+        );
+        try {
+            AiProviderPort.AiGenerationResult result = routing.generate(sampleRequest());
+            assertThat(routing.providerId()).isEqualTo("openai");
+            assertThat(result.model()).contains("openai");
+        } finally {
+            OrgAiRoutingContext.clear();
+        }
     }
 
     private static AiProviderPort.AiGenerationRequest sampleRequest() {

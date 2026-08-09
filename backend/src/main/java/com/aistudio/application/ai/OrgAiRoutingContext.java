@@ -3,11 +3,12 @@ package com.aistudio.application.ai;
 import java.util.UUID;
 
 /**
- * Request-scoped organization id for org-level AI routing policy resolution.
+ * Request-scoped organization and model routing for AI calls.
  */
 public final class OrgAiRoutingContext {
 
     private static final ThreadLocal<UUID> ORGANIZATION_ID = new ThreadLocal<>();
+    private static final ThreadLocal<AiModelRoute> MODEL_ROUTE = new ThreadLocal<>();
 
     private OrgAiRoutingContext() {
     }
@@ -20,7 +21,16 @@ public final class OrgAiRoutingContext {
         return ORGANIZATION_ID.get();
     }
 
+    public static void setModelRoute(AiModelRoute modelRoute) {
+        MODEL_ROUTE.set(modelRoute);
+    }
+
+    public static AiModelRoute modelRoute() {
+        return MODEL_ROUTE.get();
+    }
+
     public static void clear() {
         ORGANIZATION_ID.remove();
+        MODEL_ROUTE.remove();
     }
 }

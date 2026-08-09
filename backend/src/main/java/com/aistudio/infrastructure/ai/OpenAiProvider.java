@@ -151,7 +151,7 @@ public class OpenAiProvider implements AiProviderPort {
 
     private ObjectNode buildBody(AiGenerationRequest request, boolean stream) {
         ObjectNode body = objectMapper.createObjectNode();
-        body.put("model", model);
+        body.put("model", resolveModel(request));
         body.put("stream", stream);
         if (stream) {
             body.putObject("stream_options").put("include_usage", true);
@@ -175,5 +175,15 @@ public class OpenAiProvider implements AiProviderPort {
             return "assistant";
         }
         return "user";
+    }
+
+    private String resolveModel(AiGenerationRequest request) {
+        if (request.metadata() != null) {
+            String override = request.metadata().get("model");
+            if (override != null && !override.isBlank()) {
+                return override.trim();
+            }
+        }
+        return model;
     }
 }

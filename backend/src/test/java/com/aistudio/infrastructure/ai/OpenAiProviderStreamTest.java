@@ -95,6 +95,7 @@ class OpenAiProviderStreamTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }

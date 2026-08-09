@@ -3,6 +3,7 @@ package com.aistudio.infrastructure.config;
 import com.aistudio.application.ai.AiProviderPort;
 import com.aistudio.infrastructure.ai.AiProviderCircuitBreaker;
 import com.aistudio.application.ai.OrgAiRoutingPolicyService;
+import com.aistudio.infrastructure.ai.AiModelRoutingRegistry;
 import com.aistudio.infrastructure.ai.AiProviderCostTierRegistry;
 import com.aistudio.infrastructure.ai.AiProviderLatencyTracker;
 import com.aistudio.infrastructure.ai.AiProviderQuotaTracker;
@@ -38,6 +39,11 @@ public class AiProviderConfiguration {
         AiProperties.AdaptiveRouting config = properties.adaptiveRouting();
         int sampleSize = config == null ? 50 : config.sampleSize();
         return new AiProviderLatencyTracker(sampleSize);
+    }
+
+    @Bean
+    AiModelRoutingRegistry aiModelRoutingRegistry(AiProperties properties) {
+        return new AiModelRoutingRegistry(properties.assistantModelMap());
     }
 
     @Bean

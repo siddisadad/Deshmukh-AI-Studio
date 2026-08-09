@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Size;
 
 public record UpdateOrgAiPolicyRequest(
         @Size(max = 255) String providerChain,
-        Long dailyTokenBudget
+        Long dailyTokenBudget,
+        @Size(max = 512) String modelMap
 ) {
 }

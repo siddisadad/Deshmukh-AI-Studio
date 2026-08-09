@@ -166,7 +166,7 @@ public class AnthropicProvider implements AiProviderPort {
 
     private ObjectNode buildBody(AiGenerationRequest request, boolean stream) {
         ObjectNode body = objectMapper.createObjectNode();
-        body.put("model", model);
+        body.put("model", resolveModel(request));
         body.put("stream", stream);
         body.put("max_tokens", request.maxOutputTokens() == null ? 2000 : request.maxOutputTokens());
         if (request.temperature() != null) {
@@ -180,5 +180,15 @@ public class AnthropicProvider implements AiProviderPort {
                     .put("content", message.content());
         }
         return body;
+    }
+
+    private String resolveModel(AiGenerationRequest request) {
+        if (request.metadata() != null) {
+            String override = request.metadata().get("model");
+            if (override != null && !override.isBlank()) {
+                return override.trim();
+            }
+        }
+        return model;
     }
 }

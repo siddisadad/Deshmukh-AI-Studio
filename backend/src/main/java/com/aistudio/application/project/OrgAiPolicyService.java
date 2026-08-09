@@ -51,10 +51,14 @@ public class OrgAiPolicyService {
         if (request.providerChain() != null) {
             validateProviderChain(request.providerChain());
         }
+        if (request.modelMap() != null) {
+            validateModelMap(request.modelMap());
+        }
         OrganizationSubscriptionEntity updated = billingService.updateAiPolicy(
                 organizationId,
                 request.providerChain(),
-                request.dailyTokenBudget());
+                request.dailyTokenBudget(),
+                request.modelMap());
         return toResponse(updated);
     }
 
@@ -70,7 +74,8 @@ public class OrgAiPolicyService {
                 sub.getDailyTokenBudget(),
                 effectiveBudget,
                 used,
-                remaining
+                remaining,
+                sub.getAiModelMap()
         );
     }
 
@@ -97,6 +102,20 @@ public class OrgAiPolicyService {
                 throw new DomainException(
                         "VALIDATION_ERROR",
                         "providerChain entries must be lowercase provider ids separated by commas");
+            }
+        }
+    }
+
+    private static void validateModelMap(String map) {
+        if (map.isBlank()) {
+            return;
+        }
+        for (String part : map.split(",")) {
+            String trimmed = part.trim();
+            if (!trimmed.matches("[A-Z_]+=[a-z0-9._-]+:[^,=]+")) {
+                throw new DomainException(
+                        "VALIDATION_ERROR",
+                        "modelMap entries must be ASSISTANT_ROLE=provider:model");
             }
         }
     }

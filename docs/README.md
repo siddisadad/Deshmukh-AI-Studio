@@ -51,7 +51,7 @@ Read in order; each document builds on the previous.
 | 44 | [44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md](44-THREAD-EXPORT-WATERMARK-DLP-GUIDE.md) | Export watermarking and DLP scanning |
 | 45 | [45-COST-AWARE-AI-ROUTING-GUIDE.md](45-COST-AWARE-AI-ROUTING-GUIDE.md) | Cost-aware routing and provider quotas |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.39-beta** adds export watermarking and DLP scanning — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.40-beta** adds cost-aware AI routing and provider quotas — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

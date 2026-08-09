@@ -48,6 +48,7 @@ public class ProjectGitSyncService {
     private final boolean fetchFileContent;
     private final boolean webhookDeltaSync;
     private final boolean scheduledSyncEnabled;
+    private final long defaultScheduledSyncIntervalMs;
 
     public ProjectGitSyncService(
             ProjectGitLinkRepository gitLinkRepository,
@@ -74,6 +75,7 @@ public class ProjectGitSyncService {
         this.fetchFileContent = gitProperties.fetchFileContentEnabled();
         this.webhookDeltaSync = gitProperties.webhookDeltaSyncEnabled();
         this.scheduledSyncEnabled = gitProperties.isScheduledSyncEnabled();
+        this.defaultScheduledSyncIntervalMs = gitProperties.effectiveScheduledSyncIntervalMs();
     }
 
     @Transactional(readOnly = true)
@@ -102,6 +104,11 @@ public class ProjectGitSyncService {
         entity.setEnabled(request.enabled() == null || request.enabled());
         if (request.regenerateWebhookSecret() != null && request.regenerateWebhookSecret()) {
             entity.setWebhookSecret(generateSecret());
+        }
+        if (request.clearScheduledSyncInterval() != null && request.clearScheduledSyncInterval()) {
+            entity.setScheduledSyncIntervalMinutes(null);
+        } else if (request.scheduledSyncIntervalMinutes() != null) {
+            entity.setScheduledSyncIntervalMinutes(request.scheduledSyncIntervalMinutes());
         }
         gitLinkRepository.save(entity);
         return toResponse(entity);
@@ -141,6 +148,9 @@ public class ProjectGitSyncService {
         }
         int enqueued = 0;
         for (ProjectGitLinkEntity link : gitLinkRepository.findByEnabledTrue()) {
+            if (!isDueForScheduledSync(link)) {
+                continue;
+            }
             if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
                     link.getProjectId(),
                     JobType.CODE_METADATA_SYNC,
@@ -294,6 +304,23 @@ public class ProjectGitSyncService {
         return link;
     }
 
+    private boolean isDueForScheduledSync(ProjectGitLinkEntity link) {
+        Instant lastSyncedAt = link.getLastSyncedAt();
+        if (lastSyncedAt == null) {
+            return true;
+        }
+        long intervalMs = effectiveScheduledSyncIntervalMs(link);
+        return Instant.now().toEpochMilli() - lastSyncedAt.toEpochMilli() >= intervalMs;
+    }
+
+    private long effectiveScheduledSyncIntervalMs(ProjectGitLinkEntity link) {
+        Integer minutes = link.getScheduledSyncIntervalMinutes();
+        if (minutes == null || minutes <= 0) {
+            return defaultScheduledSyncIntervalMs;
+        }
+        return minutes.longValue() * 60_000L;
+    }
+
     private ProjectGitLinkResponse toResponse(ProjectGitLinkEntity entity) {
         return new ProjectGitLinkResponse(
                 entity.getId(),
@@ -307,6 +334,7 @@ public class ProjectGitSyncService {
                 entity.getLastSyncedAt(),
                 entity.getLastSyncStatus(),
                 entity.getLastSyncError(),
+                entity.getScheduledSyncIntervalMinutes(),
                 entity.getUpdatedAt()
         );
     }
@@ -323,6 +351,7 @@ public class ProjectGitSyncService {
                 null,
                 null,
                 "never",
+                null,
                 null,
                 null
         );

@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.64-beta] — 2026-08-09
+
+### Added
+
+- Per-project git sync interval — optional `scheduled_sync_interval_minutes` on git links
+- Scheduled enqueue skips links until per-project or platform interval elapsed since `last_synced_at`
+- `PUT git-link` — `scheduledSyncIntervalMinutes` (15–10080) and `clearScheduledSyncInterval`
+- Project settings UI — scheduled sync interval field
+- `docs/69-GIT-PER-PROJECT-SYNC-INTERVAL-GUIDE.md`
+
 ## [0.2.63-beta] — 2026-08-09
 
 ### Added

@@ -47,6 +47,9 @@ public class ProjectGitLinkEntity {
     @Column(name = "last_sync_error", columnDefinition = "text")
     private String lastSyncError;
 
+    @Column(name = "scheduled_sync_interval_minutes")
+    private Integer scheduledSyncIntervalMinutes;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 

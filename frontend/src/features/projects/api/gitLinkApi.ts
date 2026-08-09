@@ -13,6 +13,7 @@ export interface ProjectGitLink {
   lastSyncedAt: string | null;
   lastSyncStatus: string;
   lastSyncError: string | null;
+  scheduledSyncIntervalMinutes: number | null;
   updatedAt: string | null;
 }
 
@@ -22,6 +23,8 @@ export interface UpsertProjectGitLinkBody {
   branch?: string;
   enabled?: boolean;
   regenerateWebhookSecret?: boolean;
+  scheduledSyncIntervalMinutes?: number;
+  clearScheduledSyncInterval?: boolean;
 }
 
 export const gitLinkApi = {

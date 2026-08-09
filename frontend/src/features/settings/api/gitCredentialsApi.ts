@@ -81,8 +81,15 @@ export interface OrgGitSyncOverview {
   linkedProjects: number;
   enabledLinks: number;
   scheduledSyncLinks: number;
+  manualSyncLinks: number;
   failedLastSync: number;
   items: OrgGitSyncOverviewItem[];
+}
+
+export interface OrgGitSyncEnableScheduledResult {
+  targeted: number;
+  updated: number;
+  updatedProjectIds: string[];
 }
 
 export interface OrgGitSyncRetryFailedResult {
@@ -168,6 +175,12 @@ export const gitCredentialsApi = {
   retryFailedSyncs: (orgId: string) =>
     http
       .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
+      .then((r) => r.data),
+  enableScheduledSyncs: (orgId: string) =>
+    http
+      .post<OrgGitSyncEnableScheduledResult>(
+        `/organizations/${orgId}/git-sync-overview/enable-scheduled-sync`
+      )
       .then((r) => r.data),
   retryFailedSyncForProject: (orgId: string, projectId: string) =>
     http

@@ -246,6 +246,19 @@ export function GitCredentialsSettingsPage() {
     },
   });
 
+  const enableScheduledSyncs = useMutation({
+    mutationFn: () => gitCredentialsApi.enableScheduledSyncs(org!.id),
+    onSuccess: async (result) => {
+      setError(null);
+      setMessage(`Enabled scheduled sync on ${result.updated} of ${result.targeted} manual-only links`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to enable scheduled sync');
+    },
+  });
+
   async function retryFailedSyncForProject(projectId: string, projectKey: string) {
     if (!org?.id) return;
     setRetryingProjectId(projectId);
@@ -304,6 +317,13 @@ export function GitCredentialsSettingsPage() {
     setOverviewEnabledFilter('enabled');
     setOverviewScheduledSyncFilter('scheduled');
     await loadSyncOverview('linked', 'enabled', 'scheduled', overviewProviderFilter, overviewStatusFilter);
+  }
+
+  async function filterOverviewToManualSync() {
+    setOverviewLinkedFilter('linked');
+    setOverviewEnabledFilter('enabled');
+    setOverviewScheduledSyncFilter('manual');
+    await loadSyncOverview('linked', 'enabled', 'manual', overviewProviderFilter, overviewStatusFilter);
   }
 
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
@@ -414,6 +434,20 @@ export function GitCredentialsSettingsPage() {
                   data-testid="git-sync-overview-scheduled-count"
                 >
                   {syncOverviewQuery.data.scheduledSyncLinks} scheduled sync
+                </Link>
+              </>
+            ) : null}
+            {syncOverviewQuery.data.manualSyncLinks > 0 ? (
+              <>
+                {' · '}
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => void filterOverviewToManualSync()}
+                  sx={{ verticalAlign: 'baseline' }}
+                  data-testid="git-sync-overview-manual-count"
+                >
+                  {syncOverviewQuery.data.manualSyncLinks} manual only
                 </Link>
               </>
             ) : null}
@@ -582,6 +616,18 @@ export function GitCredentialsSettingsPage() {
                 data-testid="git-sync-overview-retry-failed"
               >
                 Retry failed syncs
+              </Button>
+            )}
+            {canRetryFailedSyncs && syncOverviewQuery.data.manualSyncLinks > 0 && (
+              <Button
+                size="small"
+                variant="contained"
+                color="primary"
+                disabled={enableScheduledSyncs.isPending}
+                onClick={() => enableScheduledSyncs.mutate()}
+                data-testid="git-sync-overview-enable-scheduled"
+              >
+                Enable scheduled sync
               </Button>
             )}
           </Stack>

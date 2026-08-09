@@ -95,8 +95,9 @@ Read in order; each document builds on the previous.
 | 88 | [88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md](88-ORG-GIT-SYNC-OVERVIEW-FAILED-ACTIONS-GUIDE.md) | Org overview failed sync actions |
 | 89 | [89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md](89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md) | Org overview enabled filter + summary chips |
 | 90 | [90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md](90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md) | Org overview scheduled sync filter |
+| 91 | [91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md](91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md) | Org bulk enable scheduled sync |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.85-beta** adds org overview scheduled sync filter — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.86-beta** adds org bulk enable scheduled sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

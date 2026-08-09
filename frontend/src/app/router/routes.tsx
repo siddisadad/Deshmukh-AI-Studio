@@ -9,6 +9,7 @@ import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { AboutPage } from '../../features/marketing/pages/AboutPage';
 import { ContactPage } from '../../features/marketing/pages/ContactPage';
 import { HomePage } from '../../features/marketing/pages/HomePage';
+import { PrivacyPage } from '../../features/marketing/pages/PrivacyPage';
 import { ServicesPage } from '../../features/marketing/pages/ServicesPage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
 import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
   { path: '/about', element: <AboutPage /> },
   { path: '/services', element: <ServicesPage /> },
   { path: '/contact', element: <ContactPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {

@@ -62,7 +62,11 @@ export function MarketingShell({
       <footer className="dt-footer">
         <div className="dt-footer__inner">
           <span>© {YEAR} Deshmukh Technology</span>
-          <span>Builders of AI Studio</span>
+          <nav className="dt-footer__links" aria-label="Footer">
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/contact">Contact</Link>
+            <span>Builders of AI Studio</span>
+          </nav>
         </div>
       </footer>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { absoluteSiteUrl, getPublicSiteOrigin } from '../lib/siteUrl';
 
 function upsertMeta(selector: string, attributes: Record<string, string>) {
   let el = document.head.querySelector(selector) as HTMLMetaElement | null;
@@ -12,10 +13,18 @@ function upsertMeta(selector: string, attributes: Record<string, string>) {
   return el;
 }
 
+function upsertCanonical(href: string) {
+  let el = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'canonical');
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+
 /**
- * Sets document title + description/OG/Twitter tags for marketing pages.
- * Restores the previous title on unmount; description/OG tags stay at last value
- * (fine for SPA navigation within the site).
+ * Sets document title + description/OG/Twitter/canonical tags for marketing pages.
  */
 export function usePageMeta({
   title,
@@ -32,10 +41,11 @@ export function usePageMeta({
     const previousTitle = document.title;
     document.title = title;
 
-    const origin = window.location.origin;
-    const url = `${origin}${path}`;
+    const origin = getPublicSiteOrigin();
+    const url = absoluteSiteUrl(path);
     const imageUrl = image.startsWith('http') ? image : `${origin}${image}`;
 
+    upsertCanonical(url);
     upsertMeta('meta[name="description"]', { name: 'description', content: description });
     upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title });
     upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });

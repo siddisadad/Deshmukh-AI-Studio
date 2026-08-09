@@ -75,15 +75,19 @@ AI_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 # or OPENAI_API_KEY=...
 
-# Mail (optional)
+# Mail (optional — required for real contact-form notify mail)
+MAIL_PROVIDER=smtp
 MAIL_HOST=smtp.example.com
 MAIL_USER=...
 MAIL_PASSWORD=...
-MAIL_FROM=noreply@example.com
+MAIL_FROM=noreply@deshmukh.tech
+CONTACT_NOTIFY_EMAIL=hello@deshmukh.tech
 
 # Public URLs
-PUBLIC_APP_URL=https://app.example.com
-API_PUBLIC_URL=https://app.example.com/api/v1
+PUBLIC_APP_URL=https://deshmukh.tech
+API_PUBLIC_URL=https://deshmukh.tech/api/v1
+CORS_ORIGINS=https://deshmukh.tech
+VITE_PUBLIC_SITE_URL=https://deshmukh.tech
 ```
 
 Generate secrets:
@@ -390,16 +394,47 @@ Test restore on staging quarterly.
 
 ---
 
-## 16. Prototype Note
+## 16. Official site (deshmukh.tech)
+
+The React SPA serves both the **Deshmukh Technology marketing site** (`/`, `/about`, `/services`, `/contact`, `/privacy`) and the authenticated AI Studio app (`/dashboard`, …) behind the same Nginx edge.
+
+### DNS + TLS
+1. Point `deshmukh.tech` and `www.deshmukh.tech` A/AAAA records at the VM.
+2. Issue certificates (Let’s Encrypt).
+3. Adapt `nginx/conf.d/deshmukh.tech.conf.example` (HTTPS redirect, HSTS, `/api` proxy, SPA fallback).
+
+### Build args
+Pass the public origin so Open Graph / canonical tags are absolute:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build \
+  --build-arg VITE_PUBLIC_SITE_URL=https://deshmukh.tech \
+  frontend
+```
+
+`frontend/Dockerfile` defaults `VITE_PUBLIC_SITE_URL` to `https://deshmukh.tech`.
+
+### Contact form mail
+- API: `POST /api/v1/contact/inquiries` (public) persists rows in `contact_inquiries` and emails `CONTACT_NOTIFY_EMAIL`.
+- Set `MAIL_PROVIDER=smtp` plus SMTP host credentials in production (see §4).
+- Until SMTP is configured, the logging mail adapter records notify messages in API logs; the marketing UI also falls back to `mailto:` if the API is unreachable.
+
+### Crawlability
+Static `robots.txt` and `sitemap.xml` ship with the frontend image. Keep `sitemap.xml` hostnames aligned with the live domain.
+
+---
+
+## 17. Prototype Note
 
 The existing FastAPI prototype is **not** the production deploy target. Keep it for demos until Spring/React MVP replaces it. Do not expose the prototype publicly without auth.
 
 ---
 
-## 17. Document Control
+## 18. Document Control
 
 | Version | Date | Notes |
 |---|---|---|
 | 1.0 | 2026-08-06 | Compose + Nginx MVP deploy guide |
+| 1.1 | 2026-08-09 | Official Deshmukh site domain, contact mail, SEO build args |
 
 **Previous:** `12-TESTING-STRATEGY.md` · **Index:** `docs/README.md`

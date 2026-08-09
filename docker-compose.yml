@@ -40,6 +40,7 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: /api/v1
+        VITE_PUBLIC_SITE_URL: ${VITE_PUBLIC_SITE_URL:-https://deshmukh.tech}
     ports:
       - "8088:80"
     depends_on:

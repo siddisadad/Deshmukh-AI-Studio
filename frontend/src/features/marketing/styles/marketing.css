@@ -487,6 +487,28 @@
   font-size: 0.92rem;
 }
 
+.dt-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.dt-footer__links a {
+  color: var(--dt-ink-soft);
+  text-decoration: none;
+}
+
+.dt-footer__links a:hover,
+.dt-footer__links a:focus-visible {
+  color: var(--dt-teal);
+}
+
+.dt-section__copy a {
+  color: var(--dt-teal);
+  font-weight: 600;
+}
+
 @keyframes dt-rise {
   from {
     opacity: 0;

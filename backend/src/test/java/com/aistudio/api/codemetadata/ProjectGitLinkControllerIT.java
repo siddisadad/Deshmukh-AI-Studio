@@ -5,15 +5,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aistudio.infrastructure.persistence.entity.ProjectGitSyncRunEntity;
+import com.aistudio.infrastructure.persistence.repository.ProjectGitSyncRunRepository;
+import com.aistudio.support.IntegrationTestProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import com.aistudio.support.IntegrationTestProperties;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +23,8 @@ class ProjectGitLinkControllerIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired ProjectGitLinkRepository gitLinkRepository;
+    @Autowired ProjectGitSyncRunRepository syncRunRepository;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
@@ -192,18 +192,27 @@ class ProjectGitLinkControllerIT {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString()).get("id").asText());
 
-        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+        JsonNode linkJson = objectMapper.readTree(mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"repository":"acme/page-service","branch":"main","enabled":true}
+                                {"repository":"acme/history-service","branch":"main","enabled":true}
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        UUID linkId = UUID.fromString(linkJson.get("id").asText());
 
+        Instant now = Instant.now();
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post("/api/v1/projects/" + projectId + "/git-link/sync")
-                            .header("Authorization", "Bearer " + token))
-                    .andExpect(status().isOk());
+            ProjectGitSyncRunEntity run = new ProjectGitSyncRunEntity();
+            run.setProjectId(projectId);
+            run.setGitLinkId(linkId);
+            run.setSource("manual");
+            run.setStatus("success");
+            run.setFileCount(3);
+            run.setStartedAt(now.minusSeconds(120 - i));
+            run.setFinishedAt(now.minusSeconds(60 - i));
+            syncRunRepository.save(run);
         }
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(

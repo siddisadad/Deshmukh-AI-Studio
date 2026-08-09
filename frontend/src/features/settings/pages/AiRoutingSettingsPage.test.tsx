@@ -59,7 +59,9 @@ describe('AiRoutingSettingsPage', () => {
   it('loads and displays policy fields for owners', async () => {
     renderPage();
 
-    expect(await screen.findByTestId('ai-policy-provider-chain')).toHaveValue('mock');
+    await waitFor(() => {
+      expect(screen.getByTestId('ai-policy-provider-chain')).toHaveValue('mock');
+    });
     expect(screen.getByTestId('ai-policy-token-budget')).toHaveValue('50000');
     expect(screen.getByTestId('ai-policy-deploy-region')).toHaveValue('eu-west');
     expect(screen.getByTestId('ai-policy-save')).toBeInTheDocument();
@@ -78,7 +80,9 @@ describe('AiRoutingSettingsPage', () => {
     });
 
     renderPage();
-    await screen.findByTestId('ai-policy-provider-chain');
+    await waitFor(() => {
+      expect(screen.getByTestId('ai-policy-provider-chain')).not.toBeDisabled();
+    });
 
     await userEvent.clear(screen.getByTestId('ai-policy-provider-chain'));
     await userEvent.type(screen.getByTestId('ai-policy-provider-chain'), 'mock,openai');

@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.67-beta] — 2026-08-09
+
+### Added
+
+- Git sync failed scheduled retry — failed links bypass per-project interval on scheduler tick
+- Config — `GIT_SYNC_FAILED_SCHEDULED_RETRY` (default `true`)
+- `docs/72-GIT-SYNC-FAILED-SCHEDULED-RETRY-GUIDE.md`
+
 ## [0.2.66-beta] — 2026-08-09
 
 ### Added

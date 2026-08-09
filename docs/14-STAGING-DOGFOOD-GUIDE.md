@@ -55,7 +55,7 @@ Published images: `ghcr.io/siddisadad/deshmukh-ai-studio/api` and `frontend` (ta
 
 ```bash
 docker login ghcr.io   # if packages are private
-export IMAGE_TAG=v0.2.44-beta
+export IMAGE_TAG=v0.2.45-beta
 ./scripts/staging-ghcr-deploy.sh
 ```
 
@@ -311,7 +311,7 @@ Record for each staging release:
 | Field | Example |
 |---|---|
 | Date | 2026-08-08 |
-| `IMAGE_TAG` | `v0.2.44-beta` |
+| `IMAGE_TAG` | `v0.2.45-beta` |
 | Host | `https://staging.yourdomain.com` |
 | Providers | stripe / oidc / smtp / mock |
 | Automated | `staging-dogfood.sh` exit 0; optional `staging-signoff.sh` report ([31-STAGING-LIVE-SIGNOFF-GUIDE.md](31-STAGING-LIVE-SIGNOFF-GUIDE.md)) |

@@ -45,7 +45,7 @@ class OrgGitSyncRunsControllerIT {
         UUID projectA = createProject(token, orgId, "Alpha Proj", "AL");
         UUID projectB = createProject(token, orgId, "Beta Proj", "BE");
 
-        MvcResult linkResult = mockMvc.perform(put("/api/v1/projects/" + projectA + "/git-link")
+        MvcResult linkAResult = mockMvc.perform(put("/api/v1/projects/" + projectA + "/git-link")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -53,11 +53,22 @@ class OrgGitSyncRunsControllerIT {
                                 """))
                 .andExpect(status().isOk())
                 .andReturn();
-        UUID gitLinkId = UUID.fromString(
-                objectMapper.readTree(linkResult.getResponse().getContentAsString()).get("id").asText());
+        UUID gitLinkA = UUID.fromString(
+                objectMapper.readTree(linkAResult.getResponse().getContentAsString()).get("id").asText());
 
-        seedRun(projectA, gitLinkId, "manual", "success", 3);
-        seedRun(projectB, UUID.randomUUID(), "scheduled", "failed", 0, "timeout");
+        MvcResult linkBResult = mockMvc.perform(put("/api/v1/projects/" + projectB + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/beta","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        UUID gitLinkB = UUID.fromString(
+                objectMapper.readTree(linkBResult.getResponse().getContentAsString()).get("id").asText());
+
+        seedRun(projectA, gitLinkA, "manual", "success", 3);
+        seedRun(projectB, gitLinkB, "scheduled", "failed", 0, "timeout");
 
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs?limit=10&offset=0")
                         .header("Authorization", "Bearer " + token))

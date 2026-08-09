@@ -151,6 +151,7 @@ aistudio:
     webhook-delta-sync: ${GIT_SYNC_WEBHOOK_DELTA:true}
     scheduled-sync-enabled: ${GIT_SYNC_SCHEDULED_ENABLED:true}
     scheduled-sync-interval-ms: ${GIT_SYNC_SCHEDULED_INTERVAL_MS:3600000}
+    failed-scheduled-retry-enabled: ${GIT_SYNC_FAILED_SCHEDULED_RETRY:true}
   billing:
     provider: ${BILLING_PROVIDER:mock}
     app-base-url: ${BILLING_APP_BASE_URL:http://localhost:5173}

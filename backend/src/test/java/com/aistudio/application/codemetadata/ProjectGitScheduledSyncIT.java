@@ -134,6 +134,40 @@ class ProjectGitScheduledSyncIT {
         )).isZero();
     }
 
+    @Test
+    void enqueueScheduledSyncsRetriesFailedLinksDespitePerProjectInterval() throws Exception {
+        JsonNode auth = register("git-failed-retry" + System.currentTimeMillis() + "@example.com");
+        String token = auth.get("accessToken").asText();
+        UUID orgId = UUID.fromString(auth.get("organization").get("id").asText());
+        UUID projectId = UUID.fromString(objectMapper.readTree(mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Failed Retry Proj","projectKey":"FR","description":"failed-retry"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"repository":"acme/failed-retry-service","branch":"main","enabled":true,"scheduledSyncIntervalMinutes":1440}
+                                """))
+                .andExpect(status().isOk());
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId).orElseThrow();
+        link.setLastSyncedAt(Instant.now());
+        link.setLastSyncStatus("failed");
+        link.setLastSyncError("upstream timeout");
+        gitLinkRepository.save(link);
+
+        gitSyncService.enqueueScheduledSyncsForEnabledLinks();
+        assertThat(jobRepository.countByProjectIdAndJobTypeAndStatus(
+                projectId, JobType.CODE_METADATA_SYNC, com.aistudio.domain.job.JobStatus.PENDING
+        )).isEqualTo(1);
+    }
+
     private JsonNode register(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

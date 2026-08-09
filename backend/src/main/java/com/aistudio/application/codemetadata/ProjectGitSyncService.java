@@ -48,6 +48,7 @@ public class ProjectGitSyncService {
     private final boolean fetchFileContent;
     private final boolean webhookDeltaSync;
     private final boolean scheduledSyncEnabled;
+    private final boolean failedScheduledRetryEnabled;
     private final long defaultScheduledSyncIntervalMs;
 
     public ProjectGitSyncService(
@@ -75,6 +76,7 @@ public class ProjectGitSyncService {
         this.fetchFileContent = gitProperties.fetchFileContentEnabled();
         this.webhookDeltaSync = gitProperties.webhookDeltaSyncEnabled();
         this.scheduledSyncEnabled = gitProperties.isScheduledSyncEnabled();
+        this.failedScheduledRetryEnabled = gitProperties.isFailedScheduledRetryEnabled();
         this.defaultScheduledSyncIntervalMs = gitProperties.effectiveScheduledSyncIntervalMs();
     }
 
@@ -323,6 +325,9 @@ public class ProjectGitSyncService {
     }
 
     private boolean isDueForScheduledSync(ProjectGitLinkEntity link) {
+        if (failedScheduledRetryEnabled && isFailedSyncStatus(link.getLastSyncStatus())) {
+            return true;
+        }
         Instant lastSyncedAt = link.getLastSyncedAt();
         if (lastSyncedAt == null) {
             return true;
@@ -341,6 +346,10 @@ public class ProjectGitSyncService {
 
     private List<String> ignorePatterns(ProjectGitLinkEntity link) {
         return GitPathIgnoreMatcher.normalizePatterns(link.getPathIgnorePatterns());
+    }
+
+    private static boolean isFailedSyncStatus(String status) {
+        return status != null && "failed".equalsIgnoreCase(status.trim());
     }
 
     private ProjectGitLinkResponse toResponse(ProjectGitLinkEntity entity) {

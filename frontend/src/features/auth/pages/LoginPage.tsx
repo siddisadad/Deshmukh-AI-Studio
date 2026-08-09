@@ -163,8 +163,14 @@ export function AuthCard({
         variant="outlined"
       >
         <Stack spacing={1} sx={{ mb: 3 }}>
-          <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
-            AI Studio
+          <Typography
+            component={Link}
+            to="/"
+            variant="overline"
+            color="primary"
+            sx={{ fontWeight: 700, textDecoration: 'none', width: 'fit-content' }}
+          >
+            Deshmukh Technology
           </Typography>
           <Typography variant="h4">{title}</Typography>
           <Typography color="text.secondary">{subtitle}</Typography>

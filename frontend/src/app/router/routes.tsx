@@ -6,6 +6,7 @@ import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { SsoCallbackPage } from '../../features/auth/pages/SsoCallbackPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { HomePage } from '../../features/marketing/pages/HomePage';
 import { ProjectOverviewPage } from '../../features/projects/pages/ProjectOverviewPage';
 import { ProjectSettingsPage } from '../../features/projects/pages/ProjectSettingsPage';
 import { ProjectsPage } from '../../features/projects/pages/ProjectsPage';
@@ -23,6 +24,7 @@ import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
 
 export const router = createBrowserRouter([
   // Public even when a session exists (email reset links must work while logged in).
+  { path: '/', element: <HomePage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/shared/chat/:token', element: <SharedChatPage /> },
   {
@@ -57,6 +59,5 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/', element: <Navigate to="/dashboard" replace /> },
-  { path: '*', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

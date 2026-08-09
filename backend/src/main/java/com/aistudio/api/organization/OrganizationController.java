@@ -12,8 +12,12 @@ import com.aistudio.api.organization.dto.UpdateOrgAiCanaryHooksRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
 import com.aistudio.api.organization.dto.OrgSloSettingsResponse;
+import com.aistudio.api.organization.dto.OrgSsoIdpResponse;
+import com.aistudio.api.organization.dto.CreateOrgSsoIdpRequest;
+import com.aistudio.api.organization.dto.UpdateOrgSsoIdpRequest;
 import com.aistudio.api.organization.dto.UpdateOrgSloSettingsRequest;
 import com.aistudio.application.organization.OrgSloService;
+import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
@@ -45,15 +49,18 @@ public class OrganizationController {
     private final OrganizationService organizationService;
     private final OrgAiPolicyService orgAiPolicyService;
     private final OrgSloService orgSloService;
+    private final OrgSsoIdpService orgSsoIdpService;
 
     public OrganizationController(
             OrganizationService organizationService,
             OrgAiPolicyService orgAiPolicyService,
-            OrgSloService orgSloService
+            OrgSloService orgSloService,
+            OrgSsoIdpService orgSsoIdpService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
         this.orgSloService = orgSloService;
+        this.orgSsoIdpService = orgSsoIdpService;
     }
 
     @GetMapping
@@ -219,5 +226,57 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgSloService.updateSettings(orgId, user.getId(), request);
+    }
+
+    @GetMapping("/{orgId}/sso/idps")
+    @Operation(summary = "List organization SSO IdP configurations")
+    public List<OrgSsoIdpResponse> listOrgSsoIdps(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSsoIdpService.list(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/sso/idps")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create organization SSO IdP (OWNER)")
+    public OrgSsoIdpResponse createOrgSsoIdp(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody CreateOrgSsoIdpRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSsoIdpService.create(orgId, user.getId(), request);
+    }
+
+    @PutMapping("/{orgId}/sso/idps/{idpId}")
+    @Operation(summary = "Update organization SSO IdP (OWNER)")
+    public OrgSsoIdpResponse updateOrgSsoIdp(
+            @PathVariable UUID orgId,
+            @PathVariable UUID idpId,
+            @Valid @RequestBody UpdateOrgSsoIdpRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSsoIdpService.update(orgId, idpId, user.getId(), request);
+    }
+
+    @DeleteMapping("/{orgId}/sso/idps/{idpId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete organization SSO IdP (OWNER)")
+    public void deleteOrgSsoIdp(
+            @PathVariable UUID orgId,
+            @PathVariable UUID idpId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        orgSsoIdpService.delete(orgId, idpId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/sso/idps/{idpId}/refresh-metadata")
+    @Operation(summary = "Refresh IdP metadata from issuer or federation URL (OWNER)")
+    public OrgSsoIdpResponse refreshOrgSsoIdpMetadata(
+            @PathVariable UUID orgId,
+            @PathVariable UUID idpId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSsoIdpService.refreshMetadata(orgId, idpId, user.getId());
     }
 }

@@ -3,6 +3,7 @@ package com.aistudio.infrastructure.auth;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.config.SsoProperties;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -10,8 +11,7 @@ import org.springframework.web.client.RestClient;
 public class OidcDiscoveryClient {
 
     private final RestClient restClient;
-    private volatile OidcDiscoveryDocument cached;
-    private volatile String cachedIssuer;
+    private final ConcurrentHashMap<String, OidcDiscoveryDocument> cache = new ConcurrentHashMap<>();
 
     public OidcDiscoveryClient(RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder
@@ -25,9 +25,14 @@ public class OidcDiscoveryClient {
     }
 
     public OidcDiscoveryDocument discover(SsoProperties.Oidc oidc) {
-        String issuer = normalizeIssuer(oidc.issuerUri());
-        if (cached != null && cachedIssuer != null && cachedIssuer.equals(issuer)) {
-            return cached;
+        return discoverByIssuer(oidc.issuerUri());
+    }
+
+    public OidcDiscoveryDocument discoverByIssuer(String issuerUri) {
+        String issuer = normalizeIssuer(issuerUri);
+        OidcDiscoveryDocument cachedDoc = cache.get(issuer);
+        if (cachedDoc != null) {
+            return cachedDoc;
         }
         String discoveryUrl = issuer + "/.well-known/openid-configuration";
         OidcDiscoveryDocument document = restClient.get()
@@ -40,9 +45,14 @@ public class OidcDiscoveryClient {
                 || document.userinfoEndpoint() == null) {
             throw new DomainException("CONFIG_ERROR", "OIDC discovery document is incomplete");
         }
-        cached = document;
-        cachedIssuer = issuer;
+        cache.put(issuer, document);
         return document;
+    }
+
+    public void evict(String issuerUri) {
+        if (issuerUri != null && !issuerUri.isBlank()) {
+            cache.remove(normalizeIssuer(issuerUri));
+        }
     }
 
     private static String normalizeIssuer(String issuerUri) {

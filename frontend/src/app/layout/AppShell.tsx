@@ -84,6 +84,13 @@ export function AppShell() {
               SLO
             </Button>
             <Button
+              onClick={() => navigate('/settings/sso')}
+              aria-label="SSO and identity providers"
+              data-testid="nav-sso"
+            >
+              SSO
+            </Button>
+            <Button
               onClick={() => navigate('/settings/plugins')}
               aria-label="Plugins and assistants"
               data-testid="nav-plugins"

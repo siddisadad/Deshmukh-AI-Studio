@@ -41,6 +41,8 @@ class SamlSsoStubAdapterTest {
                 true,
                 "saml",
                 "http://localhost:5173",
+                false,
+                3600000L,
                 new SsoProperties.Oidc("", "", "", "", ""),
                 new SsoProperties.Saml(
                         stubMode ? "" : "https://idp.example.com/metadata",

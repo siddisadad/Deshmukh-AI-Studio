@@ -13,7 +13,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 @Component
-class SamlIdpMetadataLoader {
+public class SamlIdpMetadataLoader {
 
     private final RestClient restClient;
 
@@ -21,7 +21,7 @@ class SamlIdpMetadataLoader {
         this.restClient = restClientBuilder.build();
     }
 
-    SamlIdpMetadata load(String metadataUrl) {
+    public SamlIdpMetadata load(String metadataUrl) {
         if (metadataUrl == null || metadataUrl.isBlank()) {
             throw new DomainException("VALIDATION_ERROR", "SAML metadata URL is required");
         }
@@ -35,7 +35,7 @@ class SamlIdpMetadataLoader {
         return parse(xml);
     }
 
-    SamlIdpMetadata parse(String xml) {
+    public SamlIdpMetadata parse(String xml) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
@@ -172,7 +172,7 @@ class SamlIdpMetadataLoader {
         return certificate.replaceAll("\\s+", "");
     }
 
-    record SamlIdpMetadata(
+    public record SamlIdpMetadata(
             String entityId,
             String singleSignOnUrl,
             String signingCertificate,

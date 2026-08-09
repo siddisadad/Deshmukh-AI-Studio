@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.52-beta] — 2026-08-09
+
+### Added
+
+- Per-organization multi-IdP SSO — `organization_sso_idps` table (V29)
+- OIDC and SAML IdP CRUD for org owners (`/organizations/{id}/sso/idps`)
+- Configured SSO ports (`db-{id}` provider ids) alongside env-based mock/OIDC/SAML
+- Automated metadata refresh scheduler — `SSO_METADATA_REFRESH_ENABLED`
+- Manual metadata refresh API and `/settings/sso` UI
+- Login discovery by org slug — `GET /auth/sso/providers?organizationSlug=`
+- `docs/57-SSO-MULTI-IDP-METADATA-GUIDE.md`
+
 ## [0.2.51-beta] — 2026-08-09
 
 ### Added

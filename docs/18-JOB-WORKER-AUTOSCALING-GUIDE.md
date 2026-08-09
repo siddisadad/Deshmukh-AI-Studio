@@ -23,7 +23,7 @@ Job types: `KNOWLEDGE_REINDEX`, `DOCUMENT_GENERATE` — both CPU/IO heavy; size 
 ## 2. Manual scale (staging GHCR)
 
 ```bash
-export IMAGE_TAG=v0.2.69-beta
+export IMAGE_TAG=v0.2.70-beta
 export WORKER_REPLICAS=3
 ./scripts/staging-ghcr-deploy.sh
 ```

@@ -60,7 +60,7 @@ Read in order; each document builds on the previous.
 | 53 | [53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md](53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md) | Policy canary rollout / gradual provider shifts |
 | 54 | [54-AI-POLICY-CANARY-HOOKS-GUIDE.md](54-AI-POLICY-CANARY-HOOKS-GUIDE.md) | Automated canary promotion / rollback hooks |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.48-beta** adds policy canary rollout — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.49-beta** adds automated canary hooks — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

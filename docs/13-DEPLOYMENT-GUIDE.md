@@ -82,6 +82,7 @@ MAIL_USER=...
 MAIL_PASSWORD=...
 MAIL_FROM=noreply@deshmukh.tech
 CONTACT_NOTIFY_EMAIL=hello@deshmukh.tech
+CONTACT_STAFF_EMAILS=hello@deshmukh.tech,you@example.com
 
 # Public URLs
 PUBLIC_APP_URL=https://deshmukh.tech
@@ -414,8 +415,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml build \
 
 `frontend/Dockerfile` defaults `VITE_PUBLIC_SITE_URL` to `https://deshmukh.tech`.
 
-### Contact form mail
+### Contact form mail + staff inbox
 - API: `POST /api/v1/contact/inquiries` (public) persists rows in `contact_inquiries` and emails `CONTACT_NOTIFY_EMAIL`.
+- Staff inbox: authenticated `GET /api/v1/contact/inquiries` + mark-read, gated by `CONTACT_STAFF_EMAILS` (comma-separated). The AI Studio app shows **Inbox** under settings for those users (`/settings/contact-inbox`).
 - Set `MAIL_PROVIDER=smtp` plus SMTP host credentials in production (see §4).
 - Until SMTP is configured, the logging mail adapter records notify messages in API logs; the marketing UI also falls back to `mailto:` if the API is unreachable.
 

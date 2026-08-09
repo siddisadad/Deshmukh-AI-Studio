@@ -37,6 +37,9 @@ public class ContactInquiryEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "read_at")
+    private Instant readAt;
+
     @PrePersist
     void onCreate() {
         if (id == null) {

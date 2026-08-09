@@ -12,6 +12,9 @@ import com.aistudio.domain.common.DomainException;
 import com.aistudio.infrastructure.mail.EmailPort;
 import com.aistudio.infrastructure.persistence.entity.ContactInquiryEntity;
 import com.aistudio.infrastructure.persistence.repository.ContactInquiryRepository;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,11 +29,14 @@ class ContactInquiryServiceTest {
     @Mock ContactInquiryRepository contactInquiryRepository;
     @Mock EmailPort emailPort;
 
+    ContactStaffAccess staffAccess;
     ContactInquiryService service;
 
     @BeforeEach
     void setUp() {
-        service = new ContactInquiryService(contactInquiryRepository, emailPort, "hello@deshmukh.tech");
+        staffAccess = new ContactStaffAccess("staff@deshmukh.tech");
+        service = new ContactInquiryService(
+                contactInquiryRepository, emailPort, staffAccess, "hello@deshmukh.tech");
     }
 
     @Test
@@ -65,5 +71,50 @@ class ContactInquiryServiceTest {
                 .extracting("code")
                 .isEqualTo("RATE_LIMITED");
         verify(contactInquiryRepository, never()).save(any());
+    }
+
+    @Test
+    void listForStaffRequiresAllowlist() {
+        assertThatThrownBy(() -> service.listForStaff("stranger@example.com"))
+                .isInstanceOf(DomainException.class)
+                .extracting("code")
+                .isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void markReadSetsTimestamp() {
+        UUID id = UUID.randomUUID();
+        ContactInquiryEntity entity = new ContactInquiryEntity();
+        entity.setId(id);
+        entity.setName("Ada");
+        entity.setEmail("ada@example.com");
+        entity.setTopic("Partnership");
+        entity.setMessage("Hello");
+        entity.setCreatedAt(Instant.parse("2026-08-09T12:00:00Z"));
+        when(contactInquiryRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(contactInquiryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.markRead("staff@deshmukh.tech", id);
+
+        assertThat(response.readAt()).isNotNull();
+        assertThat(entity.getReadAt()).isNotNull();
+        verify(contactInquiryRepository).save(entity);
+    }
+
+    @Test
+    void listForStaffReturnsNewestFirst() {
+        ContactInquiryEntity entity = new ContactInquiryEntity();
+        entity.setId(UUID.randomUUID());
+        entity.setName("Ada");
+        entity.setEmail("ada@example.com");
+        entity.setTopic("AI Studio");
+        entity.setMessage("Hi");
+        entity.setCreatedAt(Instant.parse("2026-08-09T12:00:00Z"));
+        when(contactInquiryRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(entity));
+
+        var items = service.listForStaff("staff@deshmukh.tech");
+
+        assertThat(items).hasSize(1);
+        assertThat(items.getFirst().email()).isEqualTo("ada@example.com");
     }
 }

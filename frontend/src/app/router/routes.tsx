@@ -24,6 +24,7 @@ import { BillingSettingsPage } from '../../features/settings/pages/BillingSettin
 import { OrgMembersSettingsPage } from '../../features/settings/pages/OrgMembersSettingsPage';
 import { PluginsSettingsPage } from '../../features/settings/pages/PluginsSettingsPage';
 import { AiRoutingSettingsPage } from '../../features/settings/pages/AiRoutingSettingsPage';
+import { ContactInboxSettingsPage } from '../../features/settings/pages/ContactInboxSettingsPage';
 import { SloSettingsPage } from '../../features/settings/pages/SloSettingsPage';
 import { SsoSettingsPage } from '../../features/settings/pages/SsoSettingsPage';
 import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId/documents', element: <DocumentsPage /> },
           { path: '/projects/:projectId/settings', element: <ProjectSettingsPage /> },
           { path: '/settings/profile', element: <ProfileSettingsPage /> },
+          { path: '/settings/contact-inbox', element: <ContactInboxSettingsPage /> },
           { path: '/settings/members', element: <OrgMembersSettingsPage /> },
           { path: '/settings/billing', element: <BillingSettingsPage /> },
           { path: '/settings/ai-routing', element: <AiRoutingSettingsPage /> },

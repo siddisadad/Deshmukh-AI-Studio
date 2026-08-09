@@ -51,6 +51,7 @@ aistudio:
     from: ${MAIL_FROM:noreply@localhost}
   contact:
     notify-email: ${CONTACT_NOTIFY_EMAIL:hello@deshmukh.tech}
+    staff-emails: ${CONTACT_STAFF_EMAILS:}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
   ai:

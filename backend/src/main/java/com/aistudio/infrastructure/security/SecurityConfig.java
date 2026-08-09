@@ -82,13 +82,13 @@ public class SecurityConfig {
                                 "/api/v1/auth/**",
                                 "/api/v1/billing/stripe/webhook",
                                 "/api/v1/shared/conversations/**",
-                                "/api/v1/contact/**",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/contact/inquiries").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -54,6 +54,7 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
       CONTACT_NOTIFY_EMAIL: ${CONTACT_NOTIFY_EMAIL:-hello@deshmukh.tech}
+      CONTACT_STAFF_EMAILS: ${CONTACT_STAFF_EMAILS:-}
       METRICS_SCRAPE_TOKEN: ${METRICS_SCRAPE_TOKEN:-}
     restart: unless-stopped
     healthcheck:

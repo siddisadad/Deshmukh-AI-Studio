@@ -20,19 +20,27 @@ public class AnthropicProvider implements AiProviderPort {
     private final RestClient client;
     private final String model;
     private final ObjectMapper objectMapper;
+    private final String providerId;
 
     public AnthropicProvider(AiProperties properties, ObjectMapper objectMapper) {
+        this(properties, objectMapper, null, "anthropic");
+    }
+
+    public AnthropicProvider(AiProperties properties, ObjectMapper objectMapper, String baseUrlOverride, String providerId) {
         String apiKey = properties.anthropic() == null ? null : properties.anthropic().apiKey();
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("ANTHROPIC_API_KEY / aistudio.ai.anthropic.api-key is required when provider=anthropic");
         }
-        String baseUrl = properties.anthropic().baseUrl() == null || properties.anthropic().baseUrl().isBlank()
-                ? "https://api.anthropic.com"
-                : properties.anthropic().baseUrl();
+        String baseUrl = baseUrlOverride != null && !baseUrlOverride.isBlank()
+                ? baseUrlOverride
+                : properties.anthropic().baseUrl() == null || properties.anthropic().baseUrl().isBlank()
+                        ? "https://api.anthropic.com"
+                        : properties.anthropic().baseUrl();
         this.model = properties.anthropic().model() == null || properties.anthropic().model().isBlank()
                 ? "claude-sonnet-4-20250514"
                 : properties.anthropic().model();
         this.objectMapper = objectMapper;
+        this.providerId = providerId == null || providerId.isBlank() ? "anthropic" : providerId;
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("x-api-key", apiKey)
@@ -141,7 +149,7 @@ public class AnthropicProvider implements AiProviderPort {
 
     @Override
     public String providerId() {
-        return "anthropic";
+        return providerId;
     }
 
     @Override
@@ -172,7 +180,15 @@ public class AnthropicProvider implements AiProviderPort {
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }
-        body.put("system", request.systemPrompt());
+        if (useNativePromptCache(request)) {
+            ArrayNode systemBlocks = body.putArray("system");
+            ObjectNode block = systemBlocks.addObject();
+            block.put("type", "text");
+            block.put("text", request.systemPrompt());
+            block.putObject("cache_control").put("type", "ephemeral");
+        } else {
+            body.put("system", request.systemPrompt());
+        }
         ArrayNode messages = body.putArray("messages");
         for (AiMessage message : request.messages()) {
             messages.addObject()
@@ -190,5 +206,12 @@ public class AnthropicProvider implements AiProviderPort {
             }
         }
         return model;
+    }
+
+    private static boolean useNativePromptCache(AiGenerationRequest request) {
+        if (request.metadata() == null) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(request.metadata().get("nativePromptCache"));
     }
 }

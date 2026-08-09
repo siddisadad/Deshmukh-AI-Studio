@@ -33,6 +33,7 @@ public class RoutingAiProvider implements AiProviderPort {
     private final AiProviderQuotaTracker quotaTracker;
     private final boolean costAwareRoutingEnabled;
     private final OrgAiRoutingPolicyService routingPolicyService;
+    private final AiProviderCrossRegionRegistry crossRegionRegistry;
     private final ThreadLocal<String> activeProviderId = new ThreadLocal<>();
 
     public RoutingAiProvider(
@@ -95,6 +96,31 @@ public class RoutingAiProvider implements AiProviderPort {
             boolean costAwareRoutingEnabled,
             OrgAiRoutingPolicyService routingPolicyService
     ) {
+        this(
+                registry,
+                chain,
+                circuitBreaker,
+                latencyTracker,
+                adaptiveRoutingEnabled,
+                costTierRegistry,
+                quotaTracker,
+                costAwareRoutingEnabled,
+                routingPolicyService,
+                null);
+    }
+
+    public RoutingAiProvider(
+            AiProviderRegistry registry,
+            List<String> chain,
+            AiProviderCircuitBreaker circuitBreaker,
+            AiProviderLatencyTracker latencyTracker,
+            boolean adaptiveRoutingEnabled,
+            AiProviderCostTierRegistry costTierRegistry,
+            AiProviderQuotaTracker quotaTracker,
+            boolean costAwareRoutingEnabled,
+            OrgAiRoutingPolicyService routingPolicyService,
+            AiProviderCrossRegionRegistry crossRegionRegistry
+    ) {
         this.registry = registry;
         this.chain = chain;
         this.circuitBreaker = circuitBreaker;
@@ -104,6 +130,7 @@ public class RoutingAiProvider implements AiProviderPort {
         this.quotaTracker = quotaTracker;
         this.costAwareRoutingEnabled = costAwareRoutingEnabled && costTierRegistry != null;
         this.routingPolicyService = routingPolicyService;
+        this.crossRegionRegistry = crossRegionRegistry;
     }
 
     @Override
@@ -190,6 +217,9 @@ public class RoutingAiProvider implements AiProviderPort {
     }
 
     private List<String> effectiveChain() {
+        List<String> platformChain = crossRegionRegistry != null && crossRegionRegistry.enabled()
+                ? crossRegionRegistry.resolveChain(chain)
+                : chain;
         List<String> base;
         UUID orgId = OrgAiRoutingContext.organizationId();
         if (routingPolicyService != null && orgId != null) {
@@ -197,10 +227,10 @@ public class RoutingAiProvider implements AiProviderPort {
             if (orgChain.isPresent() && !orgChain.get().isEmpty()) {
                 base = orgChain.get();
             } else {
-                base = chain;
+                base = platformChain;
             }
         } else {
-            base = chain;
+            base = platformChain;
         }
         AiModelRoute modelRoute = OrgAiRoutingContext.modelRoute();
         if (modelRoute != null && modelRoute.providerId() != null && !modelRoute.providerId().isBlank()) {

@@ -96,7 +96,12 @@ class OpenAiProviderStreamTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                crossRegionDisabled()
         );
+    }
+
+    private static AiProperties.CrossRegionRouting crossRegionDisabled() {
+        return new AiProperties.CrossRegionRouting(false, "", "", "");
     }
 }

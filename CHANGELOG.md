@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.43-beta] — 2026-08-09
+
+### Added
+
+- Provider-native prompt caching — `AI_PROVIDER_NATIVE_PROMPT_CACHE_ENABLED` sends OpenAI/Anthropic `cache_control` on system prompts
+- Cross-region AI routing — `AI_CROSS_REGION_ROUTING_ENABLED` with `AISTUDIO_DEPLOY_REGION`, `AI_PROVIDER_ENDPOINT_MAP`, `AI_PROVIDER_REGION_CHAINS`
+- Regional provider aliases — `openai-eu`, `anthropic-eu` register from endpoint map with shared API keys
+- `AiProviderCrossRegionRegistry`, regional `OpenAiProvider` / `AnthropicProvider` constructors
+- `docs/48-PROVIDER-NATIVE-CACHE-CROSS-REGION-GUIDE.md`
+
 ## [0.2.42-beta] — 2026-08-09
 
 ### Added

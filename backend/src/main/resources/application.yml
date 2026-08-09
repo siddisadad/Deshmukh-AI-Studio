@@ -101,6 +101,12 @@ aistudio:
       enabled: ${AI_PROMPT_CACHE_ENABLED:false}
       ttl-seconds: ${AI_PROMPT_CACHE_TTL_SECONDS:300}
       max-entries: ${AI_PROMPT_CACHE_MAX_ENTRIES:500}
+      native-enabled: ${AI_PROVIDER_NATIVE_PROMPT_CACHE_ENABLED:false}
+    cross-region-routing:
+      enabled: ${AI_CROSS_REGION_ROUTING_ENABLED:false}
+      deploy-region: ${AISTUDIO_DEPLOY_REGION:}
+      endpoint-map: ${AI_PROVIDER_ENDPOINT_MAP:}
+      region-chains: ${AI_PROVIDER_REGION_CHAINS:}
   jobs:
     poll-interval-ms: ${JOB_POLL_INTERVAL_MS:2000}
     worker-enabled: ${AISTUDIO_JOBS_WORKER_ENABLED:true}

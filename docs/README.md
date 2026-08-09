@@ -59,8 +59,9 @@ Read in order; each document builds on the previous.
 | 52 | [52-AI-POLICY-SIMULATION-AUDIT-GATE-GUIDE.md](52-AI-POLICY-SIMULATION-AUDIT-GATE-GUIDE.md) | Simulation audit trail and rollout gates |
 | 53 | [53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md](53-AI-POLICY-CANARY-ROLLOUT-GUIDE.md) | Policy canary rollout / gradual provider shifts |
 | 54 | [54-AI-POLICY-CANARY-HOOKS-GUIDE.md](54-AI-POLICY-CANARY-HOOKS-GUIDE.md) | Automated canary promotion / rollback hooks |
+| 55 | [55-SLO-MULTI-WINDOW-TENANT-GUIDE.md](55-SLO-MULTI-WINDOW-TENANT-GUIDE.md) | Multi-window burn-rate policies / SLO per tenant |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.49-beta** adds automated canary hooks — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.50-beta** adds multi-window tenant SLO — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

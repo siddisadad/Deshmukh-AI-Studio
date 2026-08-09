@@ -11,6 +11,9 @@ import com.aistudio.api.organization.dto.OrgAiPolicySimulationResponse;
 import com.aistudio.api.organization.dto.UpdateOrgAiCanaryHooksRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiCanaryRequest;
 import com.aistudio.api.organization.dto.UpdateOrgAiPolicyRequest;
+import com.aistudio.api.organization.dto.OrgSloSettingsResponse;
+import com.aistudio.api.organization.dto.UpdateOrgSloSettingsRequest;
+import com.aistudio.application.organization.OrgSloService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;
 import com.aistudio.infrastructure.security.AuthenticatedUser;
@@ -41,10 +44,16 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
     private final OrgAiPolicyService orgAiPolicyService;
+    private final OrgSloService orgSloService;
 
-    public OrganizationController(OrganizationService organizationService, OrgAiPolicyService orgAiPolicyService) {
+    public OrganizationController(
+            OrganizationService organizationService,
+            OrgAiPolicyService orgAiPolicyService,
+            OrgSloService orgSloService
+    ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
+        this.orgSloService = orgSloService;
     }
 
     @GetMapping
@@ -191,5 +200,24 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgAiPolicyService.evaluateCanaryHooks(orgId, user.getId());
+    }
+
+    @GetMapping("/{orgId}/slo")
+    @Operation(summary = "Get organization SLO targets")
+    public OrgSloSettingsResponse getOrgSloSettings(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSloService.getSettings(orgId, user.getId());
+    }
+
+    @PutMapping("/{orgId}/slo")
+    @Operation(summary = "Update organization SLO targets (OWNER)")
+    public OrgSloSettingsResponse updateOrgSloSettings(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdateOrgSloSettingsRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgSloService.updateSettings(orgId, user.getId(), request);
     }
 }

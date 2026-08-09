@@ -26,3 +26,22 @@ panels = doc.get("panels") or []
 assert len(panels) >= 5, "expected SLO panels"
 print(f"OK: SLO dashboard ({len(panels)} panels) at {path}")
 PY
+
+TENANT_DASHBOARD="${ROOT_DIR}/monitoring/grafana/dashboards/aistudio-slo-tenant.json"
+if [[ ! -f "$TENANT_DASHBOARD" ]]; then
+  echo "Missing dashboard: ${TENANT_DASHBOARD}" >&2
+  exit 1
+fi
+
+python3 - "$TENANT_DASHBOARD" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path) as f:
+    doc = json.load(f)
+assert doc.get("uid") == "aistudio-slo-tenant", "uid must be aistudio-slo-tenant"
+panels = doc.get("panels") or []
+assert len(panels) >= 4, "expected tenant SLO panels"
+print(f"OK: tenant SLO dashboard ({len(panels)} panels) at {path}")
+PY

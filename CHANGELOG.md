@@ -6,6 +6,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.50-beta] — 2026-08-09
+
+### Added
+
+- Per-organization SLO targets on `organizations` (V27) — availability, latency, threshold seconds
+- `GET/PUT /organizations/{id}/slo` and `/settings/slo` UI for owners
+- HTTP metrics tagged with `organization_id` via `OrgSloRequestFilter` + observation filter
+- Prometheus gauges for per-tenant SLO targets (`aistudio_slo_org_*`)
+- Multi-window burn-rate recording rules (5m / 1h / 6h) for platform and tenant
+- Multi-window burn-rate alerts — page (14.4×) and ticket (6×) policies
+- Grafana **AI Studio SLO (tenant)** dashboard (`uid: aistudio-slo-tenant`)
+- `docs/55-SLO-MULTI-WINDOW-TENANT-GUIDE.md`
+
 ## [0.2.49-beta] — 2026-08-09
 
 ### Added

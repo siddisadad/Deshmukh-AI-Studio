@@ -28,6 +28,15 @@ public class OrganizationEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "slo_availability_target", nullable = false)
+    private double sloAvailabilityTarget = 0.995;
+
+    @Column(name = "slo_latency_target", nullable = false)
+    private double sloLatencyTarget = 0.95;
+
+    @Column(name = "slo_latency_threshold_seconds", nullable = false)
+    private int sloLatencyThresholdSeconds = 2;
+
     @PrePersist
     void onCreate() {
         if (id == null) {

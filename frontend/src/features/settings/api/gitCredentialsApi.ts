@@ -70,6 +70,13 @@ export interface OrgGitSyncOverview {
   items: OrgGitSyncOverviewItem[];
 }
 
+export interface OrgGitSyncRetryFailedResult {
+  targeted: number;
+  enqueued: number;
+  skippedPending: number;
+  enqueuedProjectIds: string[];
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -109,4 +116,8 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
+  retryFailedSyncs: (orgId: string) =>
+    http
+      .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
+      .then((r) => r.data),
 };

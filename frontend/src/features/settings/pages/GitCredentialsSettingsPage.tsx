@@ -89,6 +89,25 @@ export function GitCredentialsSettingsPage() {
   }
 
   const isOwner = orgQuery.data?.role === 'OWNER';
+  const canRetryFailedSyncs =
+    orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
+
+  const retryFailedSyncs = useMutation({
+    mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id),
+    onSuccess: async (result) => {
+      setError(null);
+      setMessage(
+        `Enqueued ${result.enqueued} of ${result.targeted} failed syncs`
+          + (result.skippedPending > 0 ? ` (${result.skippedPending} skipped — sync already pending)` : ''),
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to retry syncs');
+    },
+  });
+
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
 
   const upsert = useMutation({
@@ -233,6 +252,18 @@ export function GitCredentialsSettingsPage() {
             >
               Refresh
             </Button>
+            {canRetryFailedSyncs && syncOverviewQuery.data.failedLastSync > 0 && (
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                disabled={retryFailedSyncs.isPending}
+                onClick={() => retryFailedSyncs.mutate()}
+                data-testid="git-sync-overview-retry-failed"
+              >
+                Retry failed syncs
+              </Button>
+            )}
           </Stack>
           {syncOverviewQuery.data.items.length === 0 && (
             <Typography variant="body2" color="text.secondary">

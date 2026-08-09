@@ -2,13 +2,19 @@ package com.aistudio.application.organization;
 
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
+import com.aistudio.application.job.BackgroundJobService;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
+import com.aistudio.domain.job.JobStatus;
+import com.aistudio.domain.job.JobType;
 import com.aistudio.infrastructure.persistence.entity.ProjectEntity;
 import com.aistudio.infrastructure.persistence.entity.ProjectGitLinkEntity;
+import com.aistudio.infrastructure.persistence.repository.BackgroundJobRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectGitLinkRepository;
 import com.aistudio.infrastructure.persistence.repository.ProjectRepository;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,15 +32,21 @@ public class OrgGitSyncOverviewService {
     private final ProjectRepository projectRepository;
     private final ProjectGitLinkRepository gitLinkRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final BackgroundJobService backgroundJobService;
+    private final BackgroundJobRepository backgroundJobRepository;
 
     public OrgGitSyncOverviewService(
             ProjectRepository projectRepository,
             ProjectGitLinkRepository gitLinkRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            BackgroundJobService backgroundJobService,
+            BackgroundJobRepository backgroundJobRepository
     ) {
         this.projectRepository = projectRepository;
         this.gitLinkRepository = gitLinkRepository;
         this.authorizationService = authorizationService;
+        this.backgroundJobService = backgroundJobService;
+        this.backgroundJobRepository = backgroundJobRepository;
     }
 
     @Transactional(readOnly = true)
@@ -88,6 +100,52 @@ public class OrgGitSyncOverviewService {
                 enabledLinks,
                 failedLastSync,
                 filteredItems
+        );
+    }
+
+    @Transactional
+    public OrgGitSyncRetryFailedResponse retryFailedSyncs(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
+        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
+        if (!projects.isEmpty()) {
+            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
+            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
+                linksByProjectId.put(link.getProjectId(), link);
+            }
+        }
+
+        List<ProjectGitLinkEntity> failedLinks = linksByProjectId.values().stream()
+                .filter(link -> link.isEnabled() && "failed".equals(link.getLastSyncStatus()))
+                .toList();
+
+        int skippedPending = 0;
+        List<UUID> enqueuedProjectIds = new ArrayList<>();
+        for (ProjectGitLinkEntity link : failedLinks) {
+            UUID projectId = link.getProjectId();
+            if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
+                    projectId,
+                    JobType.CODE_METADATA_SYNC,
+                    JobStatus.PENDING
+            ) > 0) {
+                skippedPending++;
+                continue;
+            }
+            backgroundJobService.enqueueInternal(
+                    projectId,
+                    userId,
+                    JobType.CODE_METADATA_SYNC,
+                    "{\"source\":\"manual\"}"
+            );
+            enqueuedProjectIds.add(projectId);
+        }
+
+        return new OrgGitSyncRetryFailedResponse(
+                failedLinks.size(),
+                enqueuedProjectIds.size(),
+                skippedPending,
+                enqueuedProjectIds
         );
     }
 

@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.77-beta] — 2026-08-09
+
+### Added
+
+- Org bulk retry failed git syncs — `POST .../git-sync-overview/retry-failed` enqueues background sync jobs
+- Git settings — **Retry failed syncs** for OWNER/ADMIN when overview shows failures
+- `docs/82-ORG-GIT-SYNC-RETRY-FAILED-GUIDE.md`, Phase 14 roadmap
+
 ## [0.2.76-beta] — 2026-08-09
 
 ### Added

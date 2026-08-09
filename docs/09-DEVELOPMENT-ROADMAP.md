@@ -254,6 +254,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 25. Phase 22 — Org overview scheduled sync filter (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Scheduled sync filter | `scheduledSyncEnabled` param, dropdown, summary count + chip ([90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md](90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -52,8 +52,18 @@ export const gitLinkApi = {
     http.get<ProjectGitLink>(`/projects/${projectId}/git-link`).then((r) => r.data),
   upsert: (projectId: string, body: UpsertProjectGitLinkBody) =>
     http.put<ProjectGitLink>(`/projects/${projectId}/git-link`, body).then((r) => r.data),
-  listSyncRuns: (projectId: string, limit = 10) =>
-    http.get<GitSyncRun[]>(`/projects/${projectId}/git-link/sync-runs?limit=${limit}`).then((r) => r.data),
+  listSyncRuns: (
+    projectId: string,
+    limit = 20,
+    filters?: { source?: string; status?: string },
+  ) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (filters?.source && filters.source !== 'all') params.set('source', filters.source);
+    if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
+    return http
+      .get<GitSyncRun[]>(`/projects/${projectId}/git-link/sync-runs?${params.toString()}`)
+      .then((r) => r.data);
+  },
   syncNow: (projectId: string) =>
     http.post<ProjectGitLink>(`/projects/${projectId}/git-link/sync`).then((r) => r.data),
   syncAsync: (projectId: string) =>

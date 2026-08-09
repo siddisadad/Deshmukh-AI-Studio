@@ -64,6 +64,8 @@ export function ProjectSettingsPage() {
   const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
   const [gitPathIncludePatterns, setGitPathIncludePatterns] = useState('');
   const [gitSyncRuns, setGitSyncRuns] = useState<GitSyncRun[]>([]);
+  const [gitSyncRunSourceFilter, setGitSyncRunSourceFilter] = useState<'all' | 'manual' | 'scheduled' | 'webhook'>('all');
+  const [gitSyncRunStatusFilter, setGitSyncRunStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [showGitWebhookSecret, setShowGitWebhookSecret] = useState(false);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export function ProjectSettingsPage() {
       jobsApi.list(projectId, 10),
       codeMetadataApi.summary(projectId),
       gitLinkApi.get(projectId),
-      gitLinkApi.listSyncRuns(projectId, 10),
+      gitLinkApi.listSyncRuns(projectId, 20, { source: 'all', status: 'all' }),
     ])
       .then(([p, listed, status, listedJobs, codeSummary, link, syncRuns]) => {
         setProject(p);
@@ -158,6 +160,15 @@ export function ProjectSettingsPage() {
     }
   }
 
+  async function loadGitSyncRuns(
+    source = gitSyncRunSourceFilter,
+    status = gitSyncRunStatusFilter,
+  ) {
+    if (!projectId) return;
+    const runs = await gitLinkApi.listSyncRuns(projectId, 20, { source, status });
+    setGitSyncRuns(runs);
+  }
+
   async function onSaveGitLink(e: FormEvent) {
     e.preventDefault();
     if (!projectId || !gitRepository.trim()) return;
@@ -207,7 +218,10 @@ export function ProjectSettingsPage() {
     try {
       const link = await gitLinkApi.syncNow(projectId);
       setGitLink(link);
-      setGitSyncRuns(await gitLinkApi.listSyncRuns(projectId, 10));
+      setGitSyncRuns(await gitLinkApi.listSyncRuns(projectId, 20, {
+        source: gitSyncRunSourceFilter,
+        status: gitSyncRunStatusFilter,
+      }));
       setCodeMetadata(await codeMetadataApi.summary(projectId));
       setKnowledge(await knowledgeApi.status(projectId));
       setMessage(`Git sync succeeded · status ${link.lastSyncStatus}`);
@@ -718,18 +732,67 @@ export function ProjectSettingsPage() {
           {gitLink?.lastSyncError && (
             <Typography color="error" variant="body2">{gitLink.lastSyncError}</Typography>
           )}
-          {gitSyncRuns.length > 0 && (
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2">Recent sync runs</Typography>
-              {gitSyncRuns.map((run) => (
-                <Typography key={run.id} variant="body2" color="text.secondary">
-                  {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
-                  {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
-                  {run.errorMessage ? ` · ${run.errorMessage}` : ''}
-                </Typography>
-              ))}
+          <Stack spacing={1}>
+            <Typography variant="subtitle2">Recent sync runs</Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
+              <TextField
+                select
+                label="Source"
+                size="small"
+                value={gitSyncRunSourceFilter}
+                onChange={(e) => {
+                  const value = e.target.value as 'all' | 'manual' | 'scheduled' | 'webhook';
+                  setGitSyncRunSourceFilter(value);
+                  void loadGitSyncRuns(value, gitSyncRunStatusFilter);
+                }}
+                slotProps={{ htmlInput: { 'data-testid': 'git-sync-run-source-filter' } }}
+              >
+                <MenuItem value="all">All sources</MenuItem>
+                <MenuItem value="manual">Manual</MenuItem>
+                <MenuItem value="scheduled">Scheduled</MenuItem>
+                <MenuItem value="webhook">Webhook</MenuItem>
+              </TextField>
+              <TextField
+                select
+                label="Status"
+                size="small"
+                value={gitSyncRunStatusFilter}
+                onChange={(e) => {
+                  const value = e.target.value as 'all' | 'success' | 'failed';
+                  setGitSyncRunStatusFilter(value);
+                  void loadGitSyncRuns(gitSyncRunSourceFilter, value);
+                }}
+                slotProps={{ htmlInput: { 'data-testid': 'git-sync-run-status-filter' } }}
+              >
+                <MenuItem value="all">All statuses</MenuItem>
+                <MenuItem value="success">Success</MenuItem>
+                <MenuItem value="failed">Failed</MenuItem>
+              </TextField>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => void loadGitSyncRuns()}
+                disabled={saving || !gitLink?.id}
+                data-testid="git-sync-runs-refresh"
+              >
+                Refresh
+              </Button>
             </Stack>
-          )}
+            {gitSyncRuns.length === 0 && (
+              <Typography variant="body2" color="text.secondary">No sync runs match the current filters.</Typography>
+            )}
+            {gitSyncRuns.map((run) => (
+              <Typography
+                key={run.id}
+                variant="body2"
+                color={run.status === 'failed' ? 'error' : 'text.secondary'}
+              >
+                {new Date(run.finishedAt).toLocaleString()} · {run.source} · {run.status}
+                {run.status === 'success' ? ` · ${run.fileCount} files` : ''}
+                {run.errorMessage ? ` · ${run.errorMessage}` : ''}
+              </Typography>
+            ))}
+          </Stack>
         </Stack>
       </Paper>
 

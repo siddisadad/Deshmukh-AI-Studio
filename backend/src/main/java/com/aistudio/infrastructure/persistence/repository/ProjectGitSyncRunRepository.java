@@ -9,4 +9,23 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ProjectGitSyncRunRepository extends JpaRepository<ProjectGitSyncRunEntity, UUID> {
 
     List<ProjectGitSyncRunEntity> findByProjectIdOrderByFinishedAtDesc(UUID projectId, Pageable pageable);
+
+    List<ProjectGitSyncRunEntity> findByProjectIdAndSourceOrderByFinishedAtDesc(
+            UUID projectId,
+            String source,
+            Pageable pageable
+    );
+
+    List<ProjectGitSyncRunEntity> findByProjectIdAndStatusOrderByFinishedAtDesc(
+            UUID projectId,
+            String status,
+            Pageable pageable
+    );
+
+    List<ProjectGitSyncRunEntity> findByProjectIdAndSourceAndStatusOrderByFinishedAtDesc(
+            UUID projectId,
+            String source,
+            String status,
+            Pageable pageable
+    );
 }

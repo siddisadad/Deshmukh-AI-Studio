@@ -82,8 +82,9 @@ Read in order; each document builds on the previous.
 | 75 | [75-ORG-GIT-CREDENTIALS-GUIDE.md](75-ORG-GIT-CREDENTIALS-GUIDE.md) | Organization git host credentials |
 | 76 | [76-GIT-STAGING-PROBE-GUIDE.md](76-GIT-STAGING-PROBE-GUIDE.md) | Git staging probes and credential audit |
 | 77 | [77-GIT-WEBHOOK-SECRET-UX-GUIDE.md](77-GIT-WEBHOOK-SECRET-UX-GUIDE.md) | Git webhook secret UX and disconnect |
+| 78 | [78-GIT-SYNC-RUN-FILTERS-GUIDE.md](78-GIT-SYNC-RUN-FILTERS-GUIDE.md) | Git sync run source/status filters |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.72-beta** adds git webhook UX — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.73-beta** adds git sync run filters — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

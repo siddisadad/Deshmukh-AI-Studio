@@ -120,6 +120,11 @@ public class ProjectGitSyncService {
         } else if (request.pathIgnorePatterns() != null) {
             entity.setPathIgnorePatterns(GitPathIgnoreMatcher.normalizePatterns(request.pathIgnorePatterns()));
         }
+        if (request.clearPathIncludePatterns() != null && request.clearPathIncludePatterns()) {
+            entity.setPathIncludePatterns(new ArrayList<>());
+        } else if (request.pathIncludePatterns() != null) {
+            entity.setPathIncludePatterns(GitPathIgnoreMatcher.normalizePatterns(request.pathIncludePatterns()));
+        }
         gitLinkRepository.save(entity);
         return toResponse(entity);
     }
@@ -204,21 +209,19 @@ public class ProjectGitSyncService {
 
     private void enqueueWebhookSync(UUID projectId, GitWebhookDelta delta) {
         ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId).orElse(null);
-        List<String> ignorePatterns = link == null ? List.of() : ignorePatterns(link);
         Map<String, Object> jobPayload = new HashMap<>();
         jobPayload.put("source", "webhook");
         if (webhookDeltaSync && delta != null && delta.hasChanges()) {
-            jobPayload.put("changedPaths", GitPathIgnoreMatcher.filterPaths(delta.changedPaths(), ignorePatterns));
-            jobPayload.put("removedPaths", GitPathIgnoreMatcher.filterPaths(delta.removedPaths(), ignorePatterns));
+            jobPayload.put("changedPaths", filterPaths(link, delta.changedPaths()));
+            jobPayload.put("removedPaths", filterPaths(link, delta.removedPaths()));
         }
         backgroundJobService.enqueueInternal(projectId, JobType.CODE_METADATA_SYNC, jobPayload);
     }
 
     private int syncLinkDelta(ProjectGitLinkEntity link, GitWebhookDelta delta) {
         try {
-            List<String> ignorePatterns = ignorePatterns(link);
-            List<String> changedPaths = GitPathIgnoreMatcher.filterPaths(delta.changedPaths(), ignorePatterns);
-            List<String> removedPaths = GitPathIgnoreMatcher.filterPaths(delta.removedPaths(), ignorePatterns);
+            List<String> changedPaths = filterPaths(link, delta.changedPaths());
+            List<String> removedPaths = filterPaths(link, delta.removedPaths());
             GitMetadataPort port = gitMetadataRegistry.require(link.getProvider());
             List<GitFileEntry> upserts = port.fetchFilesByPaths(
                     link.getRepository(),
@@ -228,7 +231,7 @@ public class ProjectGitSyncService {
             if (fetchFileContent) {
                 upserts = port.hydrateFileContents(link.getRepository(), link.getBranch(), upserts);
             }
-            upserts = GitPathIgnoreMatcher.filterFiles(upserts, ignorePatterns);
+            upserts = filterFiles(link, upserts);
             int count = codeMetadataService.applyDeltaInternal(
                     link.getProjectId(),
                     upserts,
@@ -288,7 +291,7 @@ public class ProjectGitSyncService {
             if (fetchFileContent) {
                 files = port.hydrateFileContents(link.getRepository(), link.getBranch(), files);
             }
-            files = GitPathIgnoreMatcher.filterFiles(files, ignorePatterns(link));
+            files = filterFiles(link, files);
             int count = codeMetadataService.replaceFilesInternal(link.getProjectId(), files);
             link.setLastSyncedAt(Instant.now());
             link.setLastSyncStatus("success");
@@ -348,6 +351,31 @@ public class ProjectGitSyncService {
         return GitPathIgnoreMatcher.normalizePatterns(link.getPathIgnorePatterns());
     }
 
+    private List<String> includePatterns(ProjectGitLinkEntity link) {
+        return GitPathIgnoreMatcher.normalizePatterns(link.getPathIncludePatterns());
+    }
+
+    private List<GitFileEntry> filterFiles(ProjectGitLinkEntity link, List<GitFileEntry> files) {
+        List<String> include = includePatterns(link);
+        List<String> ignore = ignorePatterns(link);
+        return GitPathIgnoreMatcher.filterFiles(
+                GitPathIgnoreMatcher.filterIncludedFiles(files, include),
+                ignore
+        );
+    }
+
+    private List<String> filterPaths(ProjectGitLinkEntity link, List<String> paths) {
+        if (link == null) {
+            return paths == null ? List.of() : paths;
+        }
+        List<String> include = includePatterns(link);
+        List<String> ignore = ignorePatterns(link);
+        return GitPathIgnoreMatcher.filterPaths(
+                GitPathIgnoreMatcher.filterIncludedPaths(paths, include),
+                ignore
+        );
+    }
+
     private static boolean isFailedSyncStatus(String status) {
         return status != null && "failed".equalsIgnoreCase(status.trim());
     }
@@ -368,6 +396,7 @@ public class ProjectGitSyncService {
                 entity.getLastSyncError(),
                 entity.getScheduledSyncIntervalMinutes(),
                 ignorePatterns(entity),
+                includePatterns(entity),
                 entity.getUpdatedAt()
         );
     }
@@ -387,6 +416,7 @@ public class ProjectGitSyncService {
                 "never",
                 null,
                 null,
+                List.of(),
                 List.of(),
                 null
         );

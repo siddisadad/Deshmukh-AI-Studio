@@ -146,7 +146,15 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
-## 12. Dependency Graph (simplified)
+## 12. Phase 9 — Git sync scope (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Path scope | Include patterns ([73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md](73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md)) | — |
+
+---
+
+## 13. Dependency Graph (simplified)
 
 ```
 Foundations → Identity → Projects → Requirements/Tasks/Docs → AI → Hardening → Beta
@@ -156,7 +164,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 13. Staffing Suggestion
+## 14. Staffing Suggestion
 
 | Role | Focus |
 |---|---|
@@ -167,7 +175,7 @@ AI can prototype in parallel behind feature flag after Projects exist, but do no
 
 ---
 
-## 14. Document Control
+## 15. Document Control
 
 | Version | Date | Notes |
 |---|---|---|

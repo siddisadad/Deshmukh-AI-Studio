@@ -9,7 +9,7 @@ Complements [64-GIT-CODE-METADATA-SYNC-GUIDE.md](64-GIT-CODE-METADATA-SYNC-GUIDE
 
 ## Overview
 
-Each project git link stores `path_ignore_patterns` (JSON array, default empty). During full sync, webhook delta sync, and background `CODE_METADATA_SYNC` jobs, paths matching any pattern are skipped for fetch, upsert, and delete.
+Each project git link stores `path_ignore_patterns` (JSON array, default empty). Matched paths are skipped for fetch, upsert, and delete. Filter order: **include** (if any) → **ignore**. See [73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md](73-GIT-PATH-INCLUDE-PATTERNS-GUIDE.md).
 
 Patterns use Spring `AntPathMatcher` semantics (`*`, `**`, `?`). Patterns without `/` are treated as `**/<pattern>` (e.g. `README.md` → `**/README.md`).
 

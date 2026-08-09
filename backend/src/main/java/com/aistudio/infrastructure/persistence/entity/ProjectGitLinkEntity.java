@@ -61,6 +61,10 @@ public class ProjectGitLinkEntity {
     @Column(name = "path_ignore_patterns", nullable = false, columnDefinition = "jsonb")
     private List<String> pathIgnorePatterns = new ArrayList<>();
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "path_include_patterns", nullable = false, columnDefinition = "jsonb")
+    private List<String> pathIncludePatterns = new ArrayList<>();
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -80,6 +84,9 @@ public class ProjectGitLinkEntity {
         }
         if (pathIgnorePatterns == null) {
             pathIgnorePatterns = new ArrayList<>();
+        }
+        if (pathIncludePatterns == null) {
+            pathIncludePatterns = new ArrayList<>();
         }
         updatedAt = Instant.now();
     }

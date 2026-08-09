@@ -16,6 +16,8 @@ public record UpsertProjectGitLinkRequest(
         @Min(15) @Max(10080) Integer scheduledSyncIntervalMinutes,
         Boolean clearScheduledSyncInterval,
         @Size(max = 50) List<@Size(max = 200) String> pathIgnorePatterns,
-        Boolean clearPathIgnorePatterns
+        Boolean clearPathIgnorePatterns,
+        @Size(max = 50) List<@Size(max = 200) String> pathIncludePatterns,
+        Boolean clearPathIncludePatterns
 ) {
 }

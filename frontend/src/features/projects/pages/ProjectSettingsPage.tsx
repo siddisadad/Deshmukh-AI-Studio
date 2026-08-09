@@ -62,6 +62,7 @@ export function ProjectSettingsPage() {
   const [gitScheduledSyncEnabled, setGitScheduledSyncEnabled] = useState(true);
   const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState('');
   const [gitPathIgnorePatterns, setGitPathIgnorePatterns] = useState('');
+  const [gitPathIncludePatterns, setGitPathIncludePatterns] = useState('');
 
   useEffect(() => {
     if (!projectId) return;
@@ -101,6 +102,9 @@ export function ProjectSettingsPage() {
         );
         setGitPathIgnorePatterns(
           link.pathIgnorePatterns?.length ? link.pathIgnorePatterns.join('\n') : '',
+        );
+        setGitPathIncludePatterns(
+          link.pathIncludePatterns?.length ? link.pathIncludePatterns.join('\n') : '',
         );
         const current = listed.find((a) => a.assetType === 'API_SPEC') || listed[0];
         if (current) {
@@ -162,6 +166,10 @@ export function ProjectSettingsPage() {
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
+      const includeLines = gitPathIncludePatterns
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
       const link = await gitLinkApi.upsert(projectId, {
         provider: gitProvider,
         repository: gitRepository.trim(),
@@ -171,6 +179,9 @@ export function ProjectSettingsPage() {
         ...(intervalTrimmed
           ? { scheduledSyncIntervalMinutes: Number(intervalTrimmed) }
           : { clearScheduledSyncInterval: true }),
+        ...(includeLines.length > 0
+          ? { pathIncludePatterns: includeLines }
+          : { clearPathIncludePatterns: true }),
         ...(patternLines.length > 0
           ? { pathIgnorePatterns: patternLines }
           : { clearPathIgnorePatterns: true }),
@@ -529,6 +540,16 @@ export function ProjectSettingsPage() {
             placeholder="Platform default (e.g. 60)"
             helperText="Optional per-project override (15–10080). Leave blank for platform GIT_SYNC_SCHEDULED_INTERVAL_MS."
             slotProps={{ htmlInput: { 'data-testid': 'git-sync-interval' } }}
+          />
+          <TextField
+            label="Path include patterns"
+            value={gitPathIncludePatterns}
+            onChange={(e) => setGitPathIncludePatterns(e.target.value)}
+            multiline
+            minRows={2}
+            placeholder="src/**\ndocs/**/*.md"
+            helperText="Optional scope limit — one Ant-style glob per line. Empty syncs all paths (after ignores)."
+            slotProps={{ htmlInput: { 'data-testid': 'git-path-include' } }}
           />
           <TextField
             label="Path ignore patterns"

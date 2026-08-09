@@ -37,7 +37,8 @@ class ThreadExportDlpScannerTest {
 
     @Test
     void detectsGoogleApiKey() {
-        ThreadExportDlpScanResult result = ThreadExportDlpScanner.scan("key AIzaSyD-1234567890abcdefghijklmnopqrs");
+        ThreadExportDlpScanResult result = ThreadExportDlpScanner.scan(
+                "key AIzaSyD-1234567890abcdefghijklmnopqrs12");
         assertThat(result.hasMatches()).isTrue();
         assertThat(result.matches().stream().anyMatch(m -> m.category().equals("google_api_key"))).isTrue();
     }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { authApi } from '../api/authApi';
+import { consumeAuthReturnPath } from '../authReturnPath';
 import { useAuthStore } from '../store/authStore';
 import { AuthCard } from './LoginPage';
 
@@ -30,7 +31,7 @@ export function SsoCallbackPage() {
           return;
         }
         setSession(data);
-        navigate('/dashboard', { replace: true });
+        navigate(consumeAuthReturnPath(), { replace: true });
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : 'SSO sign-in failed');

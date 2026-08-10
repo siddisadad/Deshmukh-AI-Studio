@@ -14,6 +14,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { MAIN_CONTENT_ID, SkipToContent } from '../../../shared/ui/SkipToContent';
 import { authApi, type SsoProvider } from '../api/authApi';
+import { consumeAuthReturnPath } from '../authReturnPath';
 import { useAuthStore } from '../store/authStore';
 
 export function LoginPage() {
@@ -43,7 +44,7 @@ export function LoginPage() {
     try {
       const data = await authApi.login({ email, password });
       setSession(data);
-      navigate('/dashboard');
+      navigate(consumeAuthReturnPath());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');
     } finally {

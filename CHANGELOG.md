@@ -6,7 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
-## [0.2.110-beta] — 2026-08-10
+## [0.2.111-beta] — 2026-08-10
+
+### Fixed
+
+- Auth bootstrap uses shared `refreshAccessToken()` to avoid duplicate refresh races and intermittent logout
+- `authStatus` gate on protected routes — spinner while session restores; deep links save return path in sessionStorage
+- Login and SSO callback redirect to saved return path after sign-in
+- Git sync filter URL updates use `navigate()` so `#org-git-sync-runs` hash is preserved when applying run filters
+- Shared `gitSyncFilterUrl` helpers for overview/run filter URL building and parsing
+- Local preset migration only marks complete when all server creates succeed
+
 
 ### Added
 

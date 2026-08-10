@@ -42,6 +42,7 @@ export function GitCredentialsSettingsPage() {
   const [overviewLinkedFilter, setOverviewLinkedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
   const [overviewEnabledFilter, setOverviewEnabledFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [overviewScheduledSyncFilter, setOverviewScheduledSyncFilter] = useState<'all' | 'scheduled' | 'manual'>('all');
+  const [overviewIntervalFilter, setOverviewIntervalFilter] = useState<'all' | 'custom' | 'default'>('all');
   const [overviewProviderFilter, setOverviewProviderFilter] = useState<'all' | 'github' | 'gitlab' | 'bitbucket'>('all');
   const [overviewStatusFilter, setOverviewStatusFilter] = useState<'all' | 'success' | 'failed' | 'never'>('all');
   const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
@@ -82,6 +83,7 @@ export function GitCredentialsSettingsPage() {
       overviewLinkedFilter,
       overviewEnabledFilter,
       overviewScheduledSyncFilter,
+      overviewIntervalFilter,
       overviewProviderFilter,
       overviewStatusFilter,
     ],
@@ -91,6 +93,8 @@ export function GitCredentialsSettingsPage() {
         enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
         scheduledSyncEnabled:
           overviewScheduledSyncFilter === 'all' ? undefined : overviewScheduledSyncFilter === 'scheduled',
+        customSyncInterval:
+          overviewIntervalFilter === 'all' ? undefined : overviewIntervalFilter === 'custom',
         provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
         lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
       }),
@@ -171,17 +175,19 @@ export function GitCredentialsSettingsPage() {
     linked = overviewLinkedFilter,
     enabled = overviewEnabledFilter,
     scheduled = overviewScheduledSyncFilter,
+    interval = overviewIntervalFilter,
     provider = overviewProviderFilter,
     status = overviewStatusFilter
   ) {
     if (!org?.id) return;
     await queryClient.fetchQuery({
-      queryKey: ['org-git-sync-overview', org.id, linked, enabled, scheduled, provider, status],
+      queryKey: ['org-git-sync-overview', org.id, linked, enabled, scheduled, interval, provider, status],
       queryFn: () =>
         gitCredentialsApi.getSyncOverview(org.id, {
           linked: linked === 'all' ? undefined : linked === 'linked',
           enabled: enabled === 'all' ? undefined : enabled === 'enabled',
           scheduledSyncEnabled: scheduled === 'all' ? undefined : scheduled === 'scheduled',
+          customSyncInterval: interval === 'all' ? undefined : interval === 'custom',
           provider: provider === 'all' ? undefined : provider,
           lastSyncStatus: status === 'all' ? undefined : status,
         }),
@@ -198,6 +204,8 @@ export function GitCredentialsSettingsPage() {
         enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
         scheduledSyncEnabled:
           overviewScheduledSyncFilter === 'all' ? undefined : overviewScheduledSyncFilter === 'scheduled',
+        customSyncInterval:
+          overviewIntervalFilter === 'all' ? undefined : overviewIntervalFilter === 'custom',
         provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
         lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
       });
@@ -347,6 +355,7 @@ export function GitCredentialsSettingsPage() {
       overviewLinkedFilter,
       overviewEnabledFilter,
       overviewScheduledSyncFilter,
+      overviewIntervalFilter,
       overviewProviderFilter,
       'failed'
     );
@@ -356,28 +365,40 @@ export function GitCredentialsSettingsPage() {
     setOverviewLinkedFilter('linked');
     setOverviewEnabledFilter('all');
     setOverviewScheduledSyncFilter('all');
-    await loadSyncOverview('linked', 'all', 'all', overviewProviderFilter, overviewStatusFilter);
+    setOverviewIntervalFilter('all');
+    await loadSyncOverview('linked', 'all', 'all', 'all', overviewProviderFilter, overviewStatusFilter);
   }
 
   async function filterOverviewToEnabled() {
     setOverviewLinkedFilter('linked');
     setOverviewEnabledFilter('enabled');
     setOverviewScheduledSyncFilter('all');
-    await loadSyncOverview('linked', 'enabled', 'all', overviewProviderFilter, overviewStatusFilter);
+    setOverviewIntervalFilter('all');
+    await loadSyncOverview('linked', 'enabled', 'all', 'all', overviewProviderFilter, overviewStatusFilter);
   }
 
   async function filterOverviewToScheduledSync() {
     setOverviewLinkedFilter('linked');
     setOverviewEnabledFilter('enabled');
     setOverviewScheduledSyncFilter('scheduled');
-    await loadSyncOverview('linked', 'enabled', 'scheduled', overviewProviderFilter, overviewStatusFilter);
+    setOverviewIntervalFilter('all');
+    await loadSyncOverview('linked', 'enabled', 'scheduled', 'all', overviewProviderFilter, overviewStatusFilter);
   }
 
   async function filterOverviewToManualSync() {
     setOverviewLinkedFilter('linked');
     setOverviewEnabledFilter('enabled');
     setOverviewScheduledSyncFilter('manual');
-    await loadSyncOverview('linked', 'enabled', 'manual', overviewProviderFilter, overviewStatusFilter);
+    setOverviewIntervalFilter('all');
+    await loadSyncOverview('linked', 'enabled', 'manual', 'all', overviewProviderFilter, overviewStatusFilter);
+  }
+
+  async function filterOverviewToCustomInterval() {
+    setOverviewLinkedFilter('linked');
+    setOverviewEnabledFilter('enabled');
+    setOverviewScheduledSyncFilter('all');
+    setOverviewIntervalFilter('custom');
+    await loadSyncOverview('linked', 'enabled', 'all', 'custom', overviewProviderFilter, overviewStatusFilter);
   }
 
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
@@ -505,6 +526,20 @@ export function GitCredentialsSettingsPage() {
                 </Link>
               </>
             ) : null}
+            {syncOverviewQuery.data.customSyncIntervalLinks > 0 ? (
+              <>
+                {' · '}
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => void filterOverviewToCustomInterval()}
+                  sx={{ verticalAlign: 'baseline' }}
+                  data-testid="git-sync-overview-custom-interval-count"
+                >
+                  {syncOverviewQuery.data.customSyncIntervalLinks} custom interval
+                </Link>
+              </>
+            ) : null}
             {syncOverviewQuery.data.failedLastSync > 0 ? (
               <>
                 {' · '}
@@ -534,6 +569,7 @@ export function GitCredentialsSettingsPage() {
                   value,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
+                  overviewIntervalFilter,
                   overviewProviderFilter,
                   overviewStatusFilter
                 );
@@ -556,6 +592,7 @@ export function GitCredentialsSettingsPage() {
                   overviewLinkedFilter,
                   value,
                   overviewScheduledSyncFilter,
+                  overviewIntervalFilter,
                   overviewProviderFilter,
                   overviewStatusFilter
                 );
@@ -578,6 +615,7 @@ export function GitCredentialsSettingsPage() {
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   value,
+                  overviewIntervalFilter,
                   overviewProviderFilter,
                   overviewStatusFilter
                 );
@@ -587,6 +625,29 @@ export function GitCredentialsSettingsPage() {
               <MenuItem value="all">All sync modes</MenuItem>
               <MenuItem value="scheduled">Scheduled only</MenuItem>
               <MenuItem value="manual">Manual only</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Sync interval"
+              size="small"
+              value={overviewIntervalFilter}
+              onChange={(e) => {
+                const value = e.target.value as 'all' | 'custom' | 'default';
+                setOverviewIntervalFilter(value);
+                void loadSyncOverview(
+                  overviewLinkedFilter,
+                  overviewEnabledFilter,
+                  overviewScheduledSyncFilter,
+                  value,
+                  overviewProviderFilter,
+                  overviewStatusFilter
+                );
+              }}
+              slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-interval-filter' } }}
+            >
+              <MenuItem value="all">All intervals</MenuItem>
+              <MenuItem value="custom">Custom interval</MenuItem>
+              <MenuItem value="default">Platform default</MenuItem>
             </TextField>
             <TextField
               select
@@ -600,6 +661,7 @@ export function GitCredentialsSettingsPage() {
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
+                  overviewIntervalFilter,
                   value,
                   overviewStatusFilter
                 );
@@ -623,6 +685,7 @@ export function GitCredentialsSettingsPage() {
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
+                  overviewIntervalFilter,
                   overviewProviderFilter,
                   value
                 );

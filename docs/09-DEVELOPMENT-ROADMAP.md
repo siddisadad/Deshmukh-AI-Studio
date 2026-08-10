@@ -286,6 +286,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 29. Phase 26 — Org overview custom interval filter (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Interval filter | `customSyncInterval` param, dropdown, summary count + chip ([94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md](94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

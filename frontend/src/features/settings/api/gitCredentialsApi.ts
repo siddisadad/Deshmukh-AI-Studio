@@ -82,6 +82,7 @@ export interface OrgGitSyncOverview {
   enabledLinks: number;
   scheduledSyncLinks: number;
   manualSyncLinks: number;
+  customSyncIntervalLinks: number;
   failedLastSync: number;
   items: OrgGitSyncOverviewItem[];
 }
@@ -165,6 +166,7 @@ export const gitCredentialsApi = {
       linked?: boolean;
       enabled?: boolean;
       scheduledSyncEnabled?: boolean;
+      customSyncInterval?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
@@ -174,6 +176,9 @@ export const gitCredentialsApi = {
     if (filters?.enabled !== undefined) params.set('enabled', String(filters.enabled));
     if (filters?.scheduledSyncEnabled !== undefined) {
       params.set('scheduledSyncEnabled', String(filters.scheduledSyncEnabled));
+    }
+    if (filters?.customSyncInterval !== undefined) {
+      params.set('customSyncInterval', String(filters.customSyncInterval));
     }
     if (filters?.provider) params.set('provider', filters.provider);
     if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
@@ -225,6 +230,7 @@ export const gitCredentialsApi = {
       linked?: boolean;
       enabled?: boolean;
       scheduledSyncEnabled?: boolean;
+      customSyncInterval?: boolean;
       provider?: string;
       lastSyncStatus?: string;
     }
@@ -234,6 +240,9 @@ export const gitCredentialsApi = {
     if (filters?.enabled !== undefined) params.enabled = String(filters.enabled);
     if (filters?.scheduledSyncEnabled !== undefined) {
       params.scheduledSyncEnabled = String(filters.scheduledSyncEnabled);
+    }
+    if (filters?.customSyncInterval !== undefined) {
+      params.customSyncInterval = String(filters.customSyncInterval);
     }
     if (filters?.provider) params.provider = filters.provider;
     if (filters?.lastSyncStatus) params.lastSyncStatus = filters.lastSyncStatus;

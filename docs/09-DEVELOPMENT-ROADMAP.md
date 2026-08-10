@@ -414,6 +414,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 45. Phase 42 — Org overview preset counts (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Overview preset chip counts | Match counts on built-in overview filter presets ([110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md](110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

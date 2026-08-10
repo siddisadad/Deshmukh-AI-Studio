@@ -96,6 +96,15 @@ export interface OrgGitSyncOverviewFilters {
   lastSyncStatus?: string;
 }
 
+export interface OrgGitSyncOverviewPresetCount {
+  id: string;
+  count: number;
+}
+
+export interface OrgGitSyncOverviewFilterCounts {
+  presets: OrgGitSyncOverviewPresetCount[];
+}
+
 export interface OrgGitSyncBulkActionsSummary {
   organizationId: string;
   filteredItems: number;
@@ -237,6 +246,10 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
+  getSyncOverviewFilterCounts: (orgId: string) =>
+    http
+      .get<OrgGitSyncOverviewFilterCounts>(`/organizations/${orgId}/git-sync-overview/filter-counts`)
+      .then((r) => r.data),
   getBulkActionsSummary: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
     const params = buildOverviewFilterParams(filters);
     const query = params.toString();

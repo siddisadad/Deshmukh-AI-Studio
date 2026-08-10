@@ -6,8 +6,9 @@ import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewFilterCountsResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
-import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewPresetCountResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalResponse;
@@ -129,6 +130,49 @@ public class OrgGitSyncOverviewService {
                 failedLastSync,
                 filteredItems
         );
+    }
+
+    @Transactional(readOnly = true)
+    public OrgGitSyncOverviewFilterCountsResponse getFilterCounts(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgMember(organizationId, userId);
+        List<OrgGitSyncOverviewItemResponse> items = buildOverviewItems(organizationId);
+
+        List<OrgGitSyncOverviewPresetCountResponse> presets = List.of(
+                presetCount("failed-enabled", items, true, true, null, null, null, "failed"),
+                presetCount("manual-enabled", items, true, true, false, null, null, null),
+                presetCount("scheduled-enabled", items, true, true, true, null, null, null),
+                presetCount("failed-scheduled", items, true, true, true, null, null, "failed"),
+                presetCount("custom-interval", items, true, true, null, true, null, null),
+                presetCount("never-synced", items, true, true, null, null, null, "never"),
+                presetCount("unlinked", items, false, null, null, null, null, null),
+                presetCount("github-enabled", items, true, true, null, null, "github", null),
+                presetCount("gitlab-enabled", items, true, true, null, null, "gitlab", null),
+                presetCount("bitbucket-enabled", items, true, true, null, null, "bitbucket", null)
+        );
+        return new OrgGitSyncOverviewFilterCountsResponse(presets);
+    }
+
+    private OrgGitSyncOverviewPresetCountResponse presetCount(
+            String id,
+            List<OrgGitSyncOverviewItemResponse> items,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
+        long count = items.stream()
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        provider,
+                        lastSyncStatus))
+                .count();
+        return new OrgGitSyncOverviewPresetCountResponse(id, count);
     }
 
     @Transactional

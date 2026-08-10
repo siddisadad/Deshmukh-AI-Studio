@@ -69,6 +69,23 @@ class OrgGitSyncOverviewControllerIT {
                 .andExpect(jsonPath("$.items[?(@.projectId == '" + linkedProjectId + "')].linked").value(true))
                 .andExpect(jsonPath("$.items[?(@.projectId == '" + linkedProjectId + "')].lastSyncStatus").value("success"))
                 .andExpect(jsonPath("$.items[?(@.projectId == '" + unlinkedProjectId + "')].linked").value(false));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/filter-counts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.presets.length()").value(10))
+                .andExpect(jsonPath("$.presets[0].id").value("failed-enabled"))
+                .andExpect(jsonPath("$.presets[0].count").value(0))
+                .andExpect(jsonPath("$.presets[1].id").value("manual-enabled"))
+                .andExpect(jsonPath("$.presets[1].count").value(1))
+                .andExpect(jsonPath("$.presets[2].id").value("scheduled-enabled"))
+                .andExpect(jsonPath("$.presets[2].count").value(0))
+                .andExpect(jsonPath("$.presets[6].id").value("unlinked"))
+                .andExpect(jsonPath("$.presets[6].count").value(1))
+                .andExpect(jsonPath("$.presets[7].id").value("github-enabled"))
+                .andExpect(jsonPath("$.presets[7].count").value(1))
+                .andExpect(jsonPath("$.presets[8].id").value("gitlab-enabled"))
+                .andExpect(jsonPath("$.presets[8].count").value(0));
     }
 
     @Test

@@ -32,6 +32,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunFilterCountsResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
+import com.aistudio.api.organization.dto.OrgGitSyncOverviewFilterCountsResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
@@ -428,6 +429,15 @@ public class OrganizationController {
     ) {
         return orgGitSyncOverviewService.getOverview(
                 orgId, user.getId(), linked, enabled, scheduledSyncEnabled, customSyncInterval, provider, lastSyncStatus);
+    }
+
+    @GetMapping("/{orgId}/git-sync-overview/filter-counts")
+    @Operation(summary = "Organization git sync overview counts for built-in filter presets")
+    public OrgGitSyncOverviewFilterCountsResponse getGitSyncOverviewFilterCounts(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.getFilterCounts(orgId, user.getId());
     }
 
     @GetMapping("/{orgId}/git-sync-overview/export")

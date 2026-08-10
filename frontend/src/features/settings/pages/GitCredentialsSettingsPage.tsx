@@ -469,6 +469,12 @@ export function GitCredentialsSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const overviewFilterCountsQuery = useQuery({
+    queryKey: ['org-git-sync-overview-filter-counts', org?.id],
+    queryFn: () => gitCredentialsApi.getSyncOverviewFilterCounts(org!.id),
+    enabled: !!org?.id,
+  });
+
   const isOwnerOrAdmin =
     orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
 
@@ -682,6 +688,7 @@ export function GitCredentialsSettingsPage() {
       queryKey: ['org-git-sync-overview', org.id, linked, enabled, scheduled, interval, provider, status],
       queryFn: () => gitCredentialsApi.getSyncOverview(org.id, filters),
     });
+    void queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
   }
 
   function buildOverviewFilters(): OrgGitSyncOverviewFilters {
@@ -901,6 +908,12 @@ export function GitCredentialsSettingsPage() {
     );
   }
 
+  function formatOverviewPresetLabel(preset: OverviewFilterPreset): string {
+    const count = overviewFilterCountsQuery.data?.presets.find((item) => item.id === preset.id)?.count;
+    if (count == null) return preset.label;
+    return `${preset.label} (${count})`;
+  }
+
   async function copyOverviewFilterLink() {
     setError(null);
     try {
@@ -1068,6 +1081,7 @@ export function GitCredentialsSettingsPage() {
           + (result.skippedPending > 0 ? ` (${result.skippedPending} skipped — sync already pending)` : ''),
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org?.id] });
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
@@ -1083,6 +1097,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Enabled scheduled sync on ${result.updated} of ${result.targeted} manual-only links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org?.id] });
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
@@ -1098,6 +1113,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Disabled scheduled sync on ${result.updated} of ${result.targeted} links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org?.id] });
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
@@ -1113,6 +1129,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Cleared custom interval on ${result.updated} of ${result.targeted} links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org?.id] });
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
@@ -1133,6 +1150,7 @@ export function GitCredentialsSettingsPage() {
           : `Skipped ${projectKey} — sync already pending`,
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to retry sync');
@@ -1153,6 +1171,7 @@ export function GitCredentialsSettingsPage() {
           : `${projectKey} already has scheduled sync enabled`,
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to enable scheduled sync');
@@ -1173,6 +1192,7 @@ export function GitCredentialsSettingsPage() {
           : `${projectKey} already set to manual only`,
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to disable scheduled sync');
@@ -1193,6 +1213,7 @@ export function GitCredentialsSettingsPage() {
           : `${projectKey} already uses the platform default interval`,
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to clear sync interval');
@@ -1249,6 +1270,7 @@ export function GitCredentialsSettingsPage() {
         setBulkSetIntervalDialogOpen(false);
         setIntervalMinutesInput('');
         await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
         await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org.id] });
       } catch (err) {
         setMessage(null);
@@ -1276,6 +1298,7 @@ export function GitCredentialsSettingsPage() {
       setIntervalDialogProject(null);
       setIntervalMinutesInput('');
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to set sync interval');
@@ -1536,7 +1559,7 @@ export function GitCredentialsSettingsPage() {
             {OVERVIEW_FILTER_PRESETS.map((preset) => (
               <Chip
                 key={preset.id}
-                label={preset.label}
+                label={formatOverviewPresetLabel(preset)}
                 size="small"
                 clickable
                 color={isOverviewPresetActive(preset) ? 'primary' : 'default'}

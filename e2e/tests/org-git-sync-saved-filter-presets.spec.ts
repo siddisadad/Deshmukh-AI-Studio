@@ -60,7 +60,8 @@ test('overview saved filter preset save apply and delete', async ({ page }) => {
   const savedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName });
   await expect(savedChip).toBeVisible();
 
-  await page.getByTestId('git-sync-overview-active-filter-linked').getByRole('button').click();
+  await page.getByTestId('git-sync-overview-linked-filter').click();
+  await page.getByRole('option', { name: 'All projects' }).click();
   await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toHaveCount(0);
   await expect(page).not.toHaveURL(/linked=/);
 

@@ -70,6 +70,8 @@ export function GitCredentialsSettingsPage() {
   } | null>(null);
   const [intervalMinutesInput, setIntervalMinutesInput] = useState('');
   const [settingIntervalProjectId, setSettingIntervalProjectId] = useState<string | null>(null);
+  const [bulkSetIntervalDialogOpen, setBulkSetIntervalDialogOpen] = useState(false);
+  const [settingBulkInterval, setSettingBulkInterval] = useState(false);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -278,10 +280,13 @@ export function GitCredentialsSettingsPage() {
     syncOverviewQuery.data?.items.filter(
       (item) => item.linked && item.enabled && item.scheduledSyncIntervalMinutes != null
     ).length ?? 0;
+  const filteredEnabledLinkedLinks =
+    syncOverviewQuery.data?.items.filter((item) => item.linked && item.enabled).length ?? 0;
   const overviewFiltersActive = hasActiveOverviewFilters();
   const bulkScheduledScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
   const bulkRetryScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
   const bulkClearIntervalScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
+  const bulkSetIntervalScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
 
   const retryFailedSyncs = useMutation({
     mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id, buildOverviewFilters()),
@@ -422,30 +427,64 @@ export function GitCredentialsSettingsPage() {
     }
   }
 
+  function openBulkSetIntervalDialog() {
+    setBulkSetIntervalDialogOpen(true);
+    setIntervalDialogProject(null);
+    setIntervalMinutesInput('');
+    setError(null);
+  }
+
   function openSetIntervalDialog(
     projectId: string,
     projectKey: string,
     currentMinutes: number | null
   ) {
+    setBulkSetIntervalDialogOpen(false);
     setIntervalDialogProject({ projectId, projectKey, currentMinutes });
     setIntervalMinutesInput(currentMinutes != null ? String(currentMinutes) : '');
     setError(null);
   }
 
   function closeSetIntervalDialog() {
-    if (settingIntervalProjectId) return;
+    if (settingIntervalProjectId || settingBulkInterval) return;
     setIntervalDialogProject(null);
+    setBulkSetIntervalDialogOpen(false);
     setIntervalMinutesInput('');
   }
 
   async function submitSetInterval() {
-    if (!org?.id || !intervalDialogProject) return;
+    if (!org?.id) return;
     const trimmed = intervalMinutesInput.trim();
     const minutes = Number(trimmed);
     if (!trimmed || !Number.isInteger(minutes) || minutes < 15 || minutes > 10080) {
       setError('Interval must be a whole number between 15 and 10080 minutes');
       return;
     }
+
+    if (bulkSetIntervalDialogOpen) {
+      setSettingBulkInterval(true);
+      setError(null);
+      try {
+        const result = await gitCredentialsApi.setCustomSyncIntervals(
+          org.id,
+          minutes,
+          buildOverviewFilters()
+        );
+        const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
+        setMessage(`Set sync interval to ${minutes}m on ${result.updated} of ${result.targeted} links${scope}`);
+        setBulkSetIntervalDialogOpen(false);
+        setIntervalMinutesInput('');
+        await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+      } catch (err) {
+        setMessage(null);
+        setError(err instanceof ApiError ? err.message : 'Failed to set sync intervals');
+      } finally {
+        setSettingBulkInterval(false);
+      }
+      return;
+    }
+
+    if (!intervalDialogProject) return;
     setSettingIntervalProjectId(intervalDialogProject.projectId);
     setError(null);
     try {
@@ -888,6 +927,22 @@ export function GitCredentialsSettingsPage() {
                 Disable scheduled sync{bulkScheduledScopeLabel}
               </Button>
             )}
+            {canRetryFailedSyncs && filteredEnabledLinkedLinks > 0 && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="secondary"
+                disabled={
+                  settingBulkInterval
+                  || settingIntervalProjectId != null
+                  || clearCustomSyncIntervals.isPending
+                }
+                onClick={() => openBulkSetIntervalDialog()}
+                data-testid="git-sync-overview-set-interval-bulk"
+              >
+                Set interval{bulkSetIntervalScopeLabel}
+              </Button>
+            )}
             {canRetryFailedSyncs && filteredCustomSyncIntervalLinks > 0 && (
               <Button
                 size="small"
@@ -1285,13 +1340,17 @@ export function GitCredentialsSettingsPage() {
       )}
 
       <Dialog
-        open={intervalDialogProject != null}
+        open={intervalDialogProject != null || bulkSetIntervalDialogOpen}
         onClose={closeSetIntervalDialog}
         data-testid="git-sync-overview-set-interval-dialog"
       >
         <DialogTitle>
           Set sync interval
-          {intervalDialogProject ? ` — ${intervalDialogProject.projectKey}` : ''}
+          {bulkSetIntervalDialogOpen
+            ? bulkSetIntervalScopeLabel
+            : intervalDialogProject
+              ? ` — ${intervalDialogProject.projectKey}`
+              : ''}
         </DialogTitle>
         <DialogContent>
           <TextField
@@ -1306,15 +1365,18 @@ export function GitCredentialsSettingsPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeSetIntervalDialog} disabled={settingIntervalProjectId != null}>
+          <Button
+            onClick={closeSetIntervalDialog}
+            disabled={settingIntervalProjectId != null || settingBulkInterval}
+          >
             Cancel
           </Button>
           <Button
             onClick={() => void submitSetInterval()}
-            disabled={settingIntervalProjectId != null}
+            disabled={settingIntervalProjectId != null || settingBulkInterval}
             data-testid="git-sync-overview-set-interval-save"
           >
-            {settingIntervalProjectId != null ? 'Saving…' : 'Save'}
+            {settingIntervalProjectId != null || settingBulkInterval ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

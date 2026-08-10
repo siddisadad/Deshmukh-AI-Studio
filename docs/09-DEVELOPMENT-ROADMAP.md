@@ -334,6 +334,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 35. Phase 32 — Org bulk set interval filter scope (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter-scoped bulk set interval | Overview filter params on set-interval API + dialog ([100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md](100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

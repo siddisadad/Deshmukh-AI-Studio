@@ -9,6 +9,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -447,6 +448,61 @@ public class OrgGitSyncOverviewService {
                 projectId,
                 scheduledSyncIntervalMinutes,
                 true);
+    }
+
+    @Transactional
+    public OrgGitSyncSetIntervalResponse setCustomSyncIntervals(
+            UUID organizationId,
+            UUID userId,
+            int scheduledSyncIntervalMinutes,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        if (scheduledSyncIntervalMinutes < 15 || scheduledSyncIntervalMinutes > 10080) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    "scheduledSyncIntervalMinutes must be between 15 and 10080");
+        }
+
+        String normalizedProvider = normalizeProvider(provider);
+        String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
+
+        List<OrgGitSyncOverviewItemResponse> targetItems = buildOverviewItems(organizationId).stream()
+                .filter(item -> item.linked() && item.enabled())
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
+                .toList();
+
+        List<UUID> updatedProjectIds = new ArrayList<>();
+        for (OrgGitSyncOverviewItemResponse item : targetItems) {
+            ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(item.projectId())
+                    .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
+            if (link.getScheduledSyncIntervalMinutes() != null
+                    && link.getScheduledSyncIntervalMinutes() == scheduledSyncIntervalMinutes) {
+                continue;
+            }
+            link.setScheduledSyncIntervalMinutes(scheduledSyncIntervalMinutes);
+            gitLinkRepository.save(link);
+            updatedProjectIds.add(item.projectId());
+        }
+
+        return new OrgGitSyncSetIntervalResponse(
+                targetItems.size(),
+                updatedProjectIds.size(),
+                updatedProjectIds
+        );
     }
 
     private OrgGitSyncScheduledProjectResponse setScheduledSyncForProject(

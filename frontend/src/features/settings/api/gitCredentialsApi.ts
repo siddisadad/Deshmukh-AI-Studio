@@ -154,6 +154,12 @@ export interface OrgGitSyncSetIntervalProjectResult {
   updated: boolean;
 }
 
+export interface OrgGitSyncSetIntervalResult {
+  targeted: number;
+  updated: number;
+  updatedProjectIds: string[];
+}
+
 export interface OrgGitSyncRetryProjectResult {
   projectId: string;
   enqueued: boolean;
@@ -281,6 +287,20 @@ export const gitCredentialsApi = {
         `/organizations/${orgId}/git-sync-overview/set-interval-project/${projectId}?scheduledSyncIntervalMinutes=${scheduledSyncIntervalMinutes}`
       )
       .then((r) => r.data),
+  setCustomSyncIntervals: (
+    orgId: string,
+    scheduledSyncIntervalMinutes: number,
+    filters?: OrgGitSyncOverviewFilters
+  ) => {
+    const params = buildOverviewFilterParams(filters);
+    params.set('scheduledSyncIntervalMinutes', String(scheduledSyncIntervalMinutes));
+    const query = params.toString();
+    return http
+      .post<OrgGitSyncSetIntervalResult>(
+        `/organizations/${orgId}/git-sync-overview/set-interval?${query}`
+      )
+      .then((r) => r.data);
+  },
   downloadSyncOverviewExport: async (
     orgId: string,
     format: 'csv' | 'json',

@@ -1,5 +1,6 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
@@ -301,6 +302,35 @@ public class OrgGitSyncOverviewService {
             UUID userId
     ) {
         return setScheduledSyncForProject(organizationId, projectId, userId, false);
+    }
+
+    @Transactional
+    public OrgGitSyncClearIntervalProjectResponse clearCustomSyncIntervalForProject(
+            UUID organizationId,
+            UUID projectId,
+            UUID userId
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        if (!project.getOrganizationId().equals(organizationId)) {
+            throw new DomainException("VALIDATION_ERROR", "projectId is not in this organization");
+        }
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
+        if (!link.isEnabled()) {
+            throw new DomainException("VALIDATION_ERROR", "Git link is disabled");
+        }
+
+        if (link.getScheduledSyncIntervalMinutes() == null) {
+            return new OrgGitSyncClearIntervalProjectResponse(projectId, null, false);
+        }
+
+        link.setScheduledSyncIntervalMinutes(null);
+        gitLinkRepository.save(link);
+        return new OrgGitSyncClearIntervalProjectResponse(projectId, null, true);
     }
 
     private OrgGitSyncScheduledProjectResponse setScheduledSyncForProject(

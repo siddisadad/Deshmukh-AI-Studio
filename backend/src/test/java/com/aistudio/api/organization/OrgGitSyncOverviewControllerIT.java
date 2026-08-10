@@ -408,6 +408,40 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanClearCustomSyncIntervalForSingleProject() throws Exception {
+        JsonNode user = register("org-clear-interval" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID projectId = createProject(token, orgId, "Clear Interval", "CL");
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/clear","branch":"main","enabled":true,"scheduledSyncIntervalMinutes":720}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/clear-interval-project/" + projectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.scheduledSyncIntervalMinutes").doesNotExist())
+                .andExpect(jsonPath("$.updated").value(true));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/clear-interval-project/" + projectId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updated").value(false));
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertNull(link.getScheduledSyncIntervalMinutes());
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncs() throws Exception {
         JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

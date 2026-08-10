@@ -124,7 +124,7 @@ class OrgGitSyncFilterPresetControllerIT {
                                 {
                                   "email": "%s",
                                   "password": "Password123!",
-                                  "name": "Preset User",
+                                  "displayName": "Preset User",
                                   "organizationName": "Preset Org"
                                 }
                                 """.formatted(email)))

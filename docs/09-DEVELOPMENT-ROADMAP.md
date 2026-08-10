@@ -398,6 +398,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 43. Phase 40 — Org git sync full page filter state (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Full page filter toolbar | Copy page link + clear all filters across overview and runs ([108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md](108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

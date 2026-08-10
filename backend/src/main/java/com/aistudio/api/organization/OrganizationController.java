@@ -449,12 +449,26 @@ public class OrganizationController {
     }
 
     @PostMapping("/{orgId}/git-sync-overview/retry-failed")
-    @Operation(summary = "Enqueue background sync for projects with failed last git sync (OWNER/ADMIN)")
+    @Operation(summary = "Enqueue background sync for projects with failed last git sync (OWNER/ADMIN); optional overview filters scope targets")
     public OrgGitSyncRetryFailedResponse retryFailedGitSyncs(
             @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return orgGitSyncOverviewService.retryFailedSyncs(orgId, user.getId());
+        return orgGitSyncOverviewService.retryFailedSyncs(
+                orgId,
+                user.getId(),
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
     }
 
     @PostMapping("/{orgId}/git-sync-overview/enable-scheduled-sync")

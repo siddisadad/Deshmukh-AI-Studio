@@ -318,6 +318,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 33. Phase 30 — Org retry failed filter scope (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter-scoped retry failed | Overview filter params on retry-failed API + UI ([98-ORG-GIT-RETRY-FAILED-FILTER-SCOPE-GUIDE.md](98-ORG-GIT-RETRY-FAILED-FILTER-SCOPE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

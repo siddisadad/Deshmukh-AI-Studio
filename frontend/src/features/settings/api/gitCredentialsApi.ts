@@ -205,10 +205,15 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
-  retryFailedSyncs: (orgId: string) =>
-    http
-      .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
-      .then((r) => r.data),
+  retryFailedSyncs: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
+    const query = params.toString();
+    return http
+      .post<OrgGitSyncRetryFailedResult>(
+        `/organizations/${orgId}/git-sync-overview/retry-failed${query ? `?${query}` : ''}`
+      )
+      .then((r) => r.data);
+  },
   enableScheduledSyncs: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
     const params = buildOverviewFilterParams(filters);
     const query = params.toString();

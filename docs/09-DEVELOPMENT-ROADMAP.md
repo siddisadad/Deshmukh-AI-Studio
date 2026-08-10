@@ -326,6 +326,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 34. Phase 31 — Org bulk clear interval filter scope (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter-scoped bulk clear interval | Overview filter params on clear-interval API + UI ([99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md](99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

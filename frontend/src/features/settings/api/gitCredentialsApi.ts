@@ -142,6 +142,12 @@ export interface OrgGitSyncClearIntervalProjectResult {
   updated: boolean;
 }
 
+export interface OrgGitSyncClearIntervalResult {
+  targeted: number;
+  updated: number;
+  updatedProjectIds: string[];
+}
+
 export interface OrgGitSyncSetIntervalProjectResult {
   projectId: string;
   scheduledSyncIntervalMinutes: number;
@@ -256,6 +262,15 @@ export const gitCredentialsApi = {
         `/organizations/${orgId}/git-sync-overview/clear-interval-project/${projectId}`
       )
       .then((r) => r.data),
+  clearCustomSyncIntervals: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
+    const query = params.toString();
+    return http
+      .post<OrgGitSyncClearIntervalResult>(
+        `/organizations/${orgId}/git-sync-overview/clear-interval${query ? `?${query}` : ''}`
+      )
+      .then((r) => r.data);
+  },
   setCustomSyncIntervalForProject: (
     orgId: string,
     projectId: string,

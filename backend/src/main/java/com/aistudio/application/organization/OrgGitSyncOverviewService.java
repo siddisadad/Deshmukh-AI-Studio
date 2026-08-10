@@ -6,6 +6,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -270,6 +271,53 @@ public class OrgGitSyncOverviewService {
                 "{\"source\":\"manual\"}"
         );
         return new OrgGitSyncRetryProjectResponse(projectId, true, false);
+    }
+
+    @Transactional
+    public OrgGitSyncScheduledProjectResponse enableScheduledSyncForProject(
+            UUID organizationId,
+            UUID projectId,
+            UUID userId
+    ) {
+        return setScheduledSyncForProject(organizationId, projectId, userId, true);
+    }
+
+    @Transactional
+    public OrgGitSyncScheduledProjectResponse disableScheduledSyncForProject(
+            UUID organizationId,
+            UUID projectId,
+            UUID userId
+    ) {
+        return setScheduledSyncForProject(organizationId, projectId, userId, false);
+    }
+
+    private OrgGitSyncScheduledProjectResponse setScheduledSyncForProject(
+            UUID organizationId,
+            UUID projectId,
+            UUID userId,
+            boolean scheduledSyncEnabled
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new DomainException("NOT_FOUND", "Project not found"));
+        if (!project.getOrganizationId().equals(organizationId)) {
+            throw new DomainException("VALIDATION_ERROR", "projectId is not in this organization");
+        }
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
+        if (!link.isEnabled()) {
+            throw new DomainException("VALIDATION_ERROR", "Git link is disabled");
+        }
+
+        if (link.isScheduledSyncEnabled() == scheduledSyncEnabled) {
+            return new OrgGitSyncScheduledProjectResponse(projectId, scheduledSyncEnabled, false);
+        }
+
+        link.setScheduledSyncEnabled(scheduledSyncEnabled);
+        gitLinkRepository.save(link);
+        return new OrgGitSyncScheduledProjectResponse(projectId, scheduledSyncEnabled, true);
     }
 
     @Transactional(readOnly = true)

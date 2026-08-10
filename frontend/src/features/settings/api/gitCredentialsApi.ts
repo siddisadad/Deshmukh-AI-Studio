@@ -105,6 +105,12 @@ export interface OrgGitSyncRetryFailedResult {
   enqueuedProjectIds: string[];
 }
 
+export interface OrgGitSyncScheduledProjectResult {
+  projectId: string;
+  scheduledSyncEnabled: boolean;
+  updated: boolean;
+}
+
 export interface OrgGitSyncRetryProjectResult {
   projectId: string;
   enqueued: boolean;
@@ -198,6 +204,18 @@ export const gitCredentialsApi = {
     http
       .post<OrgGitSyncRetryProjectResult>(
         `/organizations/${orgId}/git-sync-overview/retry-project/${projectId}`
+      )
+      .then((r) => r.data),
+  enableScheduledSyncForProject: (orgId: string, projectId: string) =>
+    http
+      .post<OrgGitSyncScheduledProjectResult>(
+        `/organizations/${orgId}/git-sync-overview/enable-scheduled-project/${projectId}`
+      )
+      .then((r) => r.data),
+  disableScheduledSyncForProject: (orgId: string, projectId: string) =>
+    http
+      .post<OrgGitSyncScheduledProjectResult>(
+        `/organizations/${orgId}/git-sync-overview/disable-scheduled-project/${projectId}`
       )
       .then((r) => r.data),
   downloadSyncOverviewExport: async (

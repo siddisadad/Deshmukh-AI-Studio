@@ -278,6 +278,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 28. Phase 25 — Org per-project scheduled toggle (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Row scheduled actions | Per-project enable/disable scheduled sync APIs + overview buttons ([93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md](93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

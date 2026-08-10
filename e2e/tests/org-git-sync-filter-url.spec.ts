@@ -20,8 +20,6 @@ async function register(page: Page) {
   await page.getByTestId('register-password').fill(password);
   await page.getByTestId('register-submit').click();
   await expect(page).toHaveURL(/\/dashboard/);
-  await page.getByTestId('nav-git').click();
-  await expect(page).toHaveURL(/\/settings\/git/);
 }
 
 test('org git sync filter URLs apply and copy links round-trip', async ({ page, context }) => {

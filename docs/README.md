@@ -110,6 +110,7 @@ Read in order; each document builds on the previous.
 | 103 | [103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md](103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md) | Org overview filter URL sharing |
 | 104 | [104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md](104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md) | Org overview active filter chips |
 | 105 | [105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md](105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md) | Org sync run filter URL sharing |
+| 106 | [106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md](106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md) | Org sync run active filter chips |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.100-beta** adds shareable sync run filter URLs — see [CHANGELOG.md](../CHANGELOG.md).
 

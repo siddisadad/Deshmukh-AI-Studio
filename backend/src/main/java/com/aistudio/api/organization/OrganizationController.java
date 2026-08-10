@@ -33,6 +33,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
@@ -555,6 +556,29 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.clearCustomSyncIntervalForProject(orgId, projectId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/clear-interval")
+    @Operation(summary = "Clear custom scheduled sync intervals on enabled git links (OWNER/ADMIN); optional overview filters scope targets")
+    public OrgGitSyncClearIntervalResponse clearCustomSyncIntervals(
+            @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.clearCustomSyncIntervals(
+                orgId,
+                user.getId(),
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
     }
 
     @PostMapping("/{orgId}/git-sync-overview/set-interval-project/{projectId}")

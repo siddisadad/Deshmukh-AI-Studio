@@ -274,9 +274,14 @@ export function GitCredentialsSettingsPage() {
     syncOverviewQuery.data?.items.filter(
       (item) => item.linked && item.enabled && item.lastSyncStatus === 'failed'
     ).length ?? 0;
+  const filteredCustomSyncIntervalLinks =
+    syncOverviewQuery.data?.items.filter(
+      (item) => item.linked && item.enabled && item.scheduledSyncIntervalMinutes != null
+    ).length ?? 0;
   const overviewFiltersActive = hasActiveOverviewFilters();
   const bulkScheduledScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
   const bulkRetryScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
+  const bulkClearIntervalScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
 
   const retryFailedSyncs = useMutation({
     mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id, buildOverviewFilters()),
@@ -320,6 +325,20 @@ export function GitCredentialsSettingsPage() {
     onError: (err) => {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to disable scheduled sync');
+    },
+  });
+
+  const clearCustomSyncIntervals = useMutation({
+    mutationFn: () => gitCredentialsApi.clearCustomSyncIntervals(org!.id, buildOverviewFilters()),
+    onSuccess: async (result) => {
+      setError(null);
+      const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
+      setMessage(`Cleared custom interval on ${result.updated} of ${result.targeted} links${scope}`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to clear sync intervals');
     },
   });
 
@@ -869,6 +888,22 @@ export function GitCredentialsSettingsPage() {
                 Disable scheduled sync{bulkScheduledScopeLabel}
               </Button>
             )}
+            {canRetryFailedSyncs && filteredCustomSyncIntervalLinks > 0 && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="secondary"
+                disabled={
+                  clearCustomSyncIntervals.isPending
+                  || clearingIntervalProjectId != null
+                  || settingIntervalProjectId != null
+                }
+                onClick={() => clearCustomSyncIntervals.mutate()}
+                data-testid="git-sync-overview-clear-interval-bulk"
+              >
+                Clear interval{bulkClearIntervalScopeLabel}
+              </Button>
+            )}
           </Stack>
           {syncOverviewQuery.data.items.length === 0 && (
             <Typography variant="body2" color="text.secondary">
@@ -1000,6 +1035,7 @@ export function GitCredentialsSettingsPage() {
                   disabled={
                     clearingIntervalProjectId === item.projectId
                     || togglingScheduledProjectId === item.projectId
+                    || clearCustomSyncIntervals.isPending
                   }
                   onClick={() => void clearCustomSyncIntervalForProject(item.projectId, item.projectKey)}
                   data-testid={`git-sync-overview-clear-interval-${item.projectKey}`}

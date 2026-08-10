@@ -518,6 +518,44 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanBulkClearCustomSyncIntervalScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-clear-interval-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubCustomId = createProject(token, orgId, "Github Custom", "GC");
+        UUID gitlabCustomId = createProject(token, orgId, "Gitlab Custom", "LC");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubCustomId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh-ci","branch":"main","enabled":true,"scheduledSyncIntervalMinutes":480}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabCustomId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl-ci","branch":"main","enabled":true,"scheduledSyncIntervalMinutes":720}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/clear-interval?provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.updated").value(1))
+                .andExpect(jsonPath("$.updatedProjectIds[0]").value(githubCustomId.toString()));
+
+        ProjectGitLinkEntity githubLink = gitLinkRepository.findByProjectId(githubCustomId).orElseThrow();
+        ProjectGitLinkEntity gitlabLink = gitLinkRepository.findByProjectId(gitlabCustomId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertNull(githubLink.getScheduledSyncIntervalMinutes());
+        org.junit.jupiter.api.Assertions.assertEquals(720, gitlabLink.getScheduledSyncIntervalMinutes());
+    }
+
+    @Test
     void orgOwnerCanSetCustomSyncIntervalForSingleProject() throws Exception {
         JsonNode user = register("org-set-interval" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

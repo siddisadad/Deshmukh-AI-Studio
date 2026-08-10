@@ -95,7 +95,8 @@ test('run saved filter preset save apply and delete', async ({ page }) => {
   const savedChip = page.locator('[data-testid^="org-git-sync-runs-saved-preset-"]', { hasText: presetName });
   await expect(savedChip).toBeVisible();
 
-  await page.getByTestId('org-git-sync-runs-active-filter-runStatus').getByRole('button').click();
+  await page.getByTestId('org-git-sync-run-status-filter').click();
+  await page.getByRole('option', { name: 'All statuses' }).click();
   await expect(page.getByTestId('org-git-sync-runs-active-filter-runStatus')).toHaveCount(0);
   await expect(page).not.toHaveURL(/runStatus=/);
 

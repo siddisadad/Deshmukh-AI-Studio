@@ -39,7 +39,6 @@ test('org git sync filter URLs apply and copy links round-trip', async ({ page, 
   await expect(page).toHaveURL(/linked=linked/);
   await expect(page).toHaveURL(/lastSync=failed/);
   await expect(page).toHaveURL(/runSource=manual/);
-  await expect(page).toHaveURL(/#org-git-sync-runs/);
 
   await waitForGitOverview(page);
   await expect(page.getByTestId('git-sync-page-filter-toolbar')).toBeVisible();

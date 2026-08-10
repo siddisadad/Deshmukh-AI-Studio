@@ -3,6 +3,14 @@ import type { Organization, User } from '../../../shared/api/types';
 
 const REFRESH_KEY = 'aistudio.refreshToken';
 
+function readStoredRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(REFRESH_KEY);
+  } catch {
+    return null;
+  }
+}
+
 interface AuthState {
   user: User | null;
   organization: Organization | null;
@@ -23,7 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   organization: null,
   accessToken: null,
-  refreshToken: null,
+  refreshToken: readStoredRefreshToken(),
   setSession: ({ user, organization, accessToken, refreshToken }) => {
     localStorage.setItem(REFRESH_KEY, refreshToken);
     set({ user, organization, accessToken, refreshToken });

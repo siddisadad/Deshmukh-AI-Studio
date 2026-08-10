@@ -103,8 +103,9 @@ Read in order; each document builds on the previous.
 | 96 | [96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md](96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md) | Org bulk scheduled sync filter scope |
 | 97 | [97-ORG-GIT-SYNC-SET-CUSTOM-INTERVAL-GUIDE.md](97-ORG-GIT-SYNC-SET-CUSTOM-INTERVAL-GUIDE.md) | Org per-project set custom interval |
 | 98 | [98-ORG-GIT-RETRY-FAILED-FILTER-SCOPE-GUIDE.md](98-ORG-GIT-RETRY-FAILED-FILTER-SCOPE-GUIDE.md) | Org retry failed filter scope |
+| 99 | [99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md](99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md) | Org bulk clear interval filter scope |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.93-beta** adds filter-scoped retry failed — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.94-beta** adds filter-scoped bulk clear interval — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

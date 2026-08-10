@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.87-beta] — 2026-08-10
+
+### Added
+
+- Org bulk disable scheduled sync — `POST .../git-sync-overview/disable-scheduled-sync`
+- **Disable scheduled sync** button on org git sync overview
+- `docs/92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md`, Phase 24 roadmap
+
 ## [0.2.86-beta] — 2026-08-09
 
 ### Added

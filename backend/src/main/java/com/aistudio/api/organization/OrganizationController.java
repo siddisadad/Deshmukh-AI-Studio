@@ -36,6 +36,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
 import com.aistudio.application.organization.OrgSsoIdpService;
 import com.aistudio.application.project.OrgAiPolicyService;
 import com.aistudio.application.project.OrganizationService;

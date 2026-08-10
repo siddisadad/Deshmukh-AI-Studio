@@ -462,6 +462,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 51. Phase 48 — Org git sync filter URL navigation (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter URL back/forward | Browser history sync for overview and run filter URLs ([116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md](116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

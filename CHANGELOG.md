@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.112-beta] — 2026-08-10
+
+### Added
+
+- Org git sync filter URL browser navigation — back/forward re-hydrates overview and run filters from the URL
+- E2E back/forward scenario in `org-git-sync-filter-url.spec.ts`
+- `docs/116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md`, Phase 48 roadmap
+
 ## [0.2.111-beta] — 2026-08-10
 
 ### Fixed

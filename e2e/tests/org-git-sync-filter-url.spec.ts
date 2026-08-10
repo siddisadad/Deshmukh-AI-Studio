@@ -70,6 +70,31 @@ test('org git sync filter URLs apply and copy links round-trip', async ({ page, 
   await expect(page.getByTestId('git-sync-page-filter-toolbar')).toHaveCount(0);
 });
 
+test('browser back and forward restore filter chips from URL', async ({ page, context }) => {
+  test.setTimeout(180_000);
+
+  await grantClipboard(context);
+  await register(page);
+
+  await page.goto('/settings/git?linked=linked');
+  await waitForGitOverview(page);
+  await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toBeVisible();
+
+  await page.goto('/settings/git?provider=github');
+  await waitForGitOverview(page);
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/linked=linked/);
+  await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toBeVisible();
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toHaveCount(0);
+
+  await page.goForward();
+  await expect(page).toHaveURL(/provider=github/);
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toBeVisible();
+  await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toHaveCount(0);
+});
+
 test('run filter URL applies on first visit to git settings', async ({ browser }) => {
   test.setTimeout(120_000);
 

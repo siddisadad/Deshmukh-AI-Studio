@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.102-beta] — 2026-08-10
+
+### Added
+
+- Org sync run filter preset chips — failed, success, manual, scheduled, webhook, failed manual/scheduled
+- `docs/107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md`, Phase 39 roadmap
+
 ## [0.2.101-beta] — 2026-08-10
 
 ### Added

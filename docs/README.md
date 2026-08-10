@@ -113,7 +113,7 @@ Read in order; each document builds on the previous.
 | 106 | [106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md](106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md) | Org sync run active filter chips |
 | 107 | [107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md](107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md) | Org sync run filter preset chips |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.101-beta** adds sync run active filter chips — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.102-beta** adds sync run filter preset chips — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

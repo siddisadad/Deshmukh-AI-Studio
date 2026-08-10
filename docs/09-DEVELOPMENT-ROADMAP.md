@@ -310,6 +310,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 32. Phase 29 — Org set custom interval (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Set interval action | Per-project set interval API + overview dialog ([97-ORG-GIT-SYNC-SET-CUSTOM-INTERVAL-GUIDE.md](97-ORG-GIT-SYNC-SET-CUSTOM-INTERVAL-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

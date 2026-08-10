@@ -518,6 +518,50 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanSetCustomSyncIntervalForSingleProject() throws Exception {
+        JsonNode user = register("org-set-interval" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID projectId = createProject(token, orgId, "Set Interval", "SI");
+
+        mockMvc.perform(put("/api/v1/projects/" + projectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/set","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/set-interval-project/" + projectId
+                        + "?scheduledSyncIntervalMinutes=480")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.scheduledSyncIntervalMinutes").value(480))
+                .andExpect(jsonPath("$.updated").value(true));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/set-interval-project/" + projectId
+                        + "?scheduledSyncIntervalMinutes=480")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updated").value(false));
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/set-interval-project/" + projectId
+                        + "?scheduledSyncIntervalMinutes=720")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scheduledSyncIntervalMinutes").value(720))
+                .andExpect(jsonPath("$.updated").value(true));
+
+        ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(projectId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(720, link.getScheduledSyncIntervalMinutes());
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncs() throws Exception {
         JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

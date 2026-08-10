@@ -430,6 +430,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 47. Phase 44 — Org git sync filter presets API (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Server-synced filter presets | Per-user API + localStorage migration ([112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md](112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

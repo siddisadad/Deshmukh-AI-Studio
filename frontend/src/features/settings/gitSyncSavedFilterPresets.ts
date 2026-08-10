@@ -166,3 +166,19 @@ export function removeSavedRunPreset(orgId: string, presetId: string): SavedRunF
   writeJson(runKey(orgId), presets);
   return presets;
 }
+
+export function clearLocalSavedOverviewPresets(orgId: string) {
+  try {
+    localStorage.removeItem(overviewKey(orgId));
+  } catch {
+    // ignore
+  }
+}
+
+export function clearLocalSavedRunPresets(orgId: string) {
+  try {
+    localStorage.removeItem(runKey(orgId));
+  } catch {
+    // ignore
+  }
+}

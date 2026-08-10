@@ -217,6 +217,20 @@ export interface OrgGitSyncRunFilterCounts {
   presets: OrgGitSyncRunPresetCount[];
 }
 
+export interface OrgGitSyncFilterPreset {
+  id: string;
+  scope: 'overview' | 'runs';
+  label: string;
+  filters: Record<string, string>;
+  createdAt: string;
+}
+
+export interface CreateOrgGitSyncFilterPresetBody {
+  scope: 'overview' | 'runs';
+  label: string;
+  filters: Record<string, string>;
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -417,4 +431,14 @@ export const gitCredentialsApi = {
       `git-sync-runs-${orgId}.${format}`,
     );
   },
+  listFilterPresets: (orgId: string) =>
+    http
+      .get<OrgGitSyncFilterPreset[]>(`/organizations/${orgId}/git-sync-filter-presets`)
+      .then((r) => r.data),
+  createFilterPreset: (orgId: string, body: CreateOrgGitSyncFilterPresetBody) =>
+    http
+      .post<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets`, body)
+      .then((r) => r.data),
+  deleteFilterPreset: (orgId: string, presetId: string) =>
+    http.delete(`/organizations/${orgId}/git-sync-filter-presets/${presetId}`).then(() => undefined),
 };

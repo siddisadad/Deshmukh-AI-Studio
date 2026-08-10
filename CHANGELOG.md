@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.90-beta] — 2026-08-10
+
+### Added
+
+- Org per-project clear custom sync interval — `clear-interval-project` API
+- Overview row **Clear interval** action for enabled links with custom interval
+- `docs/95-ORG-GIT-SYNC-CLEAR-CUSTOM-INTERVAL-GUIDE.md`, Phase 27 roadmap
+
 ## [0.2.89-beta] — 2026-08-10
 
 ### Added

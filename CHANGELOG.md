@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.95-beta] — 2026-08-10
+
+### Added
+
+- Filter-scoped bulk set custom interval — `set-interval` API with overview filter params
+- Bulk **Set interval** button + dialog with **(filtered)** label
+- `docs/100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md`, Phase 32 roadmap
+
 ## [0.2.94-beta] — 2026-08-10
 
 ### Added

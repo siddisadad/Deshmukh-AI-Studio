@@ -302,6 +302,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 31. Phase 28 — Org bulk scheduled filter scope (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter-scoped bulk scheduled | Overview filter params on bulk enable/disable APIs + UI ([96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md](96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -367,6 +367,82 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanBulkEnableScheduledSyncScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-enable-sched-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubManualId = createProject(token, orgId, "Github Manual", "GM");
+        UUID gitlabManualId = createProject(token, orgId, "Gitlab Manual", "GL");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubManualId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh-man","branch":"main","enabled":true,"scheduledSyncEnabled":false}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabManualId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl-man","branch":"main","enabled":true,"scheduledSyncEnabled":false}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/enable-scheduled-sync?provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.updated").value(1))
+                .andExpect(jsonPath("$.updatedProjectIds[0]").value(githubManualId.toString()));
+
+        ProjectGitLinkEntity githubLink = gitLinkRepository.findByProjectId(githubManualId).orElseThrow();
+        ProjectGitLinkEntity gitlabLink = gitLinkRepository.findByProjectId(gitlabManualId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertTrue(githubLink.isScheduledSyncEnabled());
+        org.junit.jupiter.api.Assertions.assertFalse(gitlabLink.isScheduledSyncEnabled());
+    }
+
+    @Test
+    void orgOwnerCanBulkDisableScheduledSyncScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-disable-sched-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubScheduledId = createProject(token, orgId, "Github Scheduled", "GS");
+        UUID gitlabScheduledId = createProject(token, orgId, "Gitlab Scheduled", "LS");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubScheduledId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh-sch","branch":"main","enabled":true,"scheduledSyncEnabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabScheduledId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl-sch","branch":"main","enabled":true,"scheduledSyncEnabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/disable-scheduled-sync?provider=gitlab")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.updated").value(1))
+                .andExpect(jsonPath("$.updatedProjectIds[0]").value(gitlabScheduledId.toString()));
+
+        ProjectGitLinkEntity githubLink = gitLinkRepository.findByProjectId(githubScheduledId).orElseThrow();
+        ProjectGitLinkEntity gitlabLink = gitLinkRepository.findByProjectId(gitlabScheduledId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertTrue(githubLink.isScheduledSyncEnabled());
+        org.junit.jupiter.api.Assertions.assertFalse(gitlabLink.isScheduledSyncEnabled());
+    }
+
+    @Test
     void orgOwnerCanToggleScheduledSyncForSingleProject() throws Exception {
         JsonNode user = register("org-scheduled-one" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

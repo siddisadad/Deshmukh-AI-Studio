@@ -87,6 +87,30 @@ export interface OrgGitSyncOverview {
   items: OrgGitSyncOverviewItem[];
 }
 
+export interface OrgGitSyncOverviewFilters {
+  linked?: boolean;
+  enabled?: boolean;
+  scheduledSyncEnabled?: boolean;
+  customSyncInterval?: boolean;
+  provider?: string;
+  lastSyncStatus?: string;
+}
+
+function buildOverviewFilterParams(filters?: OrgGitSyncOverviewFilters) {
+  const params = new URLSearchParams();
+  if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
+  if (filters?.enabled !== undefined) params.set('enabled', String(filters.enabled));
+  if (filters?.scheduledSyncEnabled !== undefined) {
+    params.set('scheduledSyncEnabled', String(filters.scheduledSyncEnabled));
+  }
+  if (filters?.customSyncInterval !== undefined) {
+    params.set('customSyncInterval', String(filters.customSyncInterval));
+  }
+  if (filters?.provider) params.set('provider', filters.provider);
+  if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
+  return params;
+}
+
 export interface OrgGitSyncDisableScheduledResult {
   targeted: number;
   updated: number;
@@ -166,28 +190,8 @@ export const gitCredentialsApi = {
       )
       .then((r) => r.data);
   },
-  getSyncOverview: (
-    orgId: string,
-    filters?: {
-      linked?: boolean;
-      enabled?: boolean;
-      scheduledSyncEnabled?: boolean;
-      customSyncInterval?: boolean;
-      provider?: string;
-      lastSyncStatus?: string;
-    }
-  ) => {
-    const params = new URLSearchParams();
-    if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
-    if (filters?.enabled !== undefined) params.set('enabled', String(filters.enabled));
-    if (filters?.scheduledSyncEnabled !== undefined) {
-      params.set('scheduledSyncEnabled', String(filters.scheduledSyncEnabled));
-    }
-    if (filters?.customSyncInterval !== undefined) {
-      params.set('customSyncInterval', String(filters.customSyncInterval));
-    }
-    if (filters?.provider) params.set('provider', filters.provider);
-    if (filters?.lastSyncStatus) params.set('lastSyncStatus', filters.lastSyncStatus);
+  getSyncOverview: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
     const query = params.toString();
     return http
       .get<OrgGitSyncOverview>(
@@ -199,18 +203,24 @@ export const gitCredentialsApi = {
     http
       .post<OrgGitSyncRetryFailedResult>(`/organizations/${orgId}/git-sync-overview/retry-failed`)
       .then((r) => r.data),
-  enableScheduledSyncs: (orgId: string) =>
-    http
+  enableScheduledSyncs: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
+    const query = params.toString();
+    return http
       .post<OrgGitSyncEnableScheduledResult>(
-        `/organizations/${orgId}/git-sync-overview/enable-scheduled-sync`
+        `/organizations/${orgId}/git-sync-overview/enable-scheduled-sync${query ? `?${query}` : ''}`
       )
-      .then((r) => r.data),
-  disableScheduledSyncs: (orgId: string) =>
-    http
+      .then((r) => r.data);
+  },
+  disableScheduledSyncs: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
+    const query = params.toString();
+    return http
       .post<OrgGitSyncDisableScheduledResult>(
-        `/organizations/${orgId}/git-sync-overview/disable-scheduled-sync`
+        `/organizations/${orgId}/git-sync-overview/disable-scheduled-sync${query ? `?${query}` : ''}`
       )
-      .then((r) => r.data),
+      .then((r) => r.data);
+  },
   retryFailedSyncForProject: (orgId: string, projectId: string) =>
     http
       .post<OrgGitSyncRetryProjectResult>(
@@ -238,26 +248,10 @@ export const gitCredentialsApi = {
   downloadSyncOverviewExport: async (
     orgId: string,
     format: 'csv' | 'json',
-    filters?: {
-      linked?: boolean;
-      enabled?: boolean;
-      scheduledSyncEnabled?: boolean;
-      customSyncInterval?: boolean;
-      provider?: string;
-      lastSyncStatus?: string;
-    }
+    filters?: OrgGitSyncOverviewFilters
   ) => {
-    const params: Record<string, string> = { format };
-    if (filters?.linked !== undefined) params.linked = String(filters.linked);
-    if (filters?.enabled !== undefined) params.enabled = String(filters.enabled);
-    if (filters?.scheduledSyncEnabled !== undefined) {
-      params.scheduledSyncEnabled = String(filters.scheduledSyncEnabled);
-    }
-    if (filters?.customSyncInterval !== undefined) {
-      params.customSyncInterval = String(filters.customSyncInterval);
-    }
-    if (filters?.provider) params.provider = filters.provider;
-    if (filters?.lastSyncStatus) params.lastSyncStatus = filters.lastSyncStatus;
+    const params = buildOverviewFilterParams(filters);
+    params.set('format', format);
     const response = await http.get(`/organizations/${orgId}/git-sync-overview/export`, {
       params,
       responseType: 'blob',

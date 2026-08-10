@@ -457,21 +457,49 @@ public class OrganizationController {
     }
 
     @PostMapping("/{orgId}/git-sync-overview/enable-scheduled-sync")
-    @Operation(summary = "Enable scheduled sync on enabled git links set to manual only (OWNER/ADMIN)")
+    @Operation(summary = "Enable scheduled sync on enabled manual-only git links (OWNER/ADMIN); optional overview filters scope targets")
     public OrgGitSyncEnableScheduledResponse enableScheduledGitSyncs(
             @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return orgGitSyncOverviewService.enableScheduledSyncs(orgId, user.getId());
+        return orgGitSyncOverviewService.enableScheduledSyncs(
+                orgId,
+                user.getId(),
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
     }
 
     @PostMapping("/{orgId}/git-sync-overview/disable-scheduled-sync")
-    @Operation(summary = "Disable scheduled sync on enabled git links with scheduled sync on (OWNER/ADMIN)")
+    @Operation(summary = "Disable scheduled sync on enabled scheduled git links (OWNER/ADMIN); optional overview filters scope targets")
     public OrgGitSyncDisableScheduledResponse disableScheduledGitSyncs(
             @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return orgGitSyncOverviewService.disableScheduledSyncs(orgId, user.getId());
+        return orgGitSyncOverviewService.disableScheduledSyncs(
+                orgId,
+                user.getId(),
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
     }
 
     @PostMapping("/{orgId}/git-sync-overview/retry-project/{projectId}")

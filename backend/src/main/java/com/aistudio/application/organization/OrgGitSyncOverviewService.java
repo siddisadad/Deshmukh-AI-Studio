@@ -75,18 +75,7 @@ public class OrgGitSyncOverviewService {
         String normalizedProvider = normalizeProvider(provider);
         String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
 
-        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
-        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
-        if (!projects.isEmpty()) {
-            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
-            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
-                linksByProjectId.put(link.getProjectId(), link);
-            }
-        }
-
-        List<OrgGitSyncOverviewItemResponse> items = projects.stream()
-                .map(project -> toItem(project, linksByProjectId.get(project.getId())))
-                .toList();
+        List<OrgGitSyncOverviewItemResponse> items = buildOverviewItems(organizationId);
 
         int linkedProjects = 0;
         int enabledLinks = 0;
@@ -139,62 +128,86 @@ public class OrgGitSyncOverviewService {
     }
 
     @Transactional
-    public OrgGitSyncEnableScheduledResponse enableScheduledSyncs(UUID organizationId, UUID userId) {
+    public OrgGitSyncEnableScheduledResponse enableScheduledSyncs(
+            UUID organizationId,
+            UUID userId,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
         authorizationService.requireOrgOwner(organizationId, userId);
+        String normalizedProvider = normalizeProvider(provider);
+        String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
 
-        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
-        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
-        if (!projects.isEmpty()) {
-            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
-            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
-                linksByProjectId.put(link.getProjectId(), link);
-            }
-        }
-
-        List<ProjectGitLinkEntity> manualLinks = linksByProjectId.values().stream()
-                .filter(link -> link.isEnabled() && !link.isScheduledSyncEnabled())
+        List<OrgGitSyncOverviewItemResponse> manualItems = buildOverviewItems(organizationId).stream()
+                .filter(item -> item.linked() && item.enabled() && !item.scheduledSyncEnabled())
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
                 .toList();
 
         List<UUID> updatedProjectIds = new ArrayList<>();
-        for (ProjectGitLinkEntity link : manualLinks) {
+        for (OrgGitSyncOverviewItemResponse item : manualItems) {
+            ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(item.projectId())
+                    .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
             link.setScheduledSyncEnabled(true);
             gitLinkRepository.save(link);
-            updatedProjectIds.add(link.getProjectId());
+            updatedProjectIds.add(item.projectId());
         }
 
         return new OrgGitSyncEnableScheduledResponse(
-                manualLinks.size(),
+                manualItems.size(),
                 updatedProjectIds.size(),
                 updatedProjectIds
         );
     }
 
     @Transactional
-    public OrgGitSyncDisableScheduledResponse disableScheduledSyncs(UUID organizationId, UUID userId) {
+    public OrgGitSyncDisableScheduledResponse disableScheduledSyncs(
+            UUID organizationId,
+            UUID userId,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
         authorizationService.requireOrgOwner(organizationId, userId);
+        String normalizedProvider = normalizeProvider(provider);
+        String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
 
-        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
-        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
-        if (!projects.isEmpty()) {
-            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
-            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
-                linksByProjectId.put(link.getProjectId(), link);
-            }
-        }
-
-        List<ProjectGitLinkEntity> scheduledLinks = linksByProjectId.values().stream()
-                .filter(link -> link.isEnabled() && link.isScheduledSyncEnabled())
+        List<OrgGitSyncOverviewItemResponse> scheduledItems = buildOverviewItems(organizationId).stream()
+                .filter(item -> item.linked() && item.enabled() && item.scheduledSyncEnabled())
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
                 .toList();
 
         List<UUID> updatedProjectIds = new ArrayList<>();
-        for (ProjectGitLinkEntity link : scheduledLinks) {
+        for (OrgGitSyncOverviewItemResponse item : scheduledItems) {
+            ProjectGitLinkEntity link = gitLinkRepository.findByProjectId(item.projectId())
+                    .orElseThrow(() -> new DomainException("VALIDATION_ERROR", "Project has no git link"));
             link.setScheduledSyncEnabled(false);
             gitLinkRepository.save(link);
-            updatedProjectIds.add(link.getProjectId());
+            updatedProjectIds.add(item.projectId());
         }
 
         return new OrgGitSyncDisableScheduledResponse(
-                scheduledLinks.size(),
+                scheduledItems.size(),
                 updatedProjectIds.size(),
                 updatedProjectIds
         );
@@ -475,6 +488,20 @@ public class OrgGitSyncOverviewService {
             throw new DomainException("VALIDATION_ERROR", "format must be csv or json");
         }
         return normalized;
+    }
+
+    private List<OrgGitSyncOverviewItemResponse> buildOverviewItems(UUID organizationId) {
+        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
+        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
+        if (!projects.isEmpty()) {
+            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
+            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
+                linksByProjectId.put(link.getProjectId(), link);
+            }
+        }
+        return projects.stream()
+                .map(project -> toItem(project, linksByProjectId.get(project.getId())))
+                .toList();
     }
 
     private OrgGitSyncOverviewExport exportAsJson(OrgGitSyncOverviewResponse overview) {

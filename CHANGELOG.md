@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.96-beta] — 2026-08-10
+
+### Added
+
+- Org git sync bulk actions summary — preview targeted counts per bulk action with overview filters
+- `GET .../bulk-actions-summary` API + CSV/JSON export
+- Overview **Bulk actions preview** line, summary export buttons, **Clear filters**
+- `docs/101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md`, Phase 33 roadmap
+
 ## [0.2.95-beta] — 2026-08-10
 
 ### Added

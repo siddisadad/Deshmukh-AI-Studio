@@ -59,6 +59,7 @@ class OrgGitSyncFilterPresetControllerIT {
                 .andExpect(jsonPath("$.scope").value("overview"))
                 .andExpect(jsonPath("$.label").value("My failed enabled"))
                 .andExpect(jsonPath("$.filters.status").value("failed"))
+                .andExpect(jsonPath("$.count").value(0))
                 .andReturn();
 
         UUID presetId = UUID.fromString(
@@ -68,7 +69,8 @@ class OrgGitSyncFilterPresetControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(presetId.toString()));
+                .andExpect(jsonPath("$[0].id").value(presetId.toString()))
+                .andExpect(jsonPath("$[0].count").value(0));
 
         mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-filter-presets")
                         .header("Authorization", "Bearer " + token)

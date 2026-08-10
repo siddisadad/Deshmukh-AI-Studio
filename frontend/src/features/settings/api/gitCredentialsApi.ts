@@ -222,6 +222,7 @@ export interface OrgGitSyncFilterPreset {
   scope: 'overview' | 'runs';
   label: string;
   filters: Record<string, string>;
+  count: number;
   createdAt: string;
 }
 

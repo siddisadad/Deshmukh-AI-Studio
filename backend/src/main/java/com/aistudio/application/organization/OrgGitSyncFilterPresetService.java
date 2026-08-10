@@ -45,13 +45,19 @@ public class OrgGitSyncFilterPresetService {
 
     private final OrgGitSyncFilterPresetRepository presetRepository;
     private final ProjectAuthorizationService authorizationService;
+    private final OrgGitSyncOverviewService overviewService;
+    private final OrgGitSyncRunsService runsService;
 
     public OrgGitSyncFilterPresetService(
             OrgGitSyncFilterPresetRepository presetRepository,
-            ProjectAuthorizationService authorizationService
+            ProjectAuthorizationService authorizationService,
+            OrgGitSyncOverviewService overviewService,
+            OrgGitSyncRunsService runsService
     ) {
         this.presetRepository = presetRepository;
         this.authorizationService = authorizationService;
+        this.overviewService = overviewService;
+        this.runsService = runsService;
     }
 
     @Transactional(readOnly = true)
@@ -112,11 +118,15 @@ public class OrgGitSyncFilterPresetService {
     }
 
     private OrgGitSyncFilterPresetResponse toResponse(OrgGitSyncFilterPresetEntity entity) {
+        long count = entity.getScope().equals("overview")
+                ? overviewService.countSavedPresetMatches(entity.getOrganizationId(), entity.getFilters())
+                : runsService.countSavedPresetMatches(entity.getOrganizationId(), entity.getFilters());
         return new OrgGitSyncFilterPresetResponse(
                 entity.getId(),
                 entity.getScope(),
                 entity.getLabel(),
                 new HashMap<>(entity.getFilters()),
+                count,
                 entity.getCreatedAt()
         );
     }

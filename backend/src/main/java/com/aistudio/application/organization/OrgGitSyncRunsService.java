@@ -181,6 +181,39 @@ public class OrgGitSyncRunsService {
         return new OrgGitSyncRunFilterCountsResponse(presets);
     }
 
+    @Transactional(readOnly = true)
+    public long countSavedPresetMatches(UUID organizationId, Map<String, String> filters) {
+        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
+        Map<UUID, ProjectEntity> projectsById = new HashMap<>();
+        for (ProjectEntity project : projects) {
+            projectsById.put(project.getId(), project);
+        }
+
+        List<UUID> projectIds;
+        String projectFilter = filters.get("project");
+        if (projectFilter != null && !projectFilter.isBlank() && !"all".equalsIgnoreCase(projectFilter.trim())) {
+            try {
+                UUID projectId = UUID.fromString(projectFilter.trim());
+                if (!projectsById.containsKey(projectId)) {
+                    return 0;
+                }
+                projectIds = List.of(projectId);
+            } catch (IllegalArgumentException ex) {
+                return 0;
+            }
+        } else {
+            projectIds = projects.stream().map(ProjectEntity::getId).toList();
+        }
+
+        if (projectIds.isEmpty()) {
+            return 0;
+        }
+
+        String normalizedSource = normalizeSyncRunFilter(filters.get("source"), "source");
+        String normalizedStatus = normalizeSyncRunFilter(filters.get("status"), "status");
+        return countRuns(projectIds, normalizedSource, normalizedStatus);
+    }
+
     private OrgGitSyncRunPresetCountResponse presetCount(
             String id,
             List<UUID> projectIds,

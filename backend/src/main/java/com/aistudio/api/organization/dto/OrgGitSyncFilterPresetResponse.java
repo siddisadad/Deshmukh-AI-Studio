@@ -9,5 +9,6 @@ public record OrgGitSyncFilterPresetResponse(
         String scope,
         String label,
         Map<String, String> filters,
+        long count,
         Instant createdAt
 ) {}

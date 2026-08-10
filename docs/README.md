@@ -117,6 +117,7 @@ Read in order; each document builds on the previous.
 | 110 | [110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md](110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md) | Org overview preset counts |
 | 111 | [111-ORG-GIT-SAVED-FILTER-PRESETS-GUIDE.md](111-ORG-GIT-SAVED-FILTER-PRESETS-GUIDE.md) | Org saved filter presets |
 | 112 | [112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md](112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md) | Org git sync filter presets API |
+| 113 | [113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md](113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md) | Org saved preset counts |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.107-beta** adds server-synced filter presets — see [CHANGELOG.md](../CHANGELOG.md).
 

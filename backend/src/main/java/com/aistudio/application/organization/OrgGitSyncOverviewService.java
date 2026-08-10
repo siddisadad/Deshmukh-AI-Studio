@@ -153,6 +153,93 @@ public class OrgGitSyncOverviewService {
         return new OrgGitSyncOverviewFilterCountsResponse(presets);
     }
 
+    @Transactional(readOnly = true)
+    public long countSavedPresetMatches(UUID organizationId, Map<String, String> filters) {
+        List<OrgGitSyncOverviewItemResponse> items = buildOverviewItems(organizationId);
+        Boolean linked = parseOverviewLinkedFilter(filters.get("linked"));
+        Boolean enabled = parseOverviewEnabledFilter(filters.get("enabled"));
+        Boolean scheduledSyncEnabled = parseOverviewScheduledFilter(filters.get("scheduled"));
+        Boolean customSyncInterval = parseOverviewIntervalFilter(filters.get("interval"));
+        String provider = parseOverviewProviderFilter(filters.get("provider"));
+        String lastSyncStatus = parseOverviewStatusFilter(filters.get("status"));
+        return items.stream()
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        provider,
+                        lastSyncStatus))
+                .count();
+    }
+
+    private Boolean parseOverviewLinkedFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        if ("linked".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("unlinked".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        return null;
+    }
+
+    private Boolean parseOverviewEnabledFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        if ("enabled".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("disabled".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        return null;
+    }
+
+    private Boolean parseOverviewScheduledFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        if ("scheduled".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("manual".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        return null;
+    }
+
+    private Boolean parseOverviewIntervalFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        if ("custom".equalsIgnoreCase(value.trim())) {
+            return true;
+        }
+        if ("default".equalsIgnoreCase(value.trim())) {
+            return false;
+        }
+        return null;
+    }
+
+    private String parseOverviewProviderFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String parseOverviewStatusFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
     private OrgGitSyncOverviewPresetCountResponse presetCount(
             String id,
             List<OrgGitSyncOverviewItemResponse> items,

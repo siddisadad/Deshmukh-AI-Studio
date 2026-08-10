@@ -7,6 +7,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;

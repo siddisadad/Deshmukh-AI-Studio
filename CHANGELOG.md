@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.110-beta] — 2026-08-10
+
+### Added
+
+- E2E coverage for org git sync filter URL sharing — query params, copy links, clear all
+- `e2e/tests/org-git-sync-filter-url.spec.ts`
+- `docs/115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md`, Phase 47 roadmap
+
+### Fixed
+
+- Auth store hydrates refresh token on init so deep links to protected routes work after reload
+
 ## [0.2.109-beta] — 2026-08-10
 
 ### Added

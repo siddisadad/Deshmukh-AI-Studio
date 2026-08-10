@@ -96,8 +96,9 @@ Read in order; each document builds on the previous.
 | 89 | [89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md](89-ORG-GIT-SYNC-OVERVIEW-ENABLED-FILTER-GUIDE.md) | Org overview enabled filter + summary chips |
 | 90 | [90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md](90-ORG-GIT-SYNC-OVERVIEW-SCHEDULED-SYNC-FILTER-GUIDE.md) | Org overview scheduled sync filter |
 | 91 | [91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md](91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md) | Org bulk enable scheduled sync |
+| 92 | [92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md](92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md) | Org bulk disable scheduled sync |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.86-beta** adds org bulk enable scheduled sync — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.87-beta** adds org bulk disable scheduled sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

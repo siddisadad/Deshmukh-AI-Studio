@@ -1,5 +1,6 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewItemResponse;
@@ -149,6 +150,37 @@ public class OrgGitSyncOverviewService {
 
         return new OrgGitSyncEnableScheduledResponse(
                 manualLinks.size(),
+                updatedProjectIds.size(),
+                updatedProjectIds
+        );
+    }
+
+    @Transactional
+    public OrgGitSyncDisableScheduledResponse disableScheduledSyncs(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+
+        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
+        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
+        if (!projects.isEmpty()) {
+            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
+            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
+                linksByProjectId.put(link.getProjectId(), link);
+            }
+        }
+
+        List<ProjectGitLinkEntity> scheduledLinks = linksByProjectId.values().stream()
+                .filter(link -> link.isEnabled() && link.isScheduledSyncEnabled())
+                .toList();
+
+        List<UUID> updatedProjectIds = new ArrayList<>();
+        for (ProjectGitLinkEntity link : scheduledLinks) {
+            link.setScheduledSyncEnabled(false);
+            gitLinkRepository.save(link);
+            updatedProjectIds.add(link.getProjectId());
+        }
+
+        return new OrgGitSyncDisableScheduledResponse(
+                scheduledLinks.size(),
                 updatedProjectIds.size(),
                 updatedProjectIds
         );

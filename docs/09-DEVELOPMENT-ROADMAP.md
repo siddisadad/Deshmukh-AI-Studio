@@ -270,6 +270,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 27. Phase 24 — Org bulk disable scheduled sync (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Bulk disable scheduled | `disable-scheduled-sync` API, overview button ([92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md](92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

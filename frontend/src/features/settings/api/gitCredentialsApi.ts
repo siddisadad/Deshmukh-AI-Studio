@@ -86,6 +86,12 @@ export interface OrgGitSyncOverview {
   items: OrgGitSyncOverviewItem[];
 }
 
+export interface OrgGitSyncDisableScheduledResult {
+  targeted: number;
+  updated: number;
+  updatedProjectIds: string[];
+}
+
 export interface OrgGitSyncEnableScheduledResult {
   targeted: number;
   updated: number;
@@ -180,6 +186,12 @@ export const gitCredentialsApi = {
     http
       .post<OrgGitSyncEnableScheduledResult>(
         `/organizations/${orgId}/git-sync-overview/enable-scheduled-sync`
+      )
+      .then((r) => r.data),
+  disableScheduledSyncs: (orgId: string) =>
+    http
+      .post<OrgGitSyncDisableScheduledResult>(
+        `/organizations/${orgId}/git-sync-overview/disable-scheduled-sync`
       )
       .then((r) => r.data),
   retryFailedSyncForProject: (orgId: string, projectId: string) =>

@@ -100,8 +100,9 @@ Read in order; each document builds on the previous.
 | 93 | [93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md](93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md) | Org per-project scheduled sync toggle |
 | 94 | [94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md](94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md) | Org overview custom interval filter |
 | 95 | [95-ORG-GIT-SYNC-CLEAR-CUSTOM-INTERVAL-GUIDE.md](95-ORG-GIT-SYNC-CLEAR-CUSTOM-INTERVAL-GUIDE.md) | Org per-project clear custom interval |
+| 96 | [96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md](96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md) | Org bulk scheduled sync filter scope |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.90-beta** adds org overview clear custom interval — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.91-beta** adds filter-scoped bulk scheduled sync — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -19,6 +19,7 @@ import {
   type GitConnectionTestResult,
   type OrgGitCredential,
   type OrgGitSyncRunItem,
+  type OrgGitSyncOverviewFilters,
 } from '../api/gitCredentialsApi';
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
@@ -181,18 +182,39 @@ export function GitCredentialsSettingsPage() {
     status = overviewStatusFilter
   ) {
     if (!org?.id) return;
+    const filters: OrgGitSyncOverviewFilters = {
+      linked: linked === 'all' ? undefined : linked === 'linked',
+      enabled: enabled === 'all' ? undefined : enabled === 'enabled',
+      scheduledSyncEnabled: scheduled === 'all' ? undefined : scheduled === 'scheduled',
+      customSyncInterval: interval === 'all' ? undefined : interval === 'custom',
+      provider: provider === 'all' ? undefined : provider,
+      lastSyncStatus: status === 'all' ? undefined : status,
+    };
     await queryClient.fetchQuery({
       queryKey: ['org-git-sync-overview', org.id, linked, enabled, scheduled, interval, provider, status],
-      queryFn: () =>
-        gitCredentialsApi.getSyncOverview(org.id, {
-          linked: linked === 'all' ? undefined : linked === 'linked',
-          enabled: enabled === 'all' ? undefined : enabled === 'enabled',
-          scheduledSyncEnabled: scheduled === 'all' ? undefined : scheduled === 'scheduled',
-          customSyncInterval: interval === 'all' ? undefined : interval === 'custom',
-          provider: provider === 'all' ? undefined : provider,
-          lastSyncStatus: status === 'all' ? undefined : status,
-        }),
+      queryFn: () => gitCredentialsApi.getSyncOverview(org.id, filters),
     });
+  }
+
+  function buildOverviewFilters(): OrgGitSyncOverviewFilters {
+    return {
+      linked: overviewLinkedFilter === 'all' ? undefined : overviewLinkedFilter === 'linked',
+      enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
+      scheduledSyncEnabled:
+        overviewScheduledSyncFilter === 'all' ? undefined : overviewScheduledSyncFilter === 'scheduled',
+      customSyncInterval: overviewIntervalFilter === 'all' ? undefined : overviewIntervalFilter === 'custom',
+      provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
+      lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
+    };
+  }
+
+  function hasActiveOverviewFilters() {
+    return overviewLinkedFilter !== 'all'
+      || overviewEnabledFilter !== 'all'
+      || overviewScheduledSyncFilter !== 'all'
+      || overviewIntervalFilter !== 'all'
+      || overviewProviderFilter !== 'all'
+      || overviewStatusFilter !== 'all';
   }
 
   async function exportSyncOverview(format: 'csv' | 'json') {
@@ -200,16 +222,7 @@ export function GitCredentialsSettingsPage() {
     setOverviewExporting(format);
     setError(null);
     try {
-      await gitCredentialsApi.downloadSyncOverviewExport(org.id, format, {
-        linked: overviewLinkedFilter === 'all' ? undefined : overviewLinkedFilter === 'linked',
-        enabled: overviewEnabledFilter === 'all' ? undefined : overviewEnabledFilter === 'enabled',
-        scheduledSyncEnabled:
-          overviewScheduledSyncFilter === 'all' ? undefined : overviewScheduledSyncFilter === 'scheduled',
-        customSyncInterval:
-          overviewIntervalFilter === 'all' ? undefined : overviewIntervalFilter === 'custom',
-        provider: overviewProviderFilter === 'all' ? undefined : overviewProviderFilter,
-        lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
-      });
+      await gitCredentialsApi.downloadSyncOverviewExport(org.id, format, buildOverviewFilters());
     } catch (err) {
       setMessage(null);
       setError(err instanceof ApiError ? err.message : 'Failed to export overview');
@@ -240,6 +253,15 @@ export function GitCredentialsSettingsPage() {
   const canRetryFailedSyncs =
     orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
 
+  const filteredManualSyncLinks =
+    syncOverviewQuery.data?.items.filter((item) => item.linked && item.enabled && !item.scheduledSyncEnabled)
+      .length ?? 0;
+  const filteredScheduledSyncLinks =
+    syncOverviewQuery.data?.items.filter((item) => item.linked && item.enabled && item.scheduledSyncEnabled)
+      .length ?? 0;
+  const overviewFiltersActive = hasActiveOverviewFilters();
+  const bulkScheduledScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
+
   const retryFailedSyncs = useMutation({
     mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id),
     onSuccess: async (result) => {
@@ -257,10 +279,11 @@ export function GitCredentialsSettingsPage() {
   });
 
   const enableScheduledSyncs = useMutation({
-    mutationFn: () => gitCredentialsApi.enableScheduledSyncs(org!.id),
+    mutationFn: () => gitCredentialsApi.enableScheduledSyncs(org!.id, buildOverviewFilters()),
     onSuccess: async (result) => {
       setError(null);
-      setMessage(`Enabled scheduled sync on ${result.updated} of ${result.targeted} manual-only links`);
+      const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
+      setMessage(`Enabled scheduled sync on ${result.updated} of ${result.targeted} manual-only links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
     },
     onError: (err) => {
@@ -270,10 +293,11 @@ export function GitCredentialsSettingsPage() {
   });
 
   const disableScheduledSyncs = useMutation({
-    mutationFn: () => gitCredentialsApi.disableScheduledSyncs(org!.id),
+    mutationFn: () => gitCredentialsApi.disableScheduledSyncs(org!.id, buildOverviewFilters()),
     onSuccess: async (result) => {
       setError(null);
-      setMessage(`Disabled scheduled sync on ${result.updated} of ${result.targeted} links`);
+      const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
+      setMessage(`Disabled scheduled sync on ${result.updated} of ${result.targeted} links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
     },
     onError: (err) => {
@@ -756,7 +780,7 @@ export function GitCredentialsSettingsPage() {
                 Retry failed syncs
               </Button>
             )}
-            {canRetryFailedSyncs && syncOverviewQuery.data.manualSyncLinks > 0 && (
+            {canRetryFailedSyncs && filteredManualSyncLinks > 0 && (
               <Button
                 size="small"
                 variant="contained"
@@ -765,10 +789,10 @@ export function GitCredentialsSettingsPage() {
                 onClick={() => enableScheduledSyncs.mutate()}
                 data-testid="git-sync-overview-enable-scheduled"
               >
-                Enable scheduled sync
+                Enable scheduled sync{bulkScheduledScopeLabel}
               </Button>
             )}
-            {canRetryFailedSyncs && syncOverviewQuery.data.scheduledSyncLinks > 0 && (
+            {canRetryFailedSyncs && filteredScheduledSyncLinks > 0 && (
               <Button
                 size="small"
                 variant="outlined"
@@ -777,7 +801,7 @@ export function GitCredentialsSettingsPage() {
                 onClick={() => disableScheduledSyncs.mutate()}
                 data-testid="git-sync-overview-disable-scheduled"
               >
-                Disable scheduled sync
+                Disable scheduled sync{bulkScheduledScopeLabel}
               </Button>
             )}
           </Stack>

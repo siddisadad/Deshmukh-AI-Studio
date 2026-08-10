@@ -32,6 +32,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
@@ -540,6 +541,21 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.clearCustomSyncIntervalForProject(orgId, projectId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/set-interval-project/{projectId}")
+    @Operation(summary = "Set custom scheduled sync interval for one enabled git link (OWNER/ADMIN)")
+    public OrgGitSyncSetIntervalProjectResponse setCustomSyncIntervalForProject(
+            @PathVariable UUID orgId,
+            @PathVariable UUID projectId,
+            @RequestParam int scheduledSyncIntervalMinutes,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.setCustomSyncIntervalForProject(
+                orgId,
+                projectId,
+                user.getId(),
+                scheduledSyncIntervalMinutes);
     }
 
     @GetMapping("/{orgId}/git-sync-runs")

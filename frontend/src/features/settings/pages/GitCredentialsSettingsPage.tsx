@@ -2,6 +2,10 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Link,
   MenuItem,
   Stack,
@@ -59,6 +63,13 @@ export function GitCredentialsSettingsPage() {
   const [retryingProjectId, setRetryingProjectId] = useState<string | null>(null);
   const [togglingScheduledProjectId, setTogglingScheduledProjectId] = useState<string | null>(null);
   const [clearingIntervalProjectId, setClearingIntervalProjectId] = useState<string | null>(null);
+  const [intervalDialogProject, setIntervalDialogProject] = useState<{
+    projectId: string;
+    projectKey: string;
+    currentMinutes: number | null;
+  } | null>(null);
+  const [intervalMinutesInput, setIntervalMinutesInput] = useState('');
+  const [settingIntervalProjectId, setSettingIntervalProjectId] = useState<string | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -383,6 +394,54 @@ export function GitCredentialsSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to clear sync interval');
     } finally {
       setClearingIntervalProjectId(null);
+    }
+  }
+
+  function openSetIntervalDialog(
+    projectId: string,
+    projectKey: string,
+    currentMinutes: number | null
+  ) {
+    setIntervalDialogProject({ projectId, projectKey, currentMinutes });
+    setIntervalMinutesInput(currentMinutes != null ? String(currentMinutes) : '');
+    setError(null);
+  }
+
+  function closeSetIntervalDialog() {
+    if (settingIntervalProjectId) return;
+    setIntervalDialogProject(null);
+    setIntervalMinutesInput('');
+  }
+
+  async function submitSetInterval() {
+    if (!org?.id || !intervalDialogProject) return;
+    const trimmed = intervalMinutesInput.trim();
+    const minutes = Number(trimmed);
+    if (!trimmed || !Number.isInteger(minutes) || minutes < 15 || minutes > 10080) {
+      setError('Interval must be a whole number between 15 and 10080 minutes');
+      return;
+    }
+    setSettingIntervalProjectId(intervalDialogProject.projectId);
+    setError(null);
+    try {
+      const result = await gitCredentialsApi.setCustomSyncIntervalForProject(
+        org.id,
+        intervalDialogProject.projectId,
+        minutes
+      );
+      setMessage(
+        result.updated
+          ? `Set sync interval to ${minutes}m for ${intervalDialogProject.projectKey}`
+          : `${intervalDialogProject.projectKey} already has interval ${minutes}m`,
+      );
+      setIntervalDialogProject(null);
+      setIntervalMinutesInput('');
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to set sync interval');
+    } finally {
+      setSettingIntervalProjectId(null);
     }
   }
 
@@ -903,6 +962,27 @@ export function GitCredentialsSettingsPage() {
                   {togglingScheduledProjectId === item.projectId ? 'Updating…' : 'Disable scheduled'}
                 </Button>
               )}
+              {canRetryFailedSyncs && item.linked && item.enabled && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="secondary"
+                  disabled={
+                    settingIntervalProjectId === item.projectId
+                    || clearingIntervalProjectId === item.projectId
+                  }
+                  onClick={() =>
+                    openSetIntervalDialog(
+                      item.projectId,
+                      item.projectKey,
+                      item.scheduledSyncIntervalMinutes
+                    )
+                  }
+                  data-testid={`git-sync-overview-set-interval-${item.projectKey}`}
+                >
+                  Set interval
+                </Button>
+              )}
               {canRetryFailedSyncs
                 && item.linked
                 && item.enabled
@@ -1161,6 +1241,41 @@ export function GitCredentialsSettingsPage() {
           ))}
         </Stack>
       )}
+
+      <Dialog
+        open={intervalDialogProject != null}
+        onClose={closeSetIntervalDialog}
+        data-testid="git-sync-overview-set-interval-dialog"
+      >
+        <DialogTitle>
+          Set sync interval
+          {intervalDialogProject ? ` — ${intervalDialogProject.projectKey}` : ''}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Scheduled sync interval (minutes)"
+            size="small"
+            fullWidth
+            margin="dense"
+            value={intervalMinutesInput}
+            onChange={(e) => setIntervalMinutesInput(e.target.value)}
+            helperText="15–10080 minutes. Platform default when cleared."
+            slotProps={{ htmlInput: { 'data-testid': 'git-sync-overview-set-interval-input' } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeSetIntervalDialog} disabled={settingIntervalProjectId != null}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void submitSetInterval()}
+            disabled={settingIntervalProjectId != null}
+            data-testid="git-sync-overview-set-interval-save"
+          >
+            {settingIntervalProjectId != null ? 'Saving…' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
  * Phase 49 — org git sync saved filter presets (docs/117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md)
@@ -29,6 +29,7 @@ async function saveOverviewPreset(page: Page, name: string, shareWithOrg = false
     await page.getByTestId('git-sync-save-preset-share-org').check();
   }
   await page.getByTestId('git-sync-save-preset-confirm').click();
+  await expect(page.getByTestId('git-sync-save-preset-dialog')).toHaveCount(0);
 }
 
 async function saveRunPreset(page: Page, name: string, shareWithOrg = false) {
@@ -39,6 +40,23 @@ async function saveRunPreset(page: Page, name: string, shareWithOrg = false) {
     await page.getByTestId('git-sync-save-preset-share-org').check();
   }
   await page.getByTestId('git-sync-save-preset-confirm').click();
+  await expect(page.getByTestId('git-sync-save-preset-dialog')).toHaveCount(0);
+}
+
+async function clearOverviewLinkedFilter(page: Page) {
+  await page.getByTestId('git-sync-overview').scrollIntoViewIfNeeded();
+  await page.getByRole('combobox', { name: 'Linked' }).click();
+  await page.getByRole('option', { name: 'All projects' }).click();
+}
+
+async function clearRunStatusFilter(page: Page) {
+  await page.getByTestId('org-git-sync-runs').scrollIntoViewIfNeeded();
+  await page.getByRole('combobox', { name: 'Status' }).click();
+  await page.getByRole('option', { name: 'All statuses' }).click();
+}
+
+async function deleteSavedChip(chip: Locator) {
+  await chip.locator('.MuiChip-deleteIcon').click();
 }
 
 test('overview saved filter preset save apply and delete', async ({ page }) => {
@@ -60,8 +78,7 @@ test('overview saved filter preset save apply and delete', async ({ page }) => {
   const savedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName });
   await expect(savedChip).toBeVisible();
 
-  await page.getByTestId('git-sync-overview-linked-filter').click();
-  await page.getByRole('option', { name: 'All projects' }).click();
+  await clearOverviewLinkedFilter(page);
   await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toHaveCount(0);
   await expect(page).not.toHaveURL(/linked=/);
 
@@ -69,10 +86,7 @@ test('overview saved filter preset save apply and delete', async ({ page }) => {
   await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toBeVisible();
   await expect(page).toHaveURL(/linked=unlinked/);
 
-  await page
-    .locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName })
-    .getByRole('button')
-    .click();
+  await deleteSavedChip(savedChip);
   await expect(savedChip).toHaveCount(0);
 });
 
@@ -95,8 +109,7 @@ test('run saved filter preset save apply and delete', async ({ page }) => {
   const savedChip = page.locator('[data-testid^="org-git-sync-runs-saved-preset-"]', { hasText: presetName });
   await expect(savedChip).toBeVisible();
 
-  await page.getByTestId('org-git-sync-run-status-filter').click();
-  await page.getByRole('option', { name: 'All statuses' }).click();
+  await clearRunStatusFilter(page);
   await expect(page.getByTestId('org-git-sync-runs-active-filter-runStatus')).toHaveCount(0);
   await expect(page).not.toHaveURL(/runStatus=/);
 
@@ -104,10 +117,7 @@ test('run saved filter preset save apply and delete', async ({ page }) => {
   await expect(page.getByTestId('org-git-sync-runs-active-filter-runStatus')).toBeVisible();
   await expect(page).toHaveURL(/runStatus=failed/);
 
-  await page
-    .locator('[data-testid^="org-git-sync-runs-saved-preset-"]', { hasText: presetName })
-    .getByRole('button')
-    .click();
+  await deleteSavedChip(savedChip);
   await expect(savedChip).toHaveCount(0);
 });
 

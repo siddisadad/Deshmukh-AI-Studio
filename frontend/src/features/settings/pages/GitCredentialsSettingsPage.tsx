@@ -14,8 +14,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { useAuthStore } from '../../auth/store/authStore';
 import { organizationsApi } from '../../projects/api/organizationsApi';
@@ -148,7 +148,107 @@ const OVERVIEW_FILTER_PRESETS: OverviewFilterPreset[] = [
       status: 'all',
     },
   },
+  {
+    id: 'gitlab-enabled',
+    label: 'GitLab',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'gitlab',
+      status: 'all',
+    },
+  },
+  {
+    id: 'bitbucket-enabled',
+    label: 'Bitbucket',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'bitbucket',
+      status: 'all',
+    },
+  },
 ];
+
+type OverviewFilterState = {
+  linked: OverviewLinkedFilter;
+  enabled: OverviewEnabledFilter;
+  scheduled: OverviewScheduledFilter;
+  interval: OverviewIntervalFilter;
+  provider: OverviewProviderFilter;
+  status: OverviewStatusFilter;
+};
+
+const OVERVIEW_FILTER_URL_KEYS = [
+  'linked',
+  'enabled',
+  'scheduled',
+  'interval',
+  'provider',
+  'lastSync',
+] as const;
+
+function parseOverviewLinkedParam(value: string | null): OverviewLinkedFilter {
+  if (value === 'linked' || value === 'unlinked') return value;
+  return 'all';
+}
+
+function parseOverviewEnabledParam(value: string | null): OverviewEnabledFilter {
+  if (value === 'enabled' || value === 'disabled') return value;
+  return 'all';
+}
+
+function parseOverviewScheduledParam(value: string | null): OverviewScheduledFilter {
+  if (value === 'scheduled' || value === 'manual') return value;
+  return 'all';
+}
+
+function parseOverviewIntervalParam(value: string | null): OverviewIntervalFilter {
+  if (value === 'custom' || value === 'default') return value;
+  return 'all';
+}
+
+function parseOverviewProviderParam(value: string | null): OverviewProviderFilter {
+  if (value === 'github' || value === 'gitlab' || value === 'bitbucket') return value;
+  return 'all';
+}
+
+function parseOverviewStatusParam(value: string | null): OverviewStatusFilter {
+  if (value === 'success' || value === 'failed' || value === 'never') return value;
+  return 'all';
+}
+
+function hasOverviewFilterUrlParams(params: URLSearchParams) {
+  return OVERVIEW_FILTER_URL_KEYS.some((key) => params.get(key) != null);
+}
+
+function readOverviewFiltersFromSearchParams(params: URLSearchParams): OverviewFilterState | null {
+  if (!hasOverviewFilterUrlParams(params)) return null;
+  return {
+    linked: parseOverviewLinkedParam(params.get('linked')),
+    enabled: parseOverviewEnabledParam(params.get('enabled')),
+    scheduled: parseOverviewScheduledParam(params.get('scheduled')),
+    interval: parseOverviewIntervalParam(params.get('interval')),
+    provider: parseOverviewProviderParam(params.get('provider')),
+    status: parseOverviewStatusParam(params.get('lastSync')),
+  };
+}
+
+function writeOverviewFiltersToSearchParams(params: URLSearchParams, filters: OverviewFilterState) {
+  for (const key of OVERVIEW_FILTER_URL_KEYS) {
+    params.delete(key);
+  }
+  if (filters.linked !== 'all') params.set('linked', filters.linked);
+  if (filters.enabled !== 'all') params.set('enabled', filters.enabled);
+  if (filters.scheduled !== 'all') params.set('scheduled', filters.scheduled);
+  if (filters.interval !== 'all') params.set('interval', filters.interval);
+  if (filters.provider !== 'all') params.set('provider', filters.provider);
+  if (filters.status !== 'all') params.set('lastSync', filters.status);
+}
 
 function projectGitSettingsPath(projectId: string) {
   return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
@@ -157,6 +257,8 @@ function projectGitSettingsPath(projectId: string) {
 export function GitCredentialsSettingsPage() {
   const org = useAuthStore((s) => s.organization);
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const overviewUrlInitializedRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('github');
@@ -379,15 +481,78 @@ export function GitCredentialsSettingsPage() {
       && overviewStatusFilter === f.status;
   }
 
+  async function applyOverviewFilterState(
+    linked: OverviewLinkedFilter,
+    enabled: OverviewEnabledFilter,
+    scheduled: OverviewScheduledFilter,
+    interval: OverviewIntervalFilter,
+    provider: OverviewProviderFilter,
+    status: OverviewStatusFilter
+  ) {
+    setOverviewLinkedFilter(linked);
+    setOverviewEnabledFilter(enabled);
+    setOverviewScheduledSyncFilter(scheduled);
+    setOverviewIntervalFilter(interval);
+    setOverviewProviderFilter(provider);
+    setOverviewStatusFilter(status);
+    const nextParams = new URLSearchParams(searchParams);
+    writeOverviewFiltersToSearchParams(nextParams, {
+      linked,
+      enabled,
+      scheduled,
+      interval,
+      provider,
+      status,
+    });
+    setSearchParams(nextParams, { replace: true });
+    await loadSyncOverview(linked, enabled, scheduled, interval, provider, status);
+  }
+
+  useEffect(() => {
+    if (!org?.id || overviewUrlInitializedRef.current) return;
+    overviewUrlInitializedRef.current = true;
+    const fromUrl = readOverviewFiltersFromSearchParams(searchParams);
+    if (!fromUrl) return;
+    setOverviewLinkedFilter(fromUrl.linked);
+    setOverviewEnabledFilter(fromUrl.enabled);
+    setOverviewScheduledSyncFilter(fromUrl.scheduled);
+    setOverviewIntervalFilter(fromUrl.interval);
+    setOverviewProviderFilter(fromUrl.provider);
+    setOverviewStatusFilter(fromUrl.status);
+    const nextParams = new URLSearchParams(searchParams);
+    writeOverviewFiltersToSearchParams(nextParams, fromUrl);
+    setSearchParams(nextParams, { replace: true });
+    void loadSyncOverview(
+      fromUrl.linked,
+      fromUrl.enabled,
+      fromUrl.scheduled,
+      fromUrl.interval,
+      fromUrl.provider,
+      fromUrl.status
+    );
+  }, [org?.id, searchParams, setSearchParams]);
+
   async function applyOverviewPreset(preset: OverviewFilterPreset) {
     const f = preset.filters;
-    setOverviewLinkedFilter(f.linked);
-    setOverviewEnabledFilter(f.enabled);
-    setOverviewScheduledSyncFilter(f.scheduled);
-    setOverviewIntervalFilter(f.interval);
-    setOverviewProviderFilter(f.provider);
-    setOverviewStatusFilter(f.status);
-    await loadSyncOverview(f.linked, f.enabled, f.scheduled, f.interval, f.provider, f.status);
+    await applyOverviewFilterState(
+      f.linked,
+      f.enabled,
+      f.scheduled,
+      f.interval,
+      f.provider,
+      f.status
+    );
+  }
+
+  async function copyOverviewFilterLink() {
+    setError(null);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setMessage('Filtered overview link copied to clipboard');
+    } catch {
+      setMessage(null);
+      setError('Failed to copy filtered overview link');
+    }
   }
 
   async function exportSyncOverview(format: 'csv' | 'json') {
@@ -419,13 +584,7 @@ export function GitCredentialsSettingsPage() {
   }
 
   async function clearOverviewFilters() {
-    setOverviewLinkedFilter('all');
-    setOverviewEnabledFilter('all');
-    setOverviewScheduledSyncFilter('all');
-    setOverviewIntervalFilter('all');
-    setOverviewProviderFilter('all');
-    setOverviewStatusFilter('all');
-    await loadSyncOverview('all', 'all', 'all', 'all', 'all', 'all');
+    await applyOverviewFilterState('all', 'all', 'all', 'all', 'all', 'all');
   }
 
   async function exportSyncRuns(format: 'csv' | 'json') {
@@ -724,19 +883,25 @@ export function GitCredentialsSettingsPage() {
   }
 
   async function filterOverviewToLinked() {
-    setOverviewLinkedFilter('linked');
-    setOverviewEnabledFilter('all');
-    setOverviewScheduledSyncFilter('all');
-    setOverviewIntervalFilter('all');
-    await loadSyncOverview('linked', 'all', 'all', 'all', overviewProviderFilter, overviewStatusFilter);
+    await applyOverviewFilterState(
+      'linked',
+      'all',
+      'all',
+      'all',
+      overviewProviderFilter,
+      overviewStatusFilter
+    );
   }
 
   async function filterOverviewToEnabled() {
-    setOverviewLinkedFilter('linked');
-    setOverviewEnabledFilter('enabled');
-    setOverviewScheduledSyncFilter('all');
-    setOverviewIntervalFilter('all');
-    await loadSyncOverview('linked', 'enabled', 'all', 'all', overviewProviderFilter, overviewStatusFilter);
+    await applyOverviewFilterState(
+      'linked',
+      'enabled',
+      'all',
+      'all',
+      overviewProviderFilter,
+      overviewStatusFilter
+    );
   }
 
   async function filterOverviewToScheduledSync() {
@@ -936,8 +1101,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewLinkedFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'linked' | 'unlinked';
-                setOverviewLinkedFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   value,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
@@ -959,8 +1123,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewEnabledFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'enabled' | 'disabled';
-                setOverviewEnabledFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   overviewLinkedFilter,
                   value,
                   overviewScheduledSyncFilter,
@@ -982,8 +1145,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewScheduledSyncFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'scheduled' | 'manual';
-                setOverviewScheduledSyncFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   value,
@@ -1005,8 +1167,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewIntervalFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'custom' | 'default';
-                setOverviewIntervalFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
@@ -1028,8 +1189,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewProviderFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'github' | 'gitlab' | 'bitbucket';
-                setOverviewProviderFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
@@ -1052,8 +1212,7 @@ export function GitCredentialsSettingsPage() {
               value={overviewStatusFilter}
               onChange={(e) => {
                 const value = e.target.value as 'all' | 'success' | 'failed' | 'never';
-                setOverviewStatusFilter(value);
-                void loadSyncOverview(
+                void applyOverviewFilterState(
                   overviewLinkedFilter,
                   overviewEnabledFilter,
                   overviewScheduledSyncFilter,
@@ -1085,6 +1244,16 @@ export function GitCredentialsSettingsPage() {
                 data-testid="git-sync-overview-clear-filters"
               >
                 Clear filters
+              </Button>
+            )}
+            {overviewFiltersActive && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => void copyOverviewFilterLink()}
+                data-testid="git-sync-overview-copy-filter-link"
+              >
+                Copy filtered link
               </Button>
             )}
             <Button

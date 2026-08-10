@@ -18,12 +18,18 @@ Settings → **Git** → **Git sync overview** chip row:
 | Never synced | linked, enabled, last sync never |
 | Unlinked | unlinked projects only |
 | GitHub | linked, enabled, GitHub provider |
+| GitLab | linked, enabled, GitLab provider |
+| Bitbucket | linked, enabled, Bitbucket provider |
 
 Active preset chip is highlighted. Summary count links for scheduled, manual, custom interval, and failed apply the matching preset.
 
-Dropdown filters, bulk actions, and exports use the active preset state.
+Dropdown filters, bulk actions, exports, and the page URL use the active filter state.
 
-## 2. API
+## 2. URL sharing
+
+Overview filters sync to query params on `/settings/git` — see [103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md](103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md).
+
+## 3. API
 
 No new endpoints — presets set the same query params as `GET .../git-sync-overview`.
 

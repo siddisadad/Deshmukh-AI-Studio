@@ -358,6 +358,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 38. Phase 35 — Org overview filter URL (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Shareable filter URL | Overview filter query params + copy link ([103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md](103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

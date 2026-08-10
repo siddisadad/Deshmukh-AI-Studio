@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.91-beta] — 2026-08-10
+
+### Added
+
+- Filter-scoped bulk scheduled sync — overview filter params on enable/disable scheduled APIs
+- Bulk buttons use filtered eligible counts and **(filtered)** label when filters active
+- `docs/96-ORG-GIT-BULK-SCHEDULED-FILTER-SCOPE-GUIDE.md`, Phase 28 roadmap
+
 ## [0.2.90-beta] — 2026-08-10
 
 ### Added

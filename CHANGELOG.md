@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.88-beta] — 2026-08-10
+
+### Added
+
+- Org per-project scheduled sync toggle — enable/disable scheduled project APIs
+- Overview row **Enable scheduled** / **Disable scheduled** actions
+- `docs/93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md`, Phase 25 roadmap
+
 ## [0.2.87-beta] — 2026-08-10
 
 ### Added

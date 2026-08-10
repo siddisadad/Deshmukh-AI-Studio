@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.94-beta] — 2026-08-10
+
+### Added
+
+- Filter-scoped bulk clear custom interval — `clear-interval` API with overview filter params
+- Bulk **Clear interval** button with filtered count and **(filtered)** label
+- `docs/99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md`, Phase 31 roadmap
+
 ## [0.2.93-beta] — 2026-08-10
 
 ### Added

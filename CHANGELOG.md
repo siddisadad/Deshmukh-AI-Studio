@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.107-beta] — 2026-08-10
+
+### Added
+
+- Server-synced org git sync filter presets — per-user API with localStorage migration
+- `GET/POST/DELETE .../git-sync-filter-presets`
+- `docs/112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md`, Phase 44 roadmap
+
 ## [0.2.106-beta] — 2026-08-10
 
 ### Added

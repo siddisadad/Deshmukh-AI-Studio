@@ -96,6 +96,17 @@ export interface OrgGitSyncOverviewFilters {
   lastSyncStatus?: string;
 }
 
+export interface OrgGitSyncBulkActionsSummary {
+  organizationId: string;
+  filteredItems: number;
+  retryFailedTargeted: number;
+  retryFailedPendingSkipped: number;
+  enableScheduledTargeted: number;
+  disableScheduledTargeted: number;
+  clearIntervalTargeted: number;
+  setIntervalTargeted: number;
+}
+
 function buildOverviewFilterParams(filters?: OrgGitSyncOverviewFilters) {
   const params = new URLSearchParams();
   if (filters?.linked !== undefined) params.set('linked', String(filters.linked));
@@ -216,6 +227,35 @@ export const gitCredentialsApi = {
         `/organizations/${orgId}/git-sync-overview${query ? `?${query}` : ''}`
       )
       .then((r) => r.data);
+  },
+  getBulkActionsSummary: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
+    const params = buildOverviewFilterParams(filters);
+    const query = params.toString();
+    return http
+      .get<OrgGitSyncBulkActionsSummary>(
+        `/organizations/${orgId}/git-sync-overview/bulk-actions-summary${query ? `?${query}` : ''}`
+      )
+      .then((r) => r.data);
+  },
+  downloadBulkActionsSummaryExport: async (
+    orgId: string,
+    format: 'csv' | 'json',
+    filters?: OrgGitSyncOverviewFilters
+  ) => {
+    const params = buildOverviewFilterParams(filters);
+    params.set('format', format);
+    const response = await http.get(
+      `/organizations/${orgId}/git-sync-overview/bulk-actions-summary/export`,
+      {
+        params,
+        responseType: 'blob',
+      }
+    );
+    triggerBlobDownload(
+      response.data as Blob,
+      response.headers['content-disposition'] as string | undefined,
+      `git-sync-bulk-actions-summary-${orgId}.${format}`,
+    );
   },
   retryFailedSyncs: (orgId: string, filters?: OrgGitSyncOverviewFilters) => {
     const params = buildOverviewFilterParams(filters);

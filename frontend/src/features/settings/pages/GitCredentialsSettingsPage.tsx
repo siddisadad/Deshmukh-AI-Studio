@@ -51,6 +51,7 @@ export function GitCredentialsSettingsPage() {
   const [overviewProviderFilter, setOverviewProviderFilter] = useState<'all' | 'github' | 'gitlab' | 'bitbucket'>('all');
   const [overviewStatusFilter, setOverviewStatusFilter] = useState<'all' | 'success' | 'failed' | 'never'>('all');
   const [overviewExporting, setOverviewExporting] = useState<'csv' | 'json' | null>(null);
+  const [bulkSummaryExporting, setBulkSummaryExporting] = useState<'csv' | 'json' | null>(null);
   const [runSourceFilter, setRunSourceFilter] = useState<'all' | 'manual' | 'scheduled' | 'webhook'>('all');
   const [runStatusFilter, setRunStatusFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [runProjectFilter, setRunProjectFilter] = useState<'all' | string>('all');
@@ -114,6 +115,24 @@ export function GitCredentialsSettingsPage() {
         lastSyncStatus: overviewStatusFilter === 'all' ? undefined : overviewStatusFilter,
       }),
     enabled: !!org?.id,
+  });
+
+  const isOwnerOrAdmin =
+    orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
+
+  const bulkActionsSummaryQuery = useQuery({
+    queryKey: [
+      'org-git-sync-bulk-actions-summary',
+      org?.id,
+      overviewLinkedFilter,
+      overviewEnabledFilter,
+      overviewScheduledSyncFilter,
+      overviewIntervalFilter,
+      overviewProviderFilter,
+      overviewStatusFilter,
+    ],
+    queryFn: () => gitCredentialsApi.getBulkActionsSummary(org!.id, buildOverviewFilters()),
+    enabled: !!org?.id && isOwnerOrAdmin,
   });
 
   const runProjectOptionsQuery = useQuery({
@@ -244,6 +263,30 @@ export function GitCredentialsSettingsPage() {
     }
   }
 
+  async function exportBulkActionsSummary(format: 'csv' | 'json') {
+    if (!org?.id) return;
+    setBulkSummaryExporting(format);
+    setError(null);
+    try {
+      await gitCredentialsApi.downloadBulkActionsSummaryExport(org.id, format, buildOverviewFilters());
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to export bulk actions summary');
+    } finally {
+      setBulkSummaryExporting(null);
+    }
+  }
+
+  async function clearOverviewFilters() {
+    setOverviewLinkedFilter('all');
+    setOverviewEnabledFilter('all');
+    setOverviewScheduledSyncFilter('all');
+    setOverviewIntervalFilter('all');
+    setOverviewProviderFilter('all');
+    setOverviewStatusFilter('all');
+    await loadSyncOverview('all', 'all', 'all', 'all', 'all', 'all');
+  }
+
   async function exportSyncRuns(format: 'csv' | 'json') {
     if (!org?.id) return;
     setRunExporting(format);
@@ -298,6 +341,7 @@ export function GitCredentialsSettingsPage() {
           + (result.skippedPending > 0 ? ` (${result.skippedPending} skipped — sync already pending)` : ''),
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -312,6 +356,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Enabled scheduled sync on ${result.updated} of ${result.targeted} manual-only links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -326,6 +371,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Disabled scheduled sync on ${result.updated} of ${result.targeted} links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -340,6 +386,7 @@ export function GitCredentialsSettingsPage() {
       const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(`Cleared custom interval on ${result.updated} of ${result.targeted} links${scope}`);
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org?.id] });
     },
     onError: (err) => {
       setMessage(null);
@@ -475,6 +522,7 @@ export function GitCredentialsSettingsPage() {
         setBulkSetIntervalDialogOpen(false);
         setIntervalMinutesInput('');
         await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+        await queryClient.invalidateQueries({ queryKey: ['org-git-sync-bulk-actions-summary', org.id] });
       } catch (err) {
         setMessage(null);
         setError(err instanceof ApiError ? err.message : 'Failed to set sync intervals');
@@ -873,6 +921,16 @@ export function GitCredentialsSettingsPage() {
             >
               Refresh
             </Button>
+            {overviewFiltersActive && (
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => void clearOverviewFilters()}
+                data-testid="git-sync-overview-clear-filters"
+              >
+                Clear filters
+              </Button>
+            )}
             <Button
               size="small"
               variant="outlined"
@@ -891,6 +949,55 @@ export function GitCredentialsSettingsPage() {
             >
               {overviewExporting === 'json' ? 'Exporting…' : 'Export JSON'}
             </Button>
+          </Stack>
+          {canRetryFailedSyncs && bulkActionsSummaryQuery.data && (
+            <Stack spacing={0.5} data-testid="git-sync-bulk-actions-summary">
+              <Typography variant="body2" color="text.secondary">
+                Bulk actions preview
+                {overviewFiltersActive ? ' (filtered scope)' : ''}
+                : {bulkActionsSummaryQuery.data.filteredItems} projects in view
+                {bulkActionsSummaryQuery.data.retryFailedTargeted > 0
+                  ? ` · retry failed ${bulkActionsSummaryQuery.data.retryFailedTargeted}`
+                    + (bulkActionsSummaryQuery.data.retryFailedPendingSkipped > 0
+                      ? ` (${bulkActionsSummaryQuery.data.retryFailedPendingSkipped} pending)`
+                      : '')
+                  : ''}
+                {bulkActionsSummaryQuery.data.enableScheduledTargeted > 0
+                  ? ` · enable scheduled ${bulkActionsSummaryQuery.data.enableScheduledTargeted}`
+                  : ''}
+                {bulkActionsSummaryQuery.data.disableScheduledTargeted > 0
+                  ? ` · disable scheduled ${bulkActionsSummaryQuery.data.disableScheduledTargeted}`
+                  : ''}
+                {bulkActionsSummaryQuery.data.clearIntervalTargeted > 0
+                  ? ` · clear interval ${bulkActionsSummaryQuery.data.clearIntervalTargeted}`
+                  : ''}
+                {bulkActionsSummaryQuery.data.setIntervalTargeted > 0
+                  ? ` · set interval ${bulkActionsSummaryQuery.data.setIntervalTargeted}`
+                  : ''}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={bulkSummaryExporting !== null}
+                  onClick={() => void exportBulkActionsSummary('csv')}
+                  data-testid="git-sync-bulk-actions-summary-export-csv"
+                >
+                  {bulkSummaryExporting === 'csv' ? 'Exporting…' : 'Export summary CSV'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={bulkSummaryExporting !== null}
+                  onClick={() => void exportBulkActionsSummary('json')}
+                  data-testid="git-sync-bulk-actions-summary-export-json"
+                >
+                  {bulkSummaryExporting === 'json' ? 'Exporting…' : 'Export summary JSON'}
+                </Button>
+              </Stack>
+            </Stack>
+          )}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
             {canRetryFailedSyncs && filteredFailedLastSync > 0 && (
               <Button
                 size="small"

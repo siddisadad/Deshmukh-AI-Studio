@@ -819,6 +819,73 @@ class OrgGitSyncOverviewControllerIT {
         org.junit.jupiter.api.Assertions.assertEquals("github", exportJson.get("items").get(0).get("provider").asText());
     }
 
+    @Test
+    void orgOwnerCanGetBulkActionsSummaryScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-bulk-summary" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID failedGithubId = createProject(token, orgId, "Failed Github", "FG");
+        UUID manualGitlabId = createProject(token, orgId, "Manual Gitlab", "MG");
+
+        mockMvc.perform(put("/api/v1/projects/" + failedGithubId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/fg","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + manualGitlabId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/mg","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        ProjectGitLinkEntity failedLink = gitLinkRepository.findByProjectId(failedGithubId).orElseThrow();
+        failedLink.setLastSyncStatus("failed");
+        failedLink.setLastSyncError("mock failure");
+        failedLink.setScheduledSyncIntervalMinutes(360);
+        gitLinkRepository.save(failedLink);
+
+        ProjectGitLinkEntity manualLink = gitLinkRepository.findByProjectId(manualGitlabId).orElseThrow();
+        manualLink.setScheduledSyncEnabled(false);
+        gitLinkRepository.save(manualLink);
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview/bulk-actions-summary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filteredItems").value(2))
+                .andExpect(jsonPath("$.retryFailedTargeted").value(1))
+                .andExpect(jsonPath("$.retryFailedPendingSkipped").value(0))
+                .andExpect(jsonPath("$.enableScheduledTargeted").value(1))
+                .andExpect(jsonPath("$.disableScheduledTargeted").value(1))
+                .andExpect(jsonPath("$.clearIntervalTargeted").value(1))
+                .andExpect(jsonPath("$.setIntervalTargeted").value(2));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/bulk-actions-summary?provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filteredItems").value(1))
+                .andExpect(jsonPath("$.retryFailedTargeted").value(1))
+                .andExpect(jsonPath("$.enableScheduledTargeted").value(0))
+                .andExpect(jsonPath("$.disableScheduledTargeted").value(1))
+                .andExpect(jsonPath("$.clearIntervalTargeted").value(1))
+                .andExpect(jsonPath("$.setIntervalTargeted").value(1));
+
+        MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/bulk-actions-summary/export?format=csv&provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString(".csv")))
+                .andReturn();
+        String csv = csvResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("retryFailed,1,0"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("filteredItems,1"));
+    }
+
     private UUID createProject(String token, UUID orgId, String name, String key) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/projects")
                         .header("Authorization", "Bearer " + token)

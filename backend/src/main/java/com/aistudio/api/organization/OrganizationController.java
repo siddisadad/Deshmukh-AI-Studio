@@ -35,6 +35,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncSetIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncBulkActionsSummaryResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
@@ -443,6 +444,59 @@ public class OrganizationController {
     ) {
         OrgGitSyncOverviewExport exported = orgGitSyncOverviewService.exportOverview(
                 orgId, user.getId(), format, linked, enabled, scheduledSyncEnabled, customSyncInterval, provider, lastSyncStatus);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + exported.filename() + "\"")
+                .contentType(MediaType.parseMediaType(exported.contentType()))
+                .body(exported.body());
+    }
+
+    @GetMapping("/{orgId}/git-sync-overview/bulk-actions-summary")
+    @Operation(summary = "Preview bulk git sync action targets scoped to overview filters (OWNER/ADMIN)")
+    public OrgGitSyncBulkActionsSummaryResponse getGitSyncBulkActionsSummary(
+            @PathVariable UUID orgId,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.getBulkActionsSummary(
+                orgId,
+                user.getId(),
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
+    }
+
+    @GetMapping("/{orgId}/git-sync-overview/bulk-actions-summary/export")
+    @Operation(summary = "Export bulk git sync action summary as CSV or JSON (OWNER/ADMIN)")
+    public ResponseEntity<byte[]> exportGitSyncBulkActionsSummary(
+            @PathVariable UUID orgId,
+            @RequestParam(defaultValue = "csv") String format,
+            @RequestParam(required = false) Boolean linked,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
+            @RequestParam(required = false) String provider,
+            @RequestParam(required = false) String lastSyncStatus,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        OrgGitSyncOverviewExport exported = orgGitSyncOverviewService.exportBulkActionsSummary(
+                orgId,
+                user.getId(),
+                format,
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + exported.filename() + "\"")

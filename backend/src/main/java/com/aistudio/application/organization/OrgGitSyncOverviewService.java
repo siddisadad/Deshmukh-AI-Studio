@@ -1,5 +1,6 @@
 package com.aistudio.application.organization;
 
+import com.aistudio.api.organization.dto.OrgGitSyncBulkActionsSummaryResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncClearIntervalResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
@@ -560,6 +561,154 @@ public class OrgGitSyncOverviewService {
             return exportAsJson(overview);
         }
         return exportAsCsv(overview);
+    }
+
+    @Transactional(readOnly = true)
+    public OrgGitSyncBulkActionsSummaryResponse getBulkActionsSummary(
+            UUID organizationId,
+            UUID userId,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
+        authorizationService.requireOrgOwner(organizationId, userId);
+        return computeBulkActionsSummary(
+                organizationId,
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
+    }
+
+    @Transactional(readOnly = true)
+    public OrgGitSyncOverviewExport exportBulkActionsSummary(
+            UUID organizationId,
+            UUID userId,
+            String format,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
+        OrgGitSyncBulkActionsSummaryResponse summary = getBulkActionsSummary(
+                organizationId,
+                userId,
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
+        String normalizedFormat = normalizeExportFormat(format);
+        if ("json".equals(normalizedFormat)) {
+            return exportBulkSummaryAsJson(summary);
+        }
+        return exportBulkSummaryAsCsv(summary);
+    }
+
+    private OrgGitSyncBulkActionsSummaryResponse computeBulkActionsSummary(
+            UUID organizationId,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
+        String normalizedProvider = normalizeProvider(provider);
+        String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
+
+        List<OrgGitSyncOverviewItemResponse> filteredItems = buildOverviewItems(organizationId).stream()
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
+                .toList();
+
+        int retryFailedTargeted = 0;
+        int retryFailedPendingSkipped = 0;
+        int enableScheduledTargeted = 0;
+        int disableScheduledTargeted = 0;
+        int clearIntervalTargeted = 0;
+        int setIntervalTargeted = 0;
+
+        for (OrgGitSyncOverviewItemResponse item : filteredItems) {
+            if (item.linked() && item.enabled()) {
+                setIntervalTargeted++;
+                if (item.scheduledSyncIntervalMinutes() != null) {
+                    clearIntervalTargeted++;
+                }
+                if (item.scheduledSyncEnabled()) {
+                    disableScheduledTargeted++;
+                } else {
+                    enableScheduledTargeted++;
+                }
+                if ("failed".equals(item.lastSyncStatus())) {
+                    retryFailedTargeted++;
+                    if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
+                            item.projectId(),
+                            JobType.CODE_METADATA_SYNC,
+                            JobStatus.PENDING
+                    ) > 0) {
+                        retryFailedPendingSkipped++;
+                    }
+                }
+            }
+        }
+
+        return new OrgGitSyncBulkActionsSummaryResponse(
+                organizationId,
+                filteredItems.size(),
+                retryFailedTargeted,
+                retryFailedPendingSkipped,
+                enableScheduledTargeted,
+                disableScheduledTargeted,
+                clearIntervalTargeted,
+                setIntervalTargeted
+        );
+    }
+
+    private OrgGitSyncOverviewExport exportBulkSummaryAsJson(OrgGitSyncBulkActionsSummaryResponse summary) {
+        try {
+            byte[] body = objectMapper.copy()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .writeValueAsBytes(summary);
+            return new OrgGitSyncOverviewExport(
+                    body,
+                    "application/json; charset=UTF-8",
+                    "git-sync-bulk-actions-summary-" + summary.organizationId() + ".json"
+            );
+        } catch (Exception ex) {
+            throw new DomainException("INTERNAL_ERROR", "Failed to export bulk actions summary as JSON");
+        }
+    }
+
+    private OrgGitSyncOverviewExport exportBulkSummaryAsCsv(OrgGitSyncBulkActionsSummaryResponse summary) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("action,targeted,pendingSkipped\n");
+        csv.append("retryFailed,").append(summary.retryFailedTargeted())
+                .append(',').append(summary.retryFailedPendingSkipped()).append('\n');
+        csv.append("enableScheduled,").append(summary.enableScheduledTargeted()).append(',').append('\n');
+        csv.append("disableScheduled,").append(summary.disableScheduledTargeted()).append(',').append('\n');
+        csv.append("clearInterval,").append(summary.clearIntervalTargeted()).append(',').append('\n');
+        csv.append("setInterval,").append(summary.setIntervalTargeted()).append(',').append('\n');
+        csv.append("filteredItems,").append(summary.filteredItems()).append(',').append('\n');
+        return new OrgGitSyncOverviewExport(
+                csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                "text/csv; charset=UTF-8",
+                "git-sync-bulk-actions-summary-" + summary.organizationId() + ".csv"
+        );
     }
 
     private boolean matchesFilters(

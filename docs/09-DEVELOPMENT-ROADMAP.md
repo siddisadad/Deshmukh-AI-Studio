@@ -342,6 +342,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 36. Phase 33 — Org bulk actions summary (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Bulk actions preview | Filter-scoped targeted counts API + export + overview UI ([101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md](101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

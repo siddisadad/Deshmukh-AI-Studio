@@ -374,6 +374,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 40. Phase 37 — Org sync run filter URL (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Shareable run filter URL | Run history query params + copy link ([105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md](105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

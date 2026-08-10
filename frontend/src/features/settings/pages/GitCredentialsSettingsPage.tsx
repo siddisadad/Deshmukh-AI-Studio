@@ -250,6 +250,55 @@ function writeOverviewFiltersToSearchParams(params: URLSearchParams, filters: Ov
   if (filters.status !== 'all') params.set('lastSync', filters.status);
 }
 
+type RunSourceFilter = 'all' | 'manual' | 'scheduled' | 'webhook';
+type RunStatusFilter = 'all' | 'success' | 'failed';
+type RunProjectFilter = 'all' | string;
+
+type RunFilterState = {
+  source: RunSourceFilter;
+  status: RunStatusFilter;
+  project: RunProjectFilter;
+};
+
+const RUN_FILTER_URL_KEYS = ['runSource', 'runStatus', 'runProject'] as const;
+
+function parseRunSourceParam(value: string | null): RunSourceFilter {
+  if (value === 'manual' || value === 'scheduled' || value === 'webhook') return value;
+  return 'all';
+}
+
+function parseRunStatusParam(value: string | null): RunStatusFilter {
+  if (value === 'success' || value === 'failed') return value;
+  return 'all';
+}
+
+function parseRunProjectParam(value: string | null): RunProjectFilter {
+  if (value && value.trim().length > 0) return value.trim();
+  return 'all';
+}
+
+function hasRunFilterUrlParams(params: URLSearchParams) {
+  return RUN_FILTER_URL_KEYS.some((key) => params.get(key) != null);
+}
+
+function readRunFiltersFromSearchParams(params: URLSearchParams): RunFilterState | null {
+  if (!hasRunFilterUrlParams(params)) return null;
+  return {
+    source: parseRunSourceParam(params.get('runSource')),
+    status: parseRunStatusParam(params.get('runStatus')),
+    project: parseRunProjectParam(params.get('runProject')),
+  };
+}
+
+function writeRunFiltersToSearchParams(params: URLSearchParams, filters: RunFilterState) {
+  for (const key of RUN_FILTER_URL_KEYS) {
+    params.delete(key);
+  }
+  if (filters.source !== 'all') params.set('runSource', filters.source);
+  if (filters.status !== 'all') params.set('runStatus', filters.status);
+  if (filters.project !== 'all') params.set('runProject', filters.project);
+}
+
 function projectGitSettingsPath(projectId: string) {
   return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
 }
@@ -259,6 +308,7 @@ export function GitCredentialsSettingsPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const overviewUrlInitializedRef = useRef(false);
+  const runUrlInitializedRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('github');
@@ -424,6 +474,43 @@ export function GitCredentialsSettingsPage() {
       setRunOffset(nextOffset);
     } finally {
       setRunLoadingMore(false);
+    }
+  }
+
+  function hasActiveRunFilters() {
+    return runSourceFilter !== 'all' || runStatusFilter !== 'all' || runProjectFilter !== 'all';
+  }
+
+  async function applyRunFilterState(
+    source: RunSourceFilter,
+    status: RunStatusFilter,
+    project: RunProjectFilter,
+    scrollToRuns = false
+  ) {
+    setRunSourceFilter(source);
+    setRunStatusFilter(status);
+    setRunProjectFilter(project);
+    const nextParams = new URLSearchParams(searchParams);
+    writeRunFiltersToSearchParams(nextParams, { source, status, project });
+    setSearchParams(nextParams, { replace: true });
+    await loadSyncRuns(source, status, project);
+    if (scrollToRuns) {
+      document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async function clearRunFilters() {
+    await applyRunFilterState('all', 'all', 'all');
+  }
+
+  async function copyRunFilterLink() {
+    setError(null);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setMessage('Filtered sync runs link copied to clipboard');
+    } catch {
+      setMessage(null);
+      setError('Failed to copy sync runs filter link');
     }
   }
 
@@ -638,6 +725,21 @@ export function GitCredentialsSettingsPage() {
       fromUrl.provider,
       fromUrl.status
     );
+  }, [org?.id, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!org?.id || runUrlInitializedRef.current) return;
+    runUrlInitializedRef.current = true;
+    const fromUrl = readRunFiltersFromSearchParams(searchParams);
+    if (!fromUrl) return;
+    setRunSourceFilter(fromUrl.source);
+    setRunStatusFilter(fromUrl.status);
+    setRunProjectFilter(fromUrl.project);
+    const nextParams = new URLSearchParams(searchParams);
+    writeRunFiltersToSearchParams(nextParams, fromUrl);
+    setSearchParams(nextParams, { replace: true });
+    void loadSyncRuns(fromUrl.source, fromUrl.status, fromUrl.project);
+    document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [org?.id, searchParams, setSearchParams]);
 
   async function applyOverviewPreset(preset: OverviewFilterPreset) {
@@ -966,11 +1068,7 @@ export function GitCredentialsSettingsPage() {
   }
 
   async function viewFailedRunsForProject(projectId: string) {
-    setRunProjectFilter(projectId);
-    setRunStatusFilter('failed');
-    setRunSourceFilter('all');
-    await loadSyncRuns('all', 'failed', projectId);
-    document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await applyRunFilterState('all', 'failed', projectId, true);
   }
 
   async function filterOverviewToFailed() {
@@ -1676,8 +1774,7 @@ export function GitCredentialsSettingsPage() {
             value={runProjectFilter}
             onChange={(e) => {
               const value = e.target.value;
-              setRunProjectFilter(value);
-              void loadSyncRuns(runSourceFilter, runStatusFilter, value);
+              void applyRunFilterState(runSourceFilter, runStatusFilter, value);
             }}
             slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-project-filter' } }}
           >
@@ -1696,9 +1793,8 @@ export function GitCredentialsSettingsPage() {
             size="small"
             value={runSourceFilter}
             onChange={(e) => {
-              const value = e.target.value as 'all' | 'manual' | 'scheduled' | 'webhook';
-              setRunSourceFilter(value);
-              void loadSyncRuns(value, runStatusFilter, runProjectFilter);
+              const value = e.target.value as RunSourceFilter;
+              void applyRunFilterState(value, runStatusFilter, runProjectFilter);
             }}
             slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-source-filter' } }}
           >
@@ -1713,9 +1809,8 @@ export function GitCredentialsSettingsPage() {
             size="small"
             value={runStatusFilter}
             onChange={(e) => {
-              const value = e.target.value as 'all' | 'success' | 'failed';
-              setRunStatusFilter(value);
-              void loadSyncRuns(runSourceFilter, value, runProjectFilter);
+              const value = e.target.value as RunStatusFilter;
+              void applyRunFilterState(runSourceFilter, value, runProjectFilter);
             }}
             slotProps={{ htmlInput: { 'data-testid': 'org-git-sync-run-status-filter' } }}
           >
@@ -1731,6 +1826,26 @@ export function GitCredentialsSettingsPage() {
           >
             Refresh
           </Button>
+          {hasActiveRunFilters() && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => void clearRunFilters()}
+              data-testid="org-git-sync-runs-clear-filters"
+            >
+              Clear filters
+            </Button>
+          )}
+          {hasActiveRunFilters() && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => void copyRunFilterLink()}
+              data-testid="org-git-sync-runs-copy-filter-link"
+            >
+              Copy filtered link
+            </Button>
+          )}
           <Button
             size="small"
             variant="outlined"

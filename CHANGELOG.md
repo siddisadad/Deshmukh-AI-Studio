@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.89-beta] — 2026-08-10
+
+### Added
+
+- Org git sync overview custom interval filter — `customSyncInterval` query param
+- `customSyncIntervalLinks` count, interval dropdown, summary chip, row interval detail
+- `docs/94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md`, Phase 26 roadmap
+
 ## [0.2.88-beta] — 2026-08-10
 
 ### Added

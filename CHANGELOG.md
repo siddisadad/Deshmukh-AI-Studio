@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.93-beta] — 2026-08-10
+
+### Added
+
+- Filter-scoped retry failed sync — overview filter params on `retry-failed` API
+- Retry button uses filtered failed count and **(filtered)** label
+- `docs/98-ORG-GIT-RETRY-FAILED-FILTER-SCOPE-GUIDE.md`, Phase 30 roadmap
+
 ## [0.2.92-beta] — 2026-08-10
 
 ### Added

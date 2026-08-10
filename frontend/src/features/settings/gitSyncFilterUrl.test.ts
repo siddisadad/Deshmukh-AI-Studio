@@ -4,6 +4,8 @@ import {
   buildGitSyncPageFilterUrl,
   buildGitSyncRunFilterUrl,
   gitSyncRunsSectionHash,
+  hasOverviewFilterInUrl,
+  hasRunFilterInUrl,
   ORG_SYNC_RUNS_SECTION_ID,
   readOverviewFiltersFromSearchParams,
   readRunFiltersFromSearchParams,
@@ -100,5 +102,14 @@ describe('gitSyncFilterUrl', () => {
     const run = { source: 'webhook' as const, status: 'all' as const, project: 'all' as const };
     const url = buildGitSyncRunFilterUrl('/settings/git', overview, run, new URLSearchParams());
     expect(url).toBe(`http://localhost/settings/git?runSource=webhook#${ORG_SYNC_RUNS_SECTION_ID}`);
+  });
+
+  it('detects overview and run params in URL', () => {
+    const overviewParams = new URLSearchParams('linked=linked');
+    const runParams = new URLSearchParams('runSource=manual');
+    expect(hasOverviewFilterInUrl(overviewParams)).toBe(true);
+    expect(hasOverviewFilterInUrl(runParams)).toBe(false);
+    expect(hasRunFilterInUrl(runParams)).toBe(true);
+    expect(hasRunFilterInUrl(overviewParams)).toBe(false);
   });
 });

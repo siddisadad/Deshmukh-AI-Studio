@@ -71,6 +71,10 @@ function hasOverviewFilterUrlParams(params: URLSearchParams) {
   return OVERVIEW_FILTER_URL_KEYS.some((key) => params.get(key) != null);
 }
 
+export function hasOverviewFilterInUrl(params: URLSearchParams) {
+  return hasOverviewFilterUrlParams(params);
+}
+
 export function readOverviewFiltersFromSearchParams(params: URLSearchParams): OverviewFilterState | null {
   if (!hasOverviewFilterUrlParams(params)) return null;
   return {
@@ -112,6 +116,10 @@ function parseRunProjectParam(value: string | null): RunProjectFilter {
 
 function hasRunFilterUrlParams(params: URLSearchParams) {
   return RUN_FILTER_URL_KEYS.some((key) => params.get(key) != null);
+}
+
+export function hasRunFilterInUrl(params: URLSearchParams) {
+  return hasRunFilterUrlParams(params);
 }
 
 export function readRunFiltersFromSearchParams(params: URLSearchParams): RunFilterState | null {

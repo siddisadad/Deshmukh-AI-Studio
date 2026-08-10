@@ -16,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { useAuthStore } from '../../auth/store/authStore';
@@ -259,6 +259,16 @@ export function GitCredentialsSettingsPage() {
   const [searchParams] = useSearchParams();
   const overviewUrlInitializedRef = useRef(false);
   const runUrlInitializedRef = useRef(false);
+
+  useEffect(() => {
+    const onPopState = () => {
+      overviewUrlInitializedRef.current = false;
+      runUrlInitializedRef.current = false;
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('github');
@@ -535,7 +545,7 @@ export function GitCredentialsSettingsPage() {
     };
   }
 
-  function syncFilterNavigate(nextParams: URLSearchParams, runForHash: RunFilterState) {
+  const syncFilterNavigate = useCallback((nextParams: URLSearchParams, runForHash: RunFilterState) => {
     navigate(
       {
         pathname: location.pathname,
@@ -544,7 +554,7 @@ export function GitCredentialsSettingsPage() {
       },
       { replace: true }
     );
-  }
+  }, [navigate, location.pathname]);
 
   async function applyRunFilterState(
     source: RunSourceFilter,
@@ -841,46 +851,78 @@ export function GitCredentialsSettingsPage() {
     if (!org?.id || overviewUrlInitializedRef.current) return;
     overviewUrlInitializedRef.current = true;
     const fromUrl = readOverviewFiltersFromSearchParams(searchParams);
-    if (!fromUrl) return;
-    setOverviewLinkedFilter(fromUrl.linked);
-    setOverviewEnabledFilter(fromUrl.enabled);
-    setOverviewScheduledSyncFilter(fromUrl.scheduled);
-    setOverviewIntervalFilter(fromUrl.interval);
-    setOverviewProviderFilter(fromUrl.provider);
-    setOverviewStatusFilter(fromUrl.status);
-    const nextParams = new URLSearchParams(searchParams);
-    writeOverviewFiltersToSearchParams(nextParams, fromUrl);
-    const runForHash =
-      readRunFiltersFromSearchParams(searchParams) ?? {
-        source: 'all',
+    if (fromUrl) {
+      setOverviewLinkedFilter(fromUrl.linked);
+      setOverviewEnabledFilter(fromUrl.enabled);
+      setOverviewScheduledSyncFilter(fromUrl.scheduled);
+      setOverviewIntervalFilter(fromUrl.interval);
+      setOverviewProviderFilter(fromUrl.provider);
+      setOverviewStatusFilter(fromUrl.status);
+      const nextParams = new URLSearchParams(searchParams);
+      writeOverviewFiltersToSearchParams(nextParams, fromUrl);
+      const runForHash =
+        readRunFiltersFromSearchParams(searchParams) ?? {
+          source: 'all',
+          status: 'all',
+          project: 'all',
+        };
+      syncFilterNavigate(nextParams, runForHash);
+      void loadSyncOverview(
+        fromUrl.linked,
+        fromUrl.enabled,
+        fromUrl.scheduled,
+        fromUrl.interval,
+        fromUrl.provider,
+        fromUrl.status
+      );
+      return;
+    }
+    if (hasActiveOverviewFilters()) {
+      setOverviewLinkedFilter('all');
+      setOverviewEnabledFilter('all');
+      setOverviewScheduledSyncFilter('all');
+      setOverviewIntervalFilter('all');
+      setOverviewProviderFilter('all');
+      setOverviewStatusFilter('all');
+      const nextParams = new URLSearchParams(searchParams);
+      writeOverviewFiltersToSearchParams(nextParams, {
+        linked: 'all',
+        enabled: 'all',
+        scheduled: 'all',
+        interval: 'all',
+        provider: 'all',
         status: 'all',
-        project: 'all',
-      };
-    syncFilterNavigate(nextParams, runForHash);
-    void loadSyncOverview(
-      fromUrl.linked,
-      fromUrl.enabled,
-      fromUrl.scheduled,
-      fromUrl.interval,
-      fromUrl.provider,
-      fromUrl.status
-    );
-  }, [org?.id, searchParams, navigate, location.pathname]);
+      });
+      syncFilterNavigate(nextParams, currentRunFilterStateForUrl());
+      void loadSyncOverview('all', 'all', 'all', 'all', 'all', 'all');
+    }
+  }, [org?.id, searchParams, syncFilterNavigate, location.pathname]);
 
   useEffect(() => {
     if (!org?.id || runUrlInitializedRef.current) return;
     runUrlInitializedRef.current = true;
     const fromUrl = readRunFiltersFromSearchParams(searchParams);
-    if (!fromUrl) return;
-    setRunSourceFilter(fromUrl.source);
-    setRunStatusFilter(fromUrl.status);
-    setRunProjectFilter(fromUrl.project);
-    const nextParams = new URLSearchParams(searchParams);
-    writeRunFiltersToSearchParams(nextParams, fromUrl);
-    syncFilterNavigate(nextParams, fromUrl);
-    void loadSyncRuns(fromUrl.source, fromUrl.status, fromUrl.project);
-    document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [org?.id, searchParams, navigate, location.pathname]);
+    if (fromUrl) {
+      setRunSourceFilter(fromUrl.source);
+      setRunStatusFilter(fromUrl.status);
+      setRunProjectFilter(fromUrl.project);
+      const nextParams = new URLSearchParams(searchParams);
+      writeRunFiltersToSearchParams(nextParams, fromUrl);
+      syncFilterNavigate(nextParams, fromUrl);
+      void loadSyncRuns(fromUrl.source, fromUrl.status, fromUrl.project);
+      document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (hasActiveRunFilters()) {
+      setRunSourceFilter('all');
+      setRunStatusFilter('all');
+      setRunProjectFilter('all');
+      const nextParams = new URLSearchParams(searchParams);
+      writeRunFiltersToSearchParams(nextParams, { source: 'all', status: 'all', project: 'all' });
+      syncFilterNavigate(nextParams, { source: 'all', status: 'all', project: 'all' });
+      void loadSyncRuns('all', 'all', 'all');
+    }
+  }, [org?.id, searchParams, syncFilterNavigate, location.pathname]);
 
   async function applyOverviewPreset(preset: OverviewFilterPreset) {
     const f = preset.filters;

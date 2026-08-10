@@ -273,6 +273,47 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanBulkDisableScheduledSync() throws Exception {
+        JsonNode user = register("org-disable-scheduled" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID scheduledProjectId = createProject(token, orgId, "Scheduled Proj", "SC");
+        UUID manualProjectId = createProject(token, orgId, "Manual Proj", "MN");
+
+        mockMvc.perform(put("/api/v1/projects/" + scheduledProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/sc-dis","branch":"main","enabled":true,"scheduledSyncEnabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + manualProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/mn-dis","branch":"main","enabled":true,"scheduledSyncEnabled":false}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/disable-scheduled-sync")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.updated").value(1))
+                .andExpect(jsonPath("$.updatedProjectIds[0]").value(scheduledProjectId.toString()));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scheduledSyncLinks").value(0))
+                .andExpect(jsonPath("$.manualSyncLinks").value(2));
+
+        ProjectGitLinkEntity scheduledLink = gitLinkRepository.findByProjectId(scheduledProjectId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertFalse(scheduledLink.isScheduledSyncEnabled());
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncs() throws Exception {
         JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

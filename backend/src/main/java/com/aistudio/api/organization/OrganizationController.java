@@ -33,6 +33,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
 import com.aistudio.application.organization.OrgSsoIdpService;
@@ -458,6 +459,15 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.enableScheduledSyncs(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/disable-scheduled-sync")
+    @Operation(summary = "Disable scheduled sync on enabled git links with scheduled sync on (OWNER/ADMIN)")
+    public OrgGitSyncDisableScheduledResponse disableScheduledGitSyncs(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.disableScheduledSyncs(orgId, user.getId());
     }
 
     @PostMapping("/{orgId}/git-sync-overview/retry-project/{projectId}")

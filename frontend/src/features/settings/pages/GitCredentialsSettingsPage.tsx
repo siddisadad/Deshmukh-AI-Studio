@@ -259,6 +259,19 @@ export function GitCredentialsSettingsPage() {
     },
   });
 
+  const disableScheduledSyncs = useMutation({
+    mutationFn: () => gitCredentialsApi.disableScheduledSyncs(org!.id),
+    onSuccess: async (result) => {
+      setError(null);
+      setMessage(`Disabled scheduled sync on ${result.updated} of ${result.targeted} links`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to disable scheduled sync');
+    },
+  });
+
   async function retryFailedSyncForProject(projectId: string, projectKey: string) {
     if (!org?.id) return;
     setRetryingProjectId(projectId);
@@ -623,11 +636,23 @@ export function GitCredentialsSettingsPage() {
                 size="small"
                 variant="contained"
                 color="primary"
-                disabled={enableScheduledSyncs.isPending}
+                disabled={enableScheduledSyncs.isPending || disableScheduledSyncs.isPending}
                 onClick={() => enableScheduledSyncs.mutate()}
                 data-testid="git-sync-overview-enable-scheduled"
               >
                 Enable scheduled sync
+              </Button>
+            )}
+            {canRetryFailedSyncs && syncOverviewQuery.data.scheduledSyncLinks > 0 && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="primary"
+                disabled={enableScheduledSyncs.isPending || disableScheduledSyncs.isPending}
+                onClick={() => disableScheduledSyncs.mutate()}
+                data-testid="git-sync-overview-disable-scheduled"
+              >
+                Disable scheduled sync
               </Button>
             )}
           </Stack>

@@ -116,7 +116,7 @@ public class OrgGitSyncOverviewService {
 
         return new OrgGitSyncOverviewResponse(
                 organizationId,
-                projects.size(),
+                items.size(),
                 linkedProjects,
                 enabledLinks,
                 scheduledSyncLinks,

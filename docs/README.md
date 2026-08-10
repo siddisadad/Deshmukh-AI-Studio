@@ -112,8 +112,9 @@ Read in order; each document builds on the previous.
 | 105 | [105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md](105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md) | Org sync run filter URL sharing |
 | 106 | [106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md](106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md) | Org sync run active filter chips |
 | 107 | [107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md](107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md) | Org sync run filter preset chips |
+| 108 | [108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md](108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md) | Org git sync full page filter state |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.102-beta** adds sync run filter preset chips — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.103-beta** adds full page git sync filter toolbar — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

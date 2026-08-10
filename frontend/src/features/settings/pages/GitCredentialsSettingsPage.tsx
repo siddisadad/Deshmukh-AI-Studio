@@ -299,6 +299,42 @@ function writeRunFiltersToSearchParams(params: URLSearchParams, filters: RunFilt
   if (filters.project !== 'all') params.set('runProject', filters.project);
 }
 
+function countActiveOverviewFilterDimensions(filters: OverviewFilterState): number {
+  let count = 0;
+  if (filters.linked !== 'all') count += 1;
+  if (filters.enabled !== 'all') count += 1;
+  if (filters.scheduled !== 'all') count += 1;
+  if (filters.interval !== 'all') count += 1;
+  if (filters.provider !== 'all') count += 1;
+  if (filters.status !== 'all') count += 1;
+  return count;
+}
+
+function countActiveRunFilterDimensions(filters: RunFilterState): number {
+  let count = 0;
+  if (filters.source !== 'all') count += 1;
+  if (filters.status !== 'all') count += 1;
+  if (filters.project !== 'all') count += 1;
+  return count;
+}
+
+function buildGitSyncPageFilterUrl(
+  pathname: string,
+  overview: OverviewFilterState,
+  run: RunFilterState,
+  existingParams: URLSearchParams
+): string {
+  const params = new URLSearchParams(existingParams);
+  writeOverviewFiltersToSearchParams(params, overview);
+  writeRunFiltersToSearchParams(params, run);
+  const query = params.toString();
+  let url = `${window.location.origin}${pathname}${query ? `?${query}` : ''}`;
+  if (countActiveRunFilterDimensions(run) > 0) {
+    url += `#${ORG_SYNC_RUNS_SECTION_ID}`;
+  }
+  return url;
+}
+
 type RunFilterPreset = {
   id: string;
   label: string;
@@ -895,6 +931,76 @@ export function GitCredentialsSettingsPage() {
     await applyOverviewFilterState('all', 'all', 'all', 'all', 'all', 'all');
   }
 
+  function currentOverviewFilterState(): OverviewFilterState {
+    return {
+      linked: overviewLinkedFilter,
+      enabled: overviewEnabledFilter,
+      scheduled: overviewScheduledSyncFilter,
+      interval: overviewIntervalFilter,
+      provider: overviewProviderFilter,
+      status: overviewStatusFilter,
+    };
+  }
+
+  function currentRunFilterState(): RunFilterState {
+    return {
+      source: runSourceFilter,
+      status: runStatusFilter,
+      project: runProjectFilter,
+    };
+  }
+
+  function hasAnyPageFilters() {
+    return hasActiveOverviewFilters() || hasActiveRunFilters();
+  }
+
+  function pageActiveFilterCount() {
+    return countActiveOverviewFilterDimensions(currentOverviewFilterState())
+      + countActiveRunFilterDimensions(currentRunFilterState());
+  }
+
+  async function clearAllPageFilters() {
+    setOverviewLinkedFilter('all');
+    setOverviewEnabledFilter('all');
+    setOverviewScheduledSyncFilter('all');
+    setOverviewIntervalFilter('all');
+    setOverviewProviderFilter('all');
+    setOverviewStatusFilter('all');
+    setRunSourceFilter('all');
+    setRunStatusFilter('all');
+    setRunProjectFilter('all');
+    const nextParams = new URLSearchParams(searchParams);
+    writeOverviewFiltersToSearchParams(nextParams, {
+      linked: 'all',
+      enabled: 'all',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'all',
+      status: 'all',
+    });
+    writeRunFiltersToSearchParams(nextParams, { source: 'all', status: 'all', project: 'all' });
+    setSearchParams(nextParams, { replace: true });
+    await loadSyncOverview('all', 'all', 'all', 'all', 'all', 'all');
+    await loadSyncRuns('all', 'all', 'all');
+  }
+
+  async function copyFullPageFilterLink() {
+    setError(null);
+    try {
+      const url = buildGitSyncPageFilterUrl(
+        window.location.pathname,
+        currentOverviewFilterState(),
+        currentRunFilterState(),
+        searchParams
+      );
+      await navigator.clipboard.writeText(url);
+      setMessage('Page link with overview and run filters copied to clipboard');
+    } catch {
+      setMessage(null);
+      setError('Failed to copy page filter link');
+    }
+  }
+
   async function exportSyncRuns(format: 'csv' | 'json') {
     if (!org?.id) return;
     setRunExporting(format);
@@ -1296,6 +1402,36 @@ export function GitCredentialsSettingsPage() {
 
       {error && <Alert severity="error">{error}</Alert>}
       {message && <Alert severity="success">{message}</Alert>}
+
+      {hasAnyPageFilters() && (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          sx={{ alignItems: 'flex-start' }}
+          data-testid="git-sync-page-filter-toolbar"
+        >
+          <Typography variant="body2" color="text.secondary">
+            {pageActiveFilterCount()} active filter{pageActiveFilterCount() === 1 ? '' : 's'} across overview
+            and runs
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void copyFullPageFilterLink()}
+            data-testid="git-sync-page-copy-filter-link"
+          >
+            Copy page link
+          </Button>
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => void clearAllPageFilters()}
+            data-testid="git-sync-page-clear-all-filters"
+          >
+            Clear all filters
+          </Button>
+        </Stack>
+      )}
 
       {syncOverviewQuery.data && (
         <Stack spacing={1} data-testid="git-sync-overview">

@@ -66,6 +66,7 @@ public class OrgGitSyncOverviewService {
             Boolean linked,
             Boolean enabled,
             Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
             String provider,
             String lastSyncStatus
     ) {
@@ -90,6 +91,7 @@ public class OrgGitSyncOverviewService {
         int enabledLinks = 0;
         int scheduledSyncLinks = 0;
         int manualSyncLinks = 0;
+        int customSyncIntervalLinks = 0;
         int failedLastSync = 0;
         for (OrgGitSyncOverviewItemResponse item : items) {
             if (item.linked()) {
@@ -101,6 +103,9 @@ public class OrgGitSyncOverviewService {
                     } else {
                         manualSyncLinks++;
                     }
+                    if (item.scheduledSyncIntervalMinutes() != null) {
+                        customSyncIntervalLinks++;
+                    }
                 }
                 if ("failed".equals(item.lastSyncStatus())) {
                     failedLastSync++;
@@ -110,7 +115,13 @@ public class OrgGitSyncOverviewService {
 
         List<OrgGitSyncOverviewItemResponse> filteredItems = items.stream()
                 .filter(item -> matchesFilters(
-                        item, linked, enabled, scheduledSyncEnabled, normalizedProvider, normalizedLastSyncStatus))
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
                 .toList();
 
         return new OrgGitSyncOverviewResponse(
@@ -120,6 +131,7 @@ public class OrgGitSyncOverviewService {
                 enabledLinks,
                 scheduledSyncLinks,
                 manualSyncLinks,
+                customSyncIntervalLinks,
                 failedLastSync,
                 filteredItems
         );
@@ -328,11 +340,19 @@ public class OrgGitSyncOverviewService {
             Boolean linked,
             Boolean enabled,
             Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
             String provider,
             String lastSyncStatus
     ) {
         OrgGitSyncOverviewResponse overview = getOverview(
-                organizationId, userId, linked, enabled, scheduledSyncEnabled, provider, lastSyncStatus);
+                organizationId,
+                userId,
+                linked,
+                enabled,
+                scheduledSyncEnabled,
+                customSyncInterval,
+                provider,
+                lastSyncStatus);
         String normalizedFormat = normalizeExportFormat(format);
         if ("json".equals(normalizedFormat)) {
             return exportAsJson(overview);
@@ -345,6 +365,7 @@ public class OrgGitSyncOverviewService {
             Boolean linked,
             Boolean enabled,
             Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
             String provider,
             String lastSyncStatus
     ) {
@@ -364,6 +385,15 @@ public class OrgGitSyncOverviewService {
                 return false;
             }
             if (item.scheduledSyncEnabled() != scheduledSyncEnabled) {
+                return false;
+            }
+        }
+        if (customSyncInterval != null) {
+            if (!item.linked()) {
+                return false;
+            }
+            boolean hasCustomInterval = item.scheduledSyncIntervalMinutes() != null;
+            if (hasCustomInterval != customSyncInterval) {
                 return false;
             }
         }

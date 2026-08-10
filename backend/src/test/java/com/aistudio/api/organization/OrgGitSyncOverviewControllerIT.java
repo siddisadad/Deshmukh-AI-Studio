@@ -226,6 +226,60 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void overviewFiltersByCustomSyncInterval() throws Exception {
+        JsonNode user = register("org-sync-interval" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID customIntervalProjectId = createProject(token, orgId, "Custom Interval", "CI");
+        UUID defaultIntervalProjectId = createProject(token, orgId, "Default Interval", "DI");
+        UUID unlinkedProjectId = createProject(token, orgId, "Plain Proj", "PL");
+
+        mockMvc.perform(put("/api/v1/projects/" + customIntervalProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/custom","branch":"main","enabled":true,"scheduledSyncIntervalMinutes":1440}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + defaultIntervalProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/default","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customSyncIntervalLinks").value(1));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?customSyncInterval=true")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customSyncIntervalLinks").value(1))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(customIntervalProjectId.toString()));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?customSyncInterval=false")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[?(@.projectId == '" + defaultIntervalProjectId + "')].linked").value(true))
+                .andExpect(jsonPath("$.items[?(@.projectId == '" + unlinkedProjectId + "')].linked").value(false));
+
+        MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/export?format=csv&linked=true&customSyncInterval=true")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csv = csvResult.getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains(customIntervalProjectId.toString()));
+        org.junit.jupiter.api.Assertions.assertFalse(csv.contains(defaultIntervalProjectId.toString()));
+    }
+
+    @Test
     void orgOwnerCanBulkEnableScheduledSync() throws Exception {
         JsonNode user = register("org-enable-scheduled" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

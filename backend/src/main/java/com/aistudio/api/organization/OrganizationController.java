@@ -415,12 +415,13 @@ public class OrganizationController {
             @RequestParam(required = false) Boolean linked,
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
             @RequestParam(required = false) String provider,
             @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.getOverview(
-                orgId, user.getId(), linked, enabled, scheduledSyncEnabled, provider, lastSyncStatus);
+                orgId, user.getId(), linked, enabled, scheduledSyncEnabled, customSyncInterval, provider, lastSyncStatus);
     }
 
     @GetMapping("/{orgId}/git-sync-overview/export")
@@ -431,12 +432,13 @@ public class OrganizationController {
             @RequestParam(required = false) Boolean linked,
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) Boolean scheduledSyncEnabled,
+            @RequestParam(required = false) Boolean customSyncInterval,
             @RequestParam(required = false) String provider,
             @RequestParam(required = false) String lastSyncStatus,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         OrgGitSyncOverviewExport exported = orgGitSyncOverviewService.exportOverview(
-                orgId, user.getId(), format, linked, enabled, scheduledSyncEnabled, provider, lastSyncStatus);
+                orgId, user.getId(), format, linked, enabled, scheduledSyncEnabled, customSyncInterval, provider, lastSyncStatus);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + exported.filename() + "\"")

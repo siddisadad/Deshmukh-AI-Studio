@@ -98,8 +98,9 @@ Read in order; each document builds on the previous.
 | 91 | [91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md](91-ORG-GIT-BULK-ENABLE-SCHEDULED-SYNC-GUIDE.md) | Org bulk enable scheduled sync |
 | 92 | [92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md](92-ORG-GIT-BULK-DISABLE-SCHEDULED-SYNC-GUIDE.md) | Org bulk disable scheduled sync |
 | 93 | [93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md](93-ORG-GIT-SYNC-PER-PROJECT-SCHEDULED-TOGGLE-GUIDE.md) | Org per-project scheduled sync toggle |
+| 94 | [94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md](94-ORG-GIT-SYNC-OVERVIEW-INTERVAL-FILTER-GUIDE.md) | Org overview custom interval filter |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.88-beta** adds per-project scheduled sync toggle — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.89-beta** adds org overview custom interval filter — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

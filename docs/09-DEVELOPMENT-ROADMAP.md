@@ -470,6 +470,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 52. Phase 49 — Org git sync saved filter presets E2E (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Saved preset E2E | Playwright save/apply/delete + org-shared presets ([117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md](117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -390,6 +390,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 42. Phase 39 — Org sync run filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Run filter preset chips | Quick-apply run history filter chips ([107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md](107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

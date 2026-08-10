@@ -299,6 +299,50 @@ function writeRunFiltersToSearchParams(params: URLSearchParams, filters: RunFilt
   if (filters.project !== 'all') params.set('runProject', filters.project);
 }
 
+type RunFilterPreset = {
+  id: string;
+  label: string;
+  filters: RunFilterState;
+};
+
+const RUN_FILTER_PRESETS: RunFilterPreset[] = [
+  {
+    id: 'failed',
+    label: 'Failed',
+    filters: { source: 'all', status: 'failed', project: 'all' },
+  },
+  {
+    id: 'success',
+    label: 'Success',
+    filters: { source: 'all', status: 'success', project: 'all' },
+  },
+  {
+    id: 'manual',
+    label: 'Manual',
+    filters: { source: 'manual', status: 'all', project: 'all' },
+  },
+  {
+    id: 'scheduled',
+    label: 'Scheduled',
+    filters: { source: 'scheduled', status: 'all', project: 'all' },
+  },
+  {
+    id: 'webhook',
+    label: 'Webhook',
+    filters: { source: 'webhook', status: 'all', project: 'all' },
+  },
+  {
+    id: 'failed-manual',
+    label: 'Failed manual',
+    filters: { source: 'manual', status: 'failed', project: 'all' },
+  },
+  {
+    id: 'failed-scheduled',
+    label: 'Failed scheduled',
+    filters: { source: 'scheduled', status: 'failed', project: 'all' },
+  },
+];
+
 function projectGitSettingsPath(projectId: string) {
   return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
 }
@@ -554,6 +598,18 @@ export function GitCredentialsSettingsPage() {
     }
 
     return chips;
+  }
+
+  function isRunPresetActive(preset: RunFilterPreset) {
+    const f = preset.filters;
+    return runSourceFilter === f.source
+      && runStatusFilter === f.status
+      && runProjectFilter === f.project;
+  }
+
+  async function applyRunPreset(preset: RunFilterPreset) {
+    const f = preset.filters;
+    await applyRunFilterState(f.source, f.status, f.project);
   }
 
   async function loadSyncOverview(
@@ -1808,6 +1864,25 @@ export function GitCredentialsSettingsPage() {
             Showing {runItems.length} of {runTotalCount}
           </Typography>
         )}
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{ flexWrap: 'wrap', gap: 0.5 }}
+          data-testid="org-git-sync-runs-filter-presets"
+        >
+          {RUN_FILTER_PRESETS.map((preset) => (
+            <Chip
+              key={preset.id}
+              label={preset.label}
+              size="small"
+              clickable
+              color={isRunPresetActive(preset) ? 'primary' : 'default'}
+              variant={isRunPresetActive(preset) ? 'filled' : 'outlined'}
+              onClick={() => void applyRunPreset(preset)}
+              data-testid={`org-git-sync-runs-preset-${preset.id}`}
+            />
+          ))}
+        </Stack>
         {hasActiveRunFilters() && (
           <Stack
             direction="row"

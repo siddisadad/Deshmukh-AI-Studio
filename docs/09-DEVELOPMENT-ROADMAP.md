@@ -382,6 +382,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 41. Phase 38 — Org sync run active filter chips (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Active run filter chips | Removable per-dimension run filter chips ([106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md](106-ORG-GIT-SYNC-RUN-ACTIVE-FILTER-CHIPS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -514,6 +514,48 @@ export function GitCredentialsSettingsPage() {
     }
   }
 
+  function getActiveRunFilterChips() {
+    const chips: {
+      id: string;
+      label: string;
+      clear: () => Promise<void>;
+    }[] = [];
+
+    if (runSourceFilter !== 'all') {
+      const sourceLabels: Record<Exclude<RunSourceFilter, 'all'>, string> = {
+        manual: 'Source: manual',
+        scheduled: 'Source: scheduled',
+        webhook: 'Source: webhook',
+      };
+      chips.push({
+        id: 'runSource',
+        label: sourceLabels[runSourceFilter],
+        clear: () => applyRunFilterState('all', runStatusFilter, runProjectFilter),
+      });
+    }
+    if (runStatusFilter !== 'all') {
+      chips.push({
+        id: 'runStatus',
+        label: runStatusFilter === 'success' ? 'Status: success' : 'Status: failed',
+        clear: () => applyRunFilterState(runSourceFilter, 'all', runProjectFilter),
+      });
+    }
+    if (runProjectFilter !== 'all') {
+      const projectOption = runProjectOptionsQuery.data?.items.find(
+        (item) => item.projectId === runProjectFilter
+      );
+      chips.push({
+        id: 'runProject',
+        label: projectOption
+          ? `Project: ${projectOption.projectKey}`
+          : `Project: ${runProjectFilter}`,
+        clear: () => applyRunFilterState(runSourceFilter, runStatusFilter, 'all'),
+      });
+    }
+
+    return chips;
+  }
+
   async function loadSyncOverview(
     linked = overviewLinkedFilter,
     enabled = overviewEnabledFilter,
@@ -1765,6 +1807,24 @@ export function GitCredentialsSettingsPage() {
           <Typography variant="body2" color="text.secondary">
             Showing {runItems.length} of {runTotalCount}
           </Typography>
+        )}
+        {hasActiveRunFilters() && (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ flexWrap: 'wrap', gap: 0.5 }}
+            data-testid="org-git-sync-runs-active-filters"
+          >
+            {getActiveRunFilterChips().map((chip) => (
+              <Chip
+                key={chip.id}
+                label={chip.label}
+                size="small"
+                onDelete={() => void chip.clear()}
+                data-testid={`org-git-sync-runs-active-filter-${chip.id}`}
+              />
+            ))}
+          </Stack>
         )}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
           <TextField

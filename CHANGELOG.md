@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.106-beta] — 2026-08-10
+
+### Added
+
+- Org saved git sync filter presets — save overview and run filter combos in browser localStorage
+- `docs/111-ORG-GIT-SAVED-FILTER-PRESETS-GUIDE.md`, Phase 43 roadmap
+
 ## [0.2.105-beta] — 2026-08-10
 
 ### Added

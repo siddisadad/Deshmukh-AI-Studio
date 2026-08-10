@@ -631,6 +631,7 @@ export function GitCredentialsSettingsPage() {
     setRunTotalCount(page.totalCount);
     setRunOffset(page.offset);
     void queryClient.invalidateQueries({ queryKey: ['org-git-sync-runs-filter-counts', org.id] });
+    void queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
   }
 
   async function loadMoreSyncRuns() {
@@ -772,6 +773,7 @@ export function GitCredentialsSettingsPage() {
       queryFn: () => gitCredentialsApi.getSyncOverview(org.id, filters),
     });
     void queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
+    void queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
   }
 
   function buildOverviewFilters(): OrgGitSyncOverviewFilters {
@@ -993,6 +995,18 @@ export function GitCredentialsSettingsPage() {
 
   function formatOverviewPresetLabel(preset: OverviewFilterPreset): string {
     const count = overviewFilterCountsQuery.data?.presets.find((item) => item.id === preset.id)?.count;
+    if (count == null) return preset.label;
+    return `${preset.label} (${count})`;
+  }
+
+  function formatSavedOverviewPresetLabel(preset: SavedOverviewFilterPreset): string {
+    const count = filterPresetsQuery.data?.find((item) => item.id === preset.id)?.count;
+    if (count == null) return preset.label;
+    return `${preset.label} (${count})`;
+  }
+
+  function formatSavedRunPresetLabel(preset: SavedRunFilterPreset): string {
+    const count = filterPresetsQuery.data?.find((item) => item.id === preset.id)?.count;
     if (count == null) return preset.label;
     return `${preset.label} (${count})`;
   }
@@ -1758,7 +1772,7 @@ export function GitCredentialsSettingsPage() {
               {savedOverviewPresets.map((preset) => (
                 <Chip
                   key={preset.id}
-                  label={preset.label}
+                  label={formatSavedOverviewPresetLabel(preset)}
                   size="small"
                   clickable
                   color={isSavedOverviewPresetActive(preset) ? 'secondary' : 'default'}
@@ -2276,7 +2290,7 @@ export function GitCredentialsSettingsPage() {
             {savedRunPresets.map((preset) => (
               <Chip
                 key={preset.id}
-                label={preset.label}
+                label={formatSavedRunPresetLabel(preset)}
                 size="small"
                 clickable
                 color={isSavedRunPresetActive(preset) ? 'secondary' : 'default'}

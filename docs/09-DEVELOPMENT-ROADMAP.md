@@ -438,6 +438,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 48. Phase 45 — Org saved preset counts (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Saved preset chip counts | Match counts on server-synced saved filter chips ([113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md](113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

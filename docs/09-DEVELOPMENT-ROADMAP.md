@@ -294,6 +294,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 30. Phase 27 — Org clear custom interval (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Clear interval action | Per-project clear interval API + overview row button ([95-ORG-GIT-SYNC-CLEAR-CUSTOM-INTERVAL-GUIDE.md](95-ORG-GIT-SYNC-CLEAR-CUSTOM-INTERVAL-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

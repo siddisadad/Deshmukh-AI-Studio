@@ -57,6 +57,7 @@ export function GitCredentialsSettingsPage() {
   const [runExporting, setRunExporting] = useState<'csv' | 'json' | null>(null);
   const [retryingProjectId, setRetryingProjectId] = useState<string | null>(null);
   const [togglingScheduledProjectId, setTogglingScheduledProjectId] = useState<string | null>(null);
+  const [clearingIntervalProjectId, setClearingIntervalProjectId] = useState<string | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -338,6 +339,26 @@ export function GitCredentialsSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to disable scheduled sync');
     } finally {
       setTogglingScheduledProjectId(null);
+    }
+  }
+
+  async function clearCustomSyncIntervalForProject(projectId: string, projectKey: string) {
+    if (!org?.id) return;
+    setClearingIntervalProjectId(projectId);
+    setError(null);
+    try {
+      const result = await gitCredentialsApi.clearCustomSyncIntervalForProject(org.id, projectId);
+      setMessage(
+        result.updated
+          ? `Cleared custom sync interval for ${projectKey}`
+          : `${projectKey} already uses the platform default interval`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to clear sync interval');
+    } finally {
+      setClearingIntervalProjectId(null);
     }
   }
 
@@ -856,6 +877,24 @@ export function GitCredentialsSettingsPage() {
                   data-testid={`git-sync-overview-disable-scheduled-${item.projectKey}`}
                 >
                   {togglingScheduledProjectId === item.projectId ? 'Updating…' : 'Disable scheduled'}
+                </Button>
+              )}
+              {canRetryFailedSyncs
+                && item.linked
+                && item.enabled
+                && item.scheduledSyncIntervalMinutes != null && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="secondary"
+                  disabled={
+                    clearingIntervalProjectId === item.projectId
+                    || togglingScheduledProjectId === item.projectId
+                  }
+                  onClick={() => void clearCustomSyncIntervalForProject(item.projectId, item.projectKey)}
+                  data-testid={`git-sync-overview-clear-interval-${item.projectKey}`}
+                >
+                  {clearingIntervalProjectId === item.projectId ? 'Updating…' : 'Clear interval'}
                 </Button>
               )}
             </Stack>

@@ -21,12 +21,15 @@ import com.aistudio.api.organization.dto.CreateOrgDlpConnectorRequest;
 import com.aistudio.api.organization.dto.OrgDlpConnectorResponse;
 import com.aistudio.api.organization.dto.ThreadExportDlpEventResponse;
 import com.aistudio.api.codemetadata.dto.GitConnectionTestResponse;
+import com.aistudio.api.organization.dto.CreateOrgGitSyncFilterPresetRequest;
+import com.aistudio.api.organization.dto.OrgGitSyncFilterPresetResponse;
 import com.aistudio.api.organization.dto.OrgGitCredentialEventResponse;
 import com.aistudio.api.organization.dto.OrgGitCredentialResponse;
 import com.aistudio.api.organization.dto.UpsertOrgGitCredentialRequest;
 import com.aistudio.application.organization.OrgDlpConnectorService;
 import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgGitSyncRunsService;
+import com.aistudio.application.organization.OrgGitSyncFilterPresetService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
 import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunFilterCountsResponse;
@@ -84,6 +87,7 @@ public class OrganizationController {
     private final OrgGitCredentialService orgGitCredentialService;
     private final OrgGitSyncOverviewService orgGitSyncOverviewService;
     private final OrgGitSyncRunsService orgGitSyncRunsService;
+    private final OrgGitSyncFilterPresetService orgGitSyncFilterPresetService;
 
     public OrganizationController(
             OrganizationService organizationService,
@@ -93,7 +97,8 @@ public class OrganizationController {
             OrgDlpConnectorService orgDlpConnectorService,
             OrgGitCredentialService orgGitCredentialService,
             OrgGitSyncOverviewService orgGitSyncOverviewService,
-            OrgGitSyncRunsService orgGitSyncRunsService
+            OrgGitSyncRunsService orgGitSyncRunsService,
+            OrgGitSyncFilterPresetService orgGitSyncFilterPresetService
     ) {
         this.organizationService = organizationService;
         this.orgAiPolicyService = orgAiPolicyService;
@@ -103,6 +108,7 @@ public class OrganizationController {
         this.orgGitCredentialService = orgGitCredentialService;
         this.orgGitSyncOverviewService = orgGitSyncOverviewService;
         this.orgGitSyncRunsService = orgGitSyncRunsService;
+        this.orgGitSyncFilterPresetService = orgGitSyncFilterPresetService;
     }
 
     @GetMapping
@@ -727,5 +733,36 @@ public class OrganizationController {
                         "attachment; filename=\"" + exported.filename() + "\"")
                 .contentType(MediaType.parseMediaType(exported.contentType()))
                 .body(exported.body());
+    }
+
+    @GetMapping("/{orgId}/git-sync-filter-presets")
+    @Operation(summary = "List saved git sync filter presets for the current user")
+    public List<OrgGitSyncFilterPresetResponse> listGitSyncFilterPresets(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncFilterPresetService.listPresets(orgId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-filter-presets")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Save a git sync filter preset for the current user")
+    public OrgGitSyncFilterPresetResponse createGitSyncFilterPreset(
+            @PathVariable UUID orgId,
+            @RequestBody CreateOrgGitSyncFilterPresetRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncFilterPresetService.createPreset(orgId, user.getId(), request);
+    }
+
+    @DeleteMapping("/{orgId}/git-sync-filter-presets/{presetId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a saved git sync filter preset")
+    public void deleteGitSyncFilterPreset(
+            @PathVariable UUID orgId,
+            @PathVariable UUID presetId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        orgGitSyncFilterPresetService.deletePreset(orgId, user.getId(), presetId);
     }
 }

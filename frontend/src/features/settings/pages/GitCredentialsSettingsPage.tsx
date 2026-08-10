@@ -27,12 +27,12 @@ import {
   type OrgGitSyncOverviewFilters,
 } from '../api/gitCredentialsApi';
 import {
-  addSavedOverviewPreset,
-  addSavedRunPreset,
+  clearLocalSavedOverviewPresets,
+  clearLocalSavedRunPresets,
   loadSavedOverviewPresets,
   loadSavedRunPresets,
-  removeSavedOverviewPreset,
-  removeSavedRunPreset,
+  type OverviewFiltersSnapshot,
+  type RunFiltersSnapshot,
   type SavedOverviewFilterPreset,
   type SavedRunFilterPreset,
 } from '../gitSyncSavedFilterPresets';
@@ -435,10 +435,9 @@ export function GitCredentialsSettingsPage() {
   const [settingIntervalProjectId, setSettingIntervalProjectId] = useState<string | null>(null);
   const [bulkSetIntervalDialogOpen, setBulkSetIntervalDialogOpen] = useState(false);
   const [settingBulkInterval, setSettingBulkInterval] = useState(false);
-  const [savedOverviewPresets, setSavedOverviewPresets] = useState<SavedOverviewFilterPreset[]>([]);
-  const [savedRunPresets, setSavedRunPresets] = useState<SavedRunFilterPreset[]>([]);
   const [savePresetDialog, setSavePresetDialog] = useState<'overview' | 'run' | null>(null);
   const [savePresetNameInput, setSavePresetNameInput] = useState('');
+  const [savingFilterPreset, setSavingFilterPreset] = useState(false);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -489,15 +488,75 @@ export function GitCredentialsSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const filterPresetsQuery = useQuery({
+    queryKey: ['org-git-sync-filter-presets', org?.id],
+    queryFn: () => gitCredentialsApi.listFilterPresets(org!.id),
+    enabled: !!org?.id,
+  });
+
+  const savedOverviewPresets: SavedOverviewFilterPreset[] = (filterPresetsQuery.data ?? [])
+    .filter((preset) => preset.scope === 'overview')
+    .map((preset) => ({
+      id: preset.id,
+      label: preset.label,
+      filters: preset.filters as OverviewFiltersSnapshot,
+    }));
+
+  const savedRunPresets: SavedRunFilterPreset[] = (filterPresetsQuery.data ?? [])
+    .filter((preset) => preset.scope === 'runs')
+    .map((preset) => ({
+      id: preset.id,
+      label: preset.label,
+      filters: preset.filters as RunFiltersSnapshot,
+    }));
+
   useEffect(() => {
-    if (!org?.id) {
-      setSavedOverviewPresets([]);
-      setSavedRunPresets([]);
+    if (!org?.id || !filterPresetsQuery.data) return;
+    const migrateKey = `aistudio.org-git-sync.presets-migrated.${org.id}`;
+    if (localStorage.getItem(migrateKey) === '1') return;
+
+    const localOverview = loadSavedOverviewPresets(org.id);
+    const localRun = loadSavedRunPresets(org.id);
+    if (filterPresetsQuery.data.length > 0) {
+      clearLocalSavedOverviewPresets(org.id);
+      clearLocalSavedRunPresets(org.id);
+      localStorage.setItem(migrateKey, '1');
       return;
     }
-    setSavedOverviewPresets(loadSavedOverviewPresets(org.id));
-    setSavedRunPresets(loadSavedRunPresets(org.id));
-  }, [org?.id]);
+    if (localOverview.length === 0 && localRun.length === 0) {
+      localStorage.setItem(migrateKey, '1');
+      return;
+    }
+
+    void (async () => {
+      for (const preset of localOverview) {
+        try {
+          await gitCredentialsApi.createFilterPreset(org.id, {
+            scope: 'overview',
+            label: preset.label,
+            filters: preset.filters,
+          });
+        } catch {
+          // skip duplicates or limits during migration
+        }
+      }
+      for (const preset of localRun) {
+        try {
+          await gitCredentialsApi.createFilterPreset(org.id, {
+            scope: 'runs',
+            label: preset.label,
+            filters: preset.filters,
+          });
+        } catch {
+          // skip duplicates or limits during migration
+        }
+      }
+      clearLocalSavedOverviewPresets(org.id);
+      clearLocalSavedRunPresets(org.id);
+      localStorage.setItem(migrateKey, '1');
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+    })();
+  }, [org?.id, filterPresetsQuery.data, queryClient]);
 
   const isOwnerOrAdmin =
     orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
@@ -953,44 +1012,60 @@ export function GitCredentialsSettingsPage() {
     setSavePresetNameInput('');
   }
 
-  function submitSavePreset() {
+  async function submitSavePreset() {
     if (!org?.id || !savePresetDialog) return;
-    if (savePresetDialog === 'overview') {
-      const result = addSavedOverviewPreset(org.id, savePresetNameInput, currentOverviewFilterState());
-      setSavedOverviewPresets(result.presets);
-      if (result.error) {
-        setMessage(null);
-        setError(result.error);
-        return;
+    setSavingFilterPreset(true);
+    setError(null);
+    try {
+      if (savePresetDialog === 'overview') {
+        await gitCredentialsApi.createFilterPreset(org.id, {
+          scope: 'overview',
+          label: savePresetNameInput,
+          filters: currentOverviewFilterState(),
+        });
+        setMessage(`Overview preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+      } else {
+        await gitCredentialsApi.createFilterPreset(org.id, {
+          scope: 'runs',
+          label: savePresetNameInput,
+          filters: currentRunFilterState(),
+        });
+        setMessage(`Run preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
       }
-      setError(null);
-      setMessage(`Overview preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
-    } else {
-      const result = addSavedRunPreset(org.id, savePresetNameInput, currentRunFilterState());
-      setSavedRunPresets(result.presets);
-      if (result.error) {
-        setMessage(null);
-        setError(result.error);
-        return;
-      }
-      setError(null);
-      setMessage(`Run preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+      closeSavePresetDialog();
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to save filter preset');
+    } finally {
+      setSavingFilterPreset(false);
     }
-    closeSavePresetDialog();
   }
 
   function normalizeSavePresetName(label: string) {
     return label.trim().slice(0, 40);
   }
 
-  function deleteSavedOverviewPreset(presetId: string) {
+  async function deleteSavedOverviewPreset(presetId: string) {
     if (!org?.id) return;
-    setSavedOverviewPresets(removeSavedOverviewPreset(org.id, presetId));
+    try {
+      await gitCredentialsApi.deleteFilterPreset(org.id, presetId);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to delete overview preset');
+    }
   }
 
-  function deleteSavedRunPreset(presetId: string) {
+  async function deleteSavedRunPreset(presetId: string) {
     if (!org?.id) return;
-    setSavedRunPresets(removeSavedRunPreset(org.id, presetId));
+    try {
+      await gitCredentialsApi.deleteFilterPreset(org.id, presetId);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to delete run preset');
+    }
   }
 
   async function applySavedOverviewPreset(preset: SavedOverviewFilterPreset) {
@@ -1689,7 +1764,7 @@ export function GitCredentialsSettingsPage() {
                   color={isSavedOverviewPresetActive(preset) ? 'secondary' : 'default'}
                   variant={isSavedOverviewPresetActive(preset) ? 'filled' : 'outlined'}
                   onClick={() => void applySavedOverviewPreset(preset)}
-                  onDelete={() => deleteSavedOverviewPreset(preset.id)}
+                  onDelete={() => void deleteSavedOverviewPreset(preset.id)}
                   data-testid={`git-sync-overview-saved-preset-${preset.id}`}
                 />
               ))}
@@ -2207,7 +2282,7 @@ export function GitCredentialsSettingsPage() {
                 color={isSavedRunPresetActive(preset) ? 'secondary' : 'default'}
                 variant={isSavedRunPresetActive(preset) ? 'filled' : 'outlined'}
                 onClick={() => void applySavedRunPreset(preset)}
-                onDelete={() => deleteSavedRunPreset(preset.id)}
+                onDelete={() => void deleteSavedRunPreset(preset.id)}
                 data-testid={`org-git-sync-runs-saved-preset-${preset.id}`}
               />
             ))}
@@ -2545,18 +2620,20 @@ export function GitCredentialsSettingsPage() {
             margin="dense"
             value={savePresetNameInput}
             onChange={(e) => setSavePresetNameInput(e.target.value)}
-            helperText="Saved in this browser for this organization (max 12)."
+            helperText="Synced to your account for this organization (max 12 per section)."
             slotProps={{ htmlInput: { 'data-testid': 'git-sync-save-preset-name-input' } }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeSavePresetDialog}>Cancel</Button>
+          <Button onClick={closeSavePresetDialog} disabled={savingFilterPreset}>Cancel</Button>
           <Button
-            onClick={() => submitSavePreset()}
-            disabled={normalizeSavePresetName(savePresetNameInput).length === 0}
+            onClick={() => void submitSavePreset()}
+            disabled={
+              savingFilterPreset || normalizeSavePresetName(savePresetNameInput).length === 0
+            }
             data-testid="git-sync-save-preset-confirm"
           >
-            Save
+            {savingFilterPreset ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

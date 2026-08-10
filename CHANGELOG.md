@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.103-beta] — 2026-08-10
+
+### Added
+
+- Org git sync full page filter toolbar — copy page link and clear all filters across overview and runs
+- `docs/108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md`, Phase 40 roadmap
+
 ## [0.2.102-beta] — 2026-08-10
 
 ### Added

@@ -107,7 +107,7 @@ Read in order; each document builds on the previous.
 | 100 | [100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md](100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md) | Org bulk set interval filter scope |
 | 101 | [101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md](101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md) | Org bulk actions summary preview |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.95-beta** adds filter-scoped bulk set interval — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.96-beta** adds org bulk actions summary preview — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

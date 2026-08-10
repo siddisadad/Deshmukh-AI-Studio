@@ -422,6 +422,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 46. Phase 43 — Org saved filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Saved custom filter presets | Browser localStorage saved overview and run presets ([111-ORG-GIT-SAVED-FILTER-PRESETS-GUIDE.md](111-ORG-GIT-SAVED-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

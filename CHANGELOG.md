@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.92-beta] — 2026-08-10
+
+### Added
+
+- Org per-project set custom sync interval — `set-interval-project` API
+- Overview row **Set interval** dialog (15–10080 minutes)
+- `docs/97-ORG-GIT-SYNC-SET-CUSTOM-INTERVAL-GUIDE.md`, Phase 29 roadmap
+
 ## [0.2.91-beta] — 2026-08-10
 
 ### Added

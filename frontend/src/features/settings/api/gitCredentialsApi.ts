@@ -223,6 +223,9 @@ export interface OrgGitSyncFilterPreset {
   label: string;
   filters: Record<string, string>;
   count: number;
+  visibility: 'private' | 'org';
+  createdByUserId: string;
+  createdByDisplayName: string;
   createdAt: string;
 }
 
@@ -230,6 +233,7 @@ export interface CreateOrgGitSyncFilterPresetBody {
   scope: 'overview' | 'runs';
   label: string;
   filters: Record<string, string>;
+  visibility?: 'private' | 'org';
 }
 
 export const gitCredentialsApi = {

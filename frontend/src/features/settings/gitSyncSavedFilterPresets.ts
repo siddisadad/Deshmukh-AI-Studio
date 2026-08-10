@@ -17,12 +17,18 @@ export type SavedOverviewFilterPreset = {
   id: string;
   label: string;
   filters: OverviewFiltersSnapshot;
+  visibility?: 'private' | 'org';
+  createdByUserId?: string;
+  createdByDisplayName?: string;
 };
 
 export type SavedRunFilterPreset = {
   id: string;
   label: string;
   filters: RunFiltersSnapshot;
+  visibility?: 'private' | 'org';
+  createdByUserId?: string;
+  createdByDisplayName?: string;
 };
 
 const OVERVIEW_KEY_PREFIX = 'aistudio.org-git-sync.saved-overview-presets.';

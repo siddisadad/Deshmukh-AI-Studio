@@ -2,11 +2,13 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Link,
   MenuItem,
   Stack,
@@ -395,6 +397,7 @@ function projectGitSettingsPath(projectId: string) {
 
 export function GitCredentialsSettingsPage() {
   const org = useAuthStore((s) => s.organization);
+  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const overviewUrlInitializedRef = useRef(false);
@@ -437,6 +440,7 @@ export function GitCredentialsSettingsPage() {
   const [settingBulkInterval, setSettingBulkInterval] = useState(false);
   const [savePresetDialog, setSavePresetDialog] = useState<'overview' | 'run' | null>(null);
   const [savePresetNameInput, setSavePresetNameInput] = useState('');
+  const [savePresetShareWithOrg, setSavePresetShareWithOrg] = useState(false);
   const [savingFilterPreset, setSavingFilterPreset] = useState(false);
 
   const orgQuery = useQuery({
@@ -500,6 +504,9 @@ export function GitCredentialsSettingsPage() {
       id: preset.id,
       label: preset.label,
       filters: preset.filters as OverviewFiltersSnapshot,
+      visibility: preset.visibility,
+      createdByUserId: preset.createdByUserId,
+      createdByDisplayName: preset.createdByDisplayName,
     }));
 
   const savedRunPresets: SavedRunFilterPreset[] = (filterPresetsQuery.data ?? [])
@@ -508,6 +515,9 @@ export function GitCredentialsSettingsPage() {
       id: preset.id,
       label: preset.label,
       filters: preset.filters as RunFiltersSnapshot,
+      visibility: preset.visibility,
+      createdByUserId: preset.createdByUserId,
+      createdByDisplayName: preset.createdByDisplayName,
     }));
 
   useEffect(() => {
@@ -1000,30 +1010,53 @@ export function GitCredentialsSettingsPage() {
   }
 
   function formatSavedOverviewPresetLabel(preset: SavedOverviewFilterPreset): string {
-    const count = filterPresetsQuery.data?.find((item) => item.id === preset.id)?.count;
-    if (count == null) return preset.label;
-    return `${preset.label} (${count})`;
+    const apiPreset = filterPresetsQuery.data?.find((item) => item.id === preset.id);
+    const count = apiPreset?.count;
+    let label = preset.label;
+    if (count != null) label = `${label} (${count})`;
+    if (preset.visibility === 'org') label = `${label} · Org`;
+    return label;
   }
 
   function formatSavedRunPresetLabel(preset: SavedRunFilterPreset): string {
-    const count = filterPresetsQuery.data?.find((item) => item.id === preset.id)?.count;
-    if (count == null) return preset.label;
-    return `${preset.label} (${count})`;
+    const apiPreset = filterPresetsQuery.data?.find((item) => item.id === preset.id);
+    const count = apiPreset?.count;
+    let label = preset.label;
+    if (count != null) label = `${label} (${count})`;
+    if (preset.visibility === 'org') label = `${label} · Org`;
+    return label;
+  }
+
+  function canDeleteSavedPreset(presetId: string): boolean {
+    const preset = filterPresetsQuery.data?.find((item) => item.id === presetId);
+    if (!preset) return false;
+    if (preset.visibility === 'private') return true;
+    if (preset.createdByUserId === user?.id) return true;
+    return isOwnerOrAdmin;
+  }
+
+  function savedPresetChipColor(preset: SavedOverviewFilterPreset | SavedRunFilterPreset, active: boolean) {
+    if (active) return 'secondary';
+    if (preset.visibility === 'org') return 'info';
+    return 'default';
   }
 
   function openSaveOverviewPresetDialog() {
     setSavePresetNameInput('');
+    setSavePresetShareWithOrg(false);
     setSavePresetDialog('overview');
   }
 
   function openSaveRunPresetDialog() {
     setSavePresetNameInput('');
+    setSavePresetShareWithOrg(false);
     setSavePresetDialog('run');
   }
 
   function closeSavePresetDialog() {
     setSavePresetDialog(null);
     setSavePresetNameInput('');
+    setSavePresetShareWithOrg(false);
   }
 
   async function submitSavePreset() {
@@ -1036,15 +1069,25 @@ export function GitCredentialsSettingsPage() {
           scope: 'overview',
           label: savePresetNameInput,
           filters: currentOverviewFilterState(),
+          visibility: savePresetShareWithOrg ? 'org' : 'private',
         });
-        setMessage(`Overview preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+        setMessage(
+          savePresetShareWithOrg
+            ? `Overview preset "${normalizeSavePresetName(savePresetNameInput)}" shared with organization`
+            : `Overview preset "${normalizeSavePresetName(savePresetNameInput)}" saved`
+        );
       } else {
         await gitCredentialsApi.createFilterPreset(org.id, {
           scope: 'runs',
           label: savePresetNameInput,
           filters: currentRunFilterState(),
+          visibility: savePresetShareWithOrg ? 'org' : 'private',
         });
-        setMessage(`Run preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+        setMessage(
+          savePresetShareWithOrg
+            ? `Run preset "${normalizeSavePresetName(savePresetNameInput)}" shared with organization`
+            : `Run preset "${normalizeSavePresetName(savePresetNameInput)}" saved`
+        );
       }
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
       closeSavePresetDialog();
@@ -1775,10 +1818,14 @@ export function GitCredentialsSettingsPage() {
                   label={formatSavedOverviewPresetLabel(preset)}
                   size="small"
                   clickable
-                  color={isSavedOverviewPresetActive(preset) ? 'secondary' : 'default'}
+                  color={savedPresetChipColor(preset, isSavedOverviewPresetActive(preset))}
                   variant={isSavedOverviewPresetActive(preset) ? 'filled' : 'outlined'}
                   onClick={() => void applySavedOverviewPreset(preset)}
-                  onDelete={() => void deleteSavedOverviewPreset(preset.id)}
+                  onDelete={
+                    canDeleteSavedPreset(preset.id)
+                      ? () => void deleteSavedOverviewPreset(preset.id)
+                      : undefined
+                  }
                   data-testid={`git-sync-overview-saved-preset-${preset.id}`}
                 />
               ))}
@@ -2293,10 +2340,14 @@ export function GitCredentialsSettingsPage() {
                 label={formatSavedRunPresetLabel(preset)}
                 size="small"
                 clickable
-                color={isSavedRunPresetActive(preset) ? 'secondary' : 'default'}
+                color={savedPresetChipColor(preset, isSavedRunPresetActive(preset))}
                 variant={isSavedRunPresetActive(preset) ? 'filled' : 'outlined'}
                 onClick={() => void applySavedRunPreset(preset)}
-                onDelete={() => void deleteSavedRunPreset(preset.id)}
+                onDelete={
+                  canDeleteSavedPreset(preset.id)
+                    ? () => void deleteSavedRunPreset(preset.id)
+                    : undefined
+                }
                 data-testid={`org-git-sync-runs-saved-preset-${preset.id}`}
               />
             ))}
@@ -2634,9 +2685,25 @@ export function GitCredentialsSettingsPage() {
             margin="dense"
             value={savePresetNameInput}
             onChange={(e) => setSavePresetNameInput(e.target.value)}
-            helperText="Synced to your account for this organization (max 12 per section)."
+            helperText={
+              savePresetShareWithOrg
+                ? 'Shared with all org members (max 12 org presets per section).'
+                : 'Private to your account for this organization (max 12 per section).'
+            }
             slotProps={{ htmlInput: { 'data-testid': 'git-sync-save-preset-name-input' } }}
           />
+          {isOwnerOrAdmin && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={savePresetShareWithOrg}
+                  onChange={(e) => setSavePresetShareWithOrg(e.target.checked)}
+                  data-testid="git-sync-save-preset-share-org"
+                />
+              }
+              label="Share with organization"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={closeSavePresetDialog} disabled={savingFilterPreset}>Cancel</Button>

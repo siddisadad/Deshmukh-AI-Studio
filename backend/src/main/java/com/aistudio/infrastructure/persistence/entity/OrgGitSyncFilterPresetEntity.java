@@ -38,6 +38,9 @@ public class OrgGitSyncFilterPresetEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(nullable = false, length = 20)
+    private String visibility = "private";
+
     @PrePersist
     void onCreate() {
         if (id == null) {
@@ -105,5 +108,13 @@ public class OrgGitSyncFilterPresetEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
     }
 }

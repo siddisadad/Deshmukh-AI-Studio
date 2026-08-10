@@ -736,7 +736,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{orgId}/git-sync-filter-presets")
-    @Operation(summary = "List saved git sync filter presets for the current user")
+    @Operation(summary = "List saved git sync filter presets for the current user and org-shared presets")
     public List<OrgGitSyncFilterPresetResponse> listGitSyncFilterPresets(
             @PathVariable UUID orgId,
             @AuthenticationPrincipal AuthenticatedUser user

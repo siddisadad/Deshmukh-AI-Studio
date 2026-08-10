@@ -446,6 +446,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 49. Phase 46 — Org shared filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Org-shared filter presets | OWNER/ADMIN share presets with all members ([114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md](114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

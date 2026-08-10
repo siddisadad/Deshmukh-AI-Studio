@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.100-beta] — 2026-08-10
+
+### Added
+
+- Shareable org git sync run filter URLs — `runSource`, `runStatus`, `runProject` query params
+- Runs section copy filtered link, clear filters, scroll on URL load
+- `docs/105-ORG-GIT-SYNC-RUN-FILTER-URL-GUIDE.md`, Phase 37 roadmap
+
 ## [0.2.99-beta] — 2026-08-10
 
 ### Added

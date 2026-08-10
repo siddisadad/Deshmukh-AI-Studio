@@ -114,8 +114,9 @@ Read in order; each document builds on the previous.
 | 107 | [107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md](107-ORG-GIT-SYNC-RUN-FILTER-PRESETS-GUIDE.md) | Org sync run filter preset chips |
 | 108 | [108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md](108-ORG-GIT-SYNC-FULL-PAGE-FILTER-STATE-GUIDE.md) | Org git sync full page filter state |
 | 109 | [109-ORG-GIT-SYNC-RUN-PRESET-COUNTS-GUIDE.md](109-ORG-GIT-SYNC-RUN-PRESET-COUNTS-GUIDE.md) | Org sync run preset counts |
+| 110 | [110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md](110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md) | Org overview preset counts |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.104-beta** adds sync run preset counts — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.105-beta** adds overview preset counts — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

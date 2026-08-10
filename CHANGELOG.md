@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.97-beta] — 2026-08-10
+
+### Added
+
+- Org git sync overview filter preset chips — quick-apply combined filters
+- Presets: failed enabled, manual, scheduled, failed scheduled, custom interval, never synced, unlinked, GitHub
+- `docs/102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md`, Phase 34 roadmap
+
 ## [0.2.96-beta] — 2026-08-10
 
 ### Added

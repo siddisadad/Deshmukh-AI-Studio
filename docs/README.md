@@ -121,7 +121,7 @@ Read in order; each document builds on the previous.
 | 114 | [114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md](114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md) | Org shared filter presets |
 | 115 | [115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md](115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md) | Org git sync filter URL E2E |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.112-beta** adds filter URL browser navigation — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.113-beta** adds saved filter preset E2E — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

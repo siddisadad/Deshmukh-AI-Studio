@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.113-beta] — 2026-08-10
+
+### Added
+
+- E2E coverage for org git sync saved filter presets — save, apply, delete, org-shared chip label
+- `e2e/tests/org-git-sync-saved-filter-presets.spec.ts`
+- `docs/117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md`, Phase 49 roadmap
+
 ## [0.2.112-beta] — 2026-08-10
 
 ### Added

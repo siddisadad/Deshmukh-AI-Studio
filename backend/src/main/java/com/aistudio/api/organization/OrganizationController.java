@@ -29,6 +29,7 @@ import com.aistudio.application.organization.OrgGitCredentialService;
 import com.aistudio.application.organization.OrgGitSyncRunsService;
 import com.aistudio.application.organization.OrgGitSyncOverviewService;
 import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
+import com.aistudio.api.organization.dto.OrgGitSyncRunFilterCountsResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
@@ -688,6 +689,15 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncRunsService.listRuns(orgId, user.getId(), limit, offset, source, status, projectId);
+    }
+
+    @GetMapping("/{orgId}/git-sync-runs/filter-counts")
+    @Operation(summary = "Organization git sync run counts for built-in filter presets")
+    public OrgGitSyncRunFilterCountsResponse getGitSyncRunFilterCounts(
+            @PathVariable UUID orgId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncRunsService.getFilterCounts(orgId, user.getId());
     }
 
     @GetMapping("/{orgId}/git-sync-runs/export")

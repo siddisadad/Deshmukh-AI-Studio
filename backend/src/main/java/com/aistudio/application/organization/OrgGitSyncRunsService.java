@@ -2,8 +2,10 @@ package com.aistudio.application.organization;
 
 import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunExportPayload;
+import com.aistudio.api.organization.dto.OrgGitSyncRunFilterCountsResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRunItemResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncRunPresetCountResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.aistudio.application.security.ProjectAuthorizationService;
@@ -156,6 +158,52 @@ public class OrgGitSyncRunsService {
             return exportAsJson(payload);
         }
         return exportAsCsv(payload);
+    }
+
+    @Transactional(readOnly = true)
+    public OrgGitSyncRunFilterCountsResponse getFilterCounts(UUID organizationId, UUID userId) {
+        authorizationService.requireOrgMember(organizationId, userId);
+
+        List<UUID> projectIds = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId)
+                .stream()
+                .map(ProjectEntity::getId)
+                .toList();
+
+        List<OrgGitSyncRunPresetCountResponse> presets = List.of(
+                presetCount("failed", projectIds, null, "failed"),
+                presetCount("success", projectIds, null, "success"),
+                presetCount("manual", projectIds, "manual", null),
+                presetCount("scheduled", projectIds, "scheduled", null),
+                presetCount("webhook", projectIds, "webhook", null),
+                presetCount("failed-manual", projectIds, "manual", "failed"),
+                presetCount("failed-scheduled", projectIds, "scheduled", "failed")
+        );
+        return new OrgGitSyncRunFilterCountsResponse(presets);
+    }
+
+    private OrgGitSyncRunPresetCountResponse presetCount(
+            String id,
+            List<UUID> projectIds,
+            String source,
+            String status
+    ) {
+        if (projectIds.isEmpty()) {
+            return new OrgGitSyncRunPresetCountResponse(id, 0);
+        }
+        return new OrgGitSyncRunPresetCountResponse(id, countRuns(projectIds, source, status));
+    }
+
+    private long countRuns(List<UUID> projectIds, String source, String status) {
+        if (source != null && status != null) {
+            return syncRunRepository.countByProjectIdInAndSourceAndStatus(projectIds, source, status);
+        }
+        if (source != null) {
+            return syncRunRepository.countByProjectIdInAndSource(projectIds, source);
+        }
+        if (status != null) {
+            return syncRunRepository.countByProjectIdInAndStatus(projectIds, status);
+        }
+        return syncRunRepository.countByProjectIdIn(projectIds);
     }
 
     private OrgGitSyncRunItemResponse toItem(ProjectGitSyncRunEntity run, ProjectEntity project) {

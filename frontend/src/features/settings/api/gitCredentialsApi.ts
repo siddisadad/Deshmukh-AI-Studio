@@ -199,6 +199,15 @@ export interface OrgGitSyncRunPage {
   hasMore: boolean;
 }
 
+export interface OrgGitSyncRunPresetCount {
+  id: string;
+  count: number;
+}
+
+export interface OrgGitSyncRunFilterCounts {
+  presets: OrgGitSyncRunPresetCount[];
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -372,6 +381,10 @@ export const gitCredentialsApi = {
       .get<OrgGitSyncRunPage>(`/organizations/${orgId}/git-sync-runs?${params.toString()}`)
       .then((r) => r.data);
   },
+  getSyncRunFilterCounts: (orgId: string) =>
+    http
+      .get<OrgGitSyncRunFilterCounts>(`/organizations/${orgId}/git-sync-runs/filter-counts`)
+      .then((r) => r.data),
   downloadSyncRunsExport: async (
     orgId: string,
     format: 'csv' | 'json',

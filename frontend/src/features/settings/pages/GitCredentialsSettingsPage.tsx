@@ -505,6 +505,12 @@ export function GitCredentialsSettingsPage() {
     enabled: !!org?.id,
   });
 
+  const runFilterCountsQuery = useQuery({
+    queryKey: ['org-git-sync-runs-filter-counts', org?.id],
+    queryFn: () => gitCredentialsApi.getSyncRunFilterCounts(org!.id),
+    enabled: !!org?.id,
+  });
+
   useEffect(() => {
     if (syncRunsQuery.data) {
       setRunItems(syncRunsQuery.data.items);
@@ -535,6 +541,7 @@ export function GitCredentialsSettingsPage() {
     setRunHasMore(page.hasMore);
     setRunTotalCount(page.totalCount);
     setRunOffset(page.offset);
+    void queryClient.invalidateQueries({ queryKey: ['org-git-sync-runs-filter-counts', org.id] });
   }
 
   async function loadMoreSyncRuns() {
@@ -646,6 +653,12 @@ export function GitCredentialsSettingsPage() {
   async function applyRunPreset(preset: RunFilterPreset) {
     const f = preset.filters;
     await applyRunFilterState(f.source, f.status, f.project);
+  }
+
+  function formatRunPresetLabel(preset: RunFilterPreset): string {
+    const count = runFilterCountsQuery.data?.presets.find((item) => item.id === preset.id)?.count;
+    if (count == null) return preset.label;
+    return `${preset.label} (${count})`;
   }
 
   async function loadSyncOverview(
@@ -2009,7 +2022,7 @@ export function GitCredentialsSettingsPage() {
           {RUN_FILTER_PRESETS.map((preset) => (
             <Chip
               key={preset.id}
-              label={preset.label}
+              label={formatRunPresetLabel(preset)}
               size="small"
               clickable
               color={isRunPresetActive(preset) ? 'primary' : 'default'}

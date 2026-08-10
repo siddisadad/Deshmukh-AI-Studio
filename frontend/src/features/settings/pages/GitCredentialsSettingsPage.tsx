@@ -481,6 +481,114 @@ export function GitCredentialsSettingsPage() {
       && overviewStatusFilter === f.status;
   }
 
+  function getActiveOverviewFilterChips() {
+    const chips: {
+      id: string;
+      label: string;
+      clear: () => Promise<void>;
+    }[] = [];
+
+    if (overviewLinkedFilter !== 'all') {
+      chips.push({
+        id: 'linked',
+        label: overviewLinkedFilter === 'linked' ? 'Linked only' : 'Unlinked only',
+        clear: () =>
+          applyOverviewFilterState(
+            'all',
+            overviewEnabledFilter,
+            overviewScheduledSyncFilter,
+            overviewIntervalFilter,
+            overviewProviderFilter,
+            overviewStatusFilter
+          ),
+      });
+    }
+    if (overviewEnabledFilter !== 'all') {
+      chips.push({
+        id: 'enabled',
+        label: overviewEnabledFilter === 'enabled' ? 'Enabled only' : 'Disabled only',
+        clear: () =>
+          applyOverviewFilterState(
+            overviewLinkedFilter,
+            'all',
+            overviewScheduledSyncFilter,
+            overviewIntervalFilter,
+            overviewProviderFilter,
+            overviewStatusFilter
+          ),
+      });
+    }
+    if (overviewScheduledSyncFilter !== 'all') {
+      chips.push({
+        id: 'scheduled',
+        label:
+          overviewScheduledSyncFilter === 'scheduled' ? 'Scheduled only' : 'Manual only',
+        clear: () =>
+          applyOverviewFilterState(
+            overviewLinkedFilter,
+            overviewEnabledFilter,
+            'all',
+            overviewIntervalFilter,
+            overviewProviderFilter,
+            overviewStatusFilter
+          ),
+      });
+    }
+    if (overviewIntervalFilter !== 'all') {
+      chips.push({
+        id: 'interval',
+        label:
+          overviewIntervalFilter === 'custom' ? 'Custom interval' : 'Platform default',
+        clear: () =>
+          applyOverviewFilterState(
+            overviewLinkedFilter,
+            overviewEnabledFilter,
+            overviewScheduledSyncFilter,
+            'all',
+            overviewProviderFilter,
+            overviewStatusFilter
+          ),
+      });
+    }
+    if (overviewProviderFilter !== 'all') {
+      chips.push({
+        id: 'provider',
+        label: overviewProviderFilter,
+        clear: () =>
+          applyOverviewFilterState(
+            overviewLinkedFilter,
+            overviewEnabledFilter,
+            overviewScheduledSyncFilter,
+            overviewIntervalFilter,
+            'all',
+            overviewStatusFilter
+          ),
+      });
+    }
+    if (overviewStatusFilter !== 'all') {
+      const statusLabels: Record<Exclude<OverviewStatusFilter, 'all'>, string> = {
+        success: 'Last sync: success',
+        failed: 'Last sync: failed',
+        never: 'Last sync: never',
+      };
+      chips.push({
+        id: 'lastSync',
+        label: statusLabels[overviewStatusFilter],
+        clear: () =>
+          applyOverviewFilterState(
+            overviewLinkedFilter,
+            overviewEnabledFilter,
+            overviewScheduledSyncFilter,
+            overviewIntervalFilter,
+            overviewProviderFilter,
+            'all'
+          ),
+      });
+    }
+
+    return chips;
+  }
+
   async function applyOverviewFilterState(
     linked: OverviewLinkedFilter,
     enabled: OverviewEnabledFilter,
@@ -1093,6 +1201,24 @@ export function GitCredentialsSettingsPage() {
               />
             ))}
           </Stack>
+          {overviewFiltersActive && (
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ flexWrap: 'wrap', gap: 0.5 }}
+              data-testid="git-sync-overview-active-filters"
+            >
+              {getActiveOverviewFilterChips().map((chip) => (
+                <Chip
+                  key={chip.id}
+                  label={chip.label}
+                  size="small"
+                  onDelete={() => void chip.clear()}
+                  data-testid={`git-sync-overview-active-filter-${chip.id}`}
+                />
+              ))}
+            </Stack>
+          )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
             <TextField
               select

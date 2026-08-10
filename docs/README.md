@@ -108,8 +108,9 @@ Read in order; each document builds on the previous.
 | 101 | [101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md](101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md) | Org bulk actions summary preview |
 | 102 | [102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md](102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md) | Org overview filter preset chips |
 | 103 | [103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md](103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md) | Org overview filter URL sharing |
+| 104 | [104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md](104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md) | Org overview active filter chips |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.97-beta** adds overview filter preset chips — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.98-beta** adds shareable overview filter URLs — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

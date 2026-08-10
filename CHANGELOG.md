@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.105-beta] — 2026-08-10
+
+### Added
+
+- Org git sync overview preset counts — match counts on built-in overview filter chips
+- `GET .../git-sync-overview/filter-counts` API
+- `docs/110-ORG-GIT-SYNC-OVERVIEW-PRESET-COUNTS-GUIDE.md`, Phase 42 roadmap
+
 ## [0.2.104-beta] — 2026-08-10
 
 ### Added

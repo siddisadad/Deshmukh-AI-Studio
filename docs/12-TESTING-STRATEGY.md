@@ -81,6 +81,8 @@ Goal: confidence in authz, core CRUD, and AI orchestration without flaky externa
 7. Plugins — disable sample Echo tool  
 8. Logout  
 
+**Org git filter URLs** (`e2e/tests/org-git-sync-filter-url.spec.ts`): overview/run query params, copy link round-trip, clear all filters — see [115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md](115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md).
+
 **SSO** (`e2e/tests/sso.spec.ts`): mock provider login → dashboard (separate spec).
 
 Run against compose (`E2E_BASE_URL=http://localhost:8088`) or local Vite (`http://localhost:5173`). CI `e2e` job uses compose + mock AI on every push/PR. CI `deploy-dry-run` and `staging-dry-run` validate compose overlays separately.

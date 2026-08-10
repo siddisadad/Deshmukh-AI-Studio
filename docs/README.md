@@ -119,6 +119,7 @@ Read in order; each document builds on the previous.
 | 112 | [112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md](112-ORG-GIT-SYNC-FILTER-PRESETS-API-GUIDE.md) | Org git sync filter presets API |
 | 113 | [113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md](113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md) | Org saved preset counts |
 | 114 | [114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md](114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md) | Org shared filter presets |
+| 115 | [115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md](115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md) | Org git sync filter URL E2E |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.109-beta** adds org-shared filter presets — see [CHANGELOG.md](../CHANGELOG.md).
 

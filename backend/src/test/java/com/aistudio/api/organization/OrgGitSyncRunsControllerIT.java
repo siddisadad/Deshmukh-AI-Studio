@@ -94,6 +94,17 @@ class OrgGitSyncRunsControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.items[0].projectName").value("Alpha Proj"));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-runs/filter-counts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.presets.length()").value(7))
+                .andExpect(jsonPath("$.presets[?(@.id == 'failed')].count[0]").value(1))
+                .andExpect(jsonPath("$.presets[?(@.id == 'success')].count[0]").value(1))
+                .andExpect(jsonPath("$.presets[?(@.id == 'manual')].count[0]").value(1))
+                .andExpect(jsonPath("$.presets[?(@.id == 'scheduled')].count[0]").value(1))
+                .andExpect(jsonPath("$.presets[?(@.id == 'failed-scheduled')].count[0]").value(1))
+                .andExpect(jsonPath("$.presets[?(@.id == 'webhook')].count[0]").value(0));
     }
 
     @Test

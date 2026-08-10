@@ -406,6 +406,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 44. Phase 41 — Org sync run preset counts (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Run preset chip counts | Match counts on built-in run filter presets ([109-ORG-GIT-SYNC-RUN-PRESET-COUNTS-GUIDE.md](109-ORG-GIT-SYNC-RUN-PRESET-COUNTS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

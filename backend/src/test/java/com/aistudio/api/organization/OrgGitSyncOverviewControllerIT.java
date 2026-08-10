@@ -607,6 +607,49 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanRetryFailedGitSyncsScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-retry-failed-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubFailedId = createProject(token, orgId, "Github Failed", "GF");
+        UUID gitlabFailedId = createProject(token, orgId, "Gitlab Failed", "LF");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubFailedId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh-fail","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabFailedId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl-fail","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        ProjectGitLinkEntity githubLink = gitLinkRepository.findByProjectId(githubFailedId).orElseThrow();
+        githubLink.setLastSyncStatus("failed");
+        githubLink.setLastSyncError("mock failure");
+        gitLinkRepository.save(githubLink);
+
+        ProjectGitLinkEntity gitlabLink = gitLinkRepository.findByProjectId(gitlabFailedId).orElseThrow();
+        gitlabLink.setLastSyncStatus("failed");
+        gitlabLink.setLastSyncError("mock failure");
+        gitLinkRepository.save(gitlabLink);
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-overview/retry-failed?provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.enqueued").value(1))
+                .andExpect(jsonPath("$.skippedPending").value(0))
+                .andExpect(jsonPath("$.enqueuedProjectIds[0]").value(githubFailedId.toString()));
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncForSingleProject() throws Exception {
         JsonNode user = register("org-retry-one" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

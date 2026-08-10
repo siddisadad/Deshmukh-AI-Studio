@@ -215,26 +215,36 @@ public class OrgGitSyncOverviewService {
     }
 
     @Transactional
-    public OrgGitSyncRetryFailedResponse retryFailedSyncs(UUID organizationId, UUID userId) {
+    public OrgGitSyncRetryFailedResponse retryFailedSyncs(
+            UUID organizationId,
+            UUID userId,
+            Boolean linked,
+            Boolean enabled,
+            Boolean scheduledSyncEnabled,
+            Boolean customSyncInterval,
+            String provider,
+            String lastSyncStatus
+    ) {
         authorizationService.requireOrgOwner(organizationId, userId);
+        String normalizedProvider = normalizeProvider(provider);
+        String normalizedLastSyncStatus = normalizeLastSyncStatus(lastSyncStatus);
 
-        List<ProjectEntity> projects = projectRepository.findByOrganizationIdOrderByUpdatedAtDesc(organizationId);
-        Map<UUID, ProjectGitLinkEntity> linksByProjectId = new HashMap<>();
-        if (!projects.isEmpty()) {
-            List<UUID> projectIds = projects.stream().map(ProjectEntity::getId).toList();
-            for (ProjectGitLinkEntity link : gitLinkRepository.findByProjectIdIn(projectIds)) {
-                linksByProjectId.put(link.getProjectId(), link);
-            }
-        }
-
-        List<ProjectGitLinkEntity> failedLinks = linksByProjectId.values().stream()
-                .filter(link -> link.isEnabled() && "failed".equals(link.getLastSyncStatus()))
+        List<OrgGitSyncOverviewItemResponse> failedItems = buildOverviewItems(organizationId).stream()
+                .filter(item -> item.linked() && item.enabled() && "failed".equals(item.lastSyncStatus()))
+                .filter(item -> matchesFilters(
+                        item,
+                        linked,
+                        enabled,
+                        scheduledSyncEnabled,
+                        customSyncInterval,
+                        normalizedProvider,
+                        normalizedLastSyncStatus))
                 .toList();
 
         int skippedPending = 0;
         List<UUID> enqueuedProjectIds = new ArrayList<>();
-        for (ProjectGitLinkEntity link : failedLinks) {
-            UUID projectId = link.getProjectId();
+        for (OrgGitSyncOverviewItemResponse item : failedItems) {
+            UUID projectId = item.projectId();
             if (backgroundJobRepository.countByProjectIdAndJobTypeAndStatus(
                     projectId,
                     JobType.CODE_METADATA_SYNC,
@@ -253,7 +263,7 @@ public class OrgGitSyncOverviewService {
         }
 
         return new OrgGitSyncRetryFailedResponse(
-                failedLinks.size(),
+                failedItems.size(),
                 enqueuedProjectIds.size(),
                 skippedPending,
                 enqueuedProjectIds

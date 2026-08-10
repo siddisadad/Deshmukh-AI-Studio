@@ -270,15 +270,21 @@ export function GitCredentialsSettingsPage() {
   const filteredScheduledSyncLinks =
     syncOverviewQuery.data?.items.filter((item) => item.linked && item.enabled && item.scheduledSyncEnabled)
       .length ?? 0;
+  const filteredFailedLastSync =
+    syncOverviewQuery.data?.items.filter(
+      (item) => item.linked && item.enabled && item.lastSyncStatus === 'failed'
+    ).length ?? 0;
   const overviewFiltersActive = hasActiveOverviewFilters();
   const bulkScheduledScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
+  const bulkRetryScopeLabel = overviewFiltersActive ? ' (filtered)' : '';
 
   const retryFailedSyncs = useMutation({
-    mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id),
+    mutationFn: () => gitCredentialsApi.retryFailedSyncs(org!.id, buildOverviewFilters()),
     onSuccess: async (result) => {
       setError(null);
+      const scope = hasActiveOverviewFilters() ? ' (filtered)' : '';
       setMessage(
-        `Enqueued ${result.enqueued} of ${result.targeted} failed syncs`
+        `Enqueued ${result.enqueued} of ${result.targeted} failed syncs${scope}`
           + (result.skippedPending > 0 ? ` (${result.skippedPending} skipped — sync already pending)` : ''),
       );
       await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org?.id] });
@@ -827,7 +833,7 @@ export function GitCredentialsSettingsPage() {
             >
               {overviewExporting === 'json' ? 'Exporting…' : 'Export JSON'}
             </Button>
-            {canRetryFailedSyncs && syncOverviewQuery.data.failedLastSync > 0 && (
+            {canRetryFailedSyncs && filteredFailedLastSync > 0 && (
               <Button
                 size="small"
                 variant="contained"
@@ -836,7 +842,7 @@ export function GitCredentialsSettingsPage() {
                 onClick={() => retryFailedSyncs.mutate()}
                 data-testid="git-sync-overview-retry-failed"
               >
-                Retry failed syncs
+                Retry failed syncs{bulkRetryScopeLabel}
               </Button>
             )}
             {canRetryFailedSyncs && filteredManualSyncLinks > 0 && (

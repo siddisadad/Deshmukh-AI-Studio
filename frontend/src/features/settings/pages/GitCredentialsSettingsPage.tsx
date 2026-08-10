@@ -26,6 +26,16 @@ import {
   type OrgGitSyncRunItem,
   type OrgGitSyncOverviewFilters,
 } from '../api/gitCredentialsApi';
+import {
+  addSavedOverviewPreset,
+  addSavedRunPreset,
+  loadSavedOverviewPresets,
+  loadSavedRunPresets,
+  removeSavedOverviewPreset,
+  removeSavedRunPreset,
+  type SavedOverviewFilterPreset,
+  type SavedRunFilterPreset,
+} from '../gitSyncSavedFilterPresets';
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 const GIT_SYNC_SECTION_HASH = '#git-repository-sync';
@@ -425,6 +435,10 @@ export function GitCredentialsSettingsPage() {
   const [settingIntervalProjectId, setSettingIntervalProjectId] = useState<string | null>(null);
   const [bulkSetIntervalDialogOpen, setBulkSetIntervalDialogOpen] = useState(false);
   const [settingBulkInterval, setSettingBulkInterval] = useState(false);
+  const [savedOverviewPresets, setSavedOverviewPresets] = useState<SavedOverviewFilterPreset[]>([]);
+  const [savedRunPresets, setSavedRunPresets] = useState<SavedRunFilterPreset[]>([]);
+  const [savePresetDialog, setSavePresetDialog] = useState<'overview' | 'run' | null>(null);
+  const [savePresetNameInput, setSavePresetNameInput] = useState('');
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -474,6 +488,16 @@ export function GitCredentialsSettingsPage() {
     queryFn: () => gitCredentialsApi.getSyncOverviewFilterCounts(org!.id),
     enabled: !!org?.id,
   });
+
+  useEffect(() => {
+    if (!org?.id) {
+      setSavedOverviewPresets([]);
+      setSavedRunPresets([]);
+      return;
+    }
+    setSavedOverviewPresets(loadSavedOverviewPresets(org.id));
+    setSavedRunPresets(loadSavedRunPresets(org.id));
+  }, [org?.id]);
 
   const isOwnerOrAdmin =
     orgQuery.data?.role === 'OWNER' || orgQuery.data?.role === 'ADMIN';
@@ -912,6 +936,86 @@ export function GitCredentialsSettingsPage() {
     const count = overviewFilterCountsQuery.data?.presets.find((item) => item.id === preset.id)?.count;
     if (count == null) return preset.label;
     return `${preset.label} (${count})`;
+  }
+
+  function openSaveOverviewPresetDialog() {
+    setSavePresetNameInput('');
+    setSavePresetDialog('overview');
+  }
+
+  function openSaveRunPresetDialog() {
+    setSavePresetNameInput('');
+    setSavePresetDialog('run');
+  }
+
+  function closeSavePresetDialog() {
+    setSavePresetDialog(null);
+    setSavePresetNameInput('');
+  }
+
+  function submitSavePreset() {
+    if (!org?.id || !savePresetDialog) return;
+    if (savePresetDialog === 'overview') {
+      const result = addSavedOverviewPreset(org.id, savePresetNameInput, currentOverviewFilterState());
+      setSavedOverviewPresets(result.presets);
+      if (result.error) {
+        setMessage(null);
+        setError(result.error);
+        return;
+      }
+      setError(null);
+      setMessage(`Overview preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+    } else {
+      const result = addSavedRunPreset(org.id, savePresetNameInput, currentRunFilterState());
+      setSavedRunPresets(result.presets);
+      if (result.error) {
+        setMessage(null);
+        setError(result.error);
+        return;
+      }
+      setError(null);
+      setMessage(`Run preset "${normalizeSavePresetName(savePresetNameInput)}" saved`);
+    }
+    closeSavePresetDialog();
+  }
+
+  function normalizeSavePresetName(label: string) {
+    return label.trim().slice(0, 40);
+  }
+
+  function deleteSavedOverviewPreset(presetId: string) {
+    if (!org?.id) return;
+    setSavedOverviewPresets(removeSavedOverviewPreset(org.id, presetId));
+  }
+
+  function deleteSavedRunPreset(presetId: string) {
+    if (!org?.id) return;
+    setSavedRunPresets(removeSavedRunPreset(org.id, presetId));
+  }
+
+  async function applySavedOverviewPreset(preset: SavedOverviewFilterPreset) {
+    const f = preset.filters;
+    await applyOverviewFilterState(
+      f.linked,
+      f.enabled,
+      f.scheduled,
+      f.interval,
+      f.provider,
+      f.status
+    );
+  }
+
+  async function applySavedRunPreset(preset: SavedRunFilterPreset) {
+    const f = preset.filters;
+    await applyRunFilterState(f.source, f.status, f.project);
+  }
+
+  function isSavedOverviewPresetActive(preset: SavedOverviewFilterPreset) {
+    return isOverviewPresetActive(preset);
+  }
+
+  function isSavedRunPresetActive(preset: SavedRunFilterPreset) {
+    return isRunPresetActive(preset);
   }
 
   async function copyOverviewFilterLink() {
@@ -1569,6 +1673,38 @@ export function GitCredentialsSettingsPage() {
               />
             ))}
           </Stack>
+          {(savedOverviewPresets.length > 0 || overviewFiltersActive) && (
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}
+              data-testid="git-sync-overview-saved-presets"
+            >
+              {savedOverviewPresets.map((preset) => (
+                <Chip
+                  key={preset.id}
+                  label={preset.label}
+                  size="small"
+                  clickable
+                  color={isSavedOverviewPresetActive(preset) ? 'secondary' : 'default'}
+                  variant={isSavedOverviewPresetActive(preset) ? 'filled' : 'outlined'}
+                  onClick={() => void applySavedOverviewPreset(preset)}
+                  onDelete={() => deleteSavedOverviewPreset(preset.id)}
+                  data-testid={`git-sync-overview-saved-preset-${preset.id}`}
+                />
+              ))}
+              {overviewFiltersActive && (
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={openSaveOverviewPresetDialog}
+                  data-testid="git-sync-overview-save-preset"
+                >
+                  Save filters
+                </Button>
+              )}
+            </Stack>
+          )}
           {overviewFiltersActive && (
             <Stack
               direction="row"
@@ -2055,6 +2191,38 @@ export function GitCredentialsSettingsPage() {
             />
           ))}
         </Stack>
+        {(savedRunPresets.length > 0 || hasActiveRunFilters()) && (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}
+            data-testid="org-git-sync-runs-saved-presets"
+          >
+            {savedRunPresets.map((preset) => (
+              <Chip
+                key={preset.id}
+                label={preset.label}
+                size="small"
+                clickable
+                color={isSavedRunPresetActive(preset) ? 'secondary' : 'default'}
+                variant={isSavedRunPresetActive(preset) ? 'filled' : 'outlined'}
+                onClick={() => void applySavedRunPreset(preset)}
+                onDelete={() => deleteSavedRunPreset(preset.id)}
+                data-testid={`org-git-sync-runs-saved-preset-${preset.id}`}
+              />
+            ))}
+            {hasActiveRunFilters() && (
+              <Button
+                size="small"
+                variant="text"
+                onClick={openSaveRunPresetDialog}
+                data-testid="org-git-sync-runs-save-preset"
+              >
+                Save filters
+              </Button>
+            )}
+          </Stack>
+        )}
         {hasActiveRunFilters() && (
           <Stack
             direction="row"
@@ -2357,6 +2525,38 @@ export function GitCredentialsSettingsPage() {
             data-testid="git-sync-overview-set-interval-save"
           >
             {settingIntervalProjectId != null || settingBulkInterval ? 'Saving…' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={savePresetDialog != null}
+        onClose={closeSavePresetDialog}
+        data-testid="git-sync-save-preset-dialog"
+      >
+        <DialogTitle>
+          Save {savePresetDialog === 'overview' ? 'overview' : 'run'} filter preset
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Preset name"
+            size="small"
+            fullWidth
+            margin="dense"
+            value={savePresetNameInput}
+            onChange={(e) => setSavePresetNameInput(e.target.value)}
+            helperText="Saved in this browser for this organization (max 12)."
+            slotProps={{ htmlInput: { 'data-testid': 'git-sync-save-preset-name-input' } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeSavePresetDialog}>Cancel</Button>
+          <Button
+            onClick={() => submitSavePreset()}
+            disabled={normalizeSavePresetName(savePresetNameInput).length === 0}
+            data-testid="git-sync-save-preset-confirm"
+          >
+            Save
           </Button>
         </DialogActions>
       </Dialog>

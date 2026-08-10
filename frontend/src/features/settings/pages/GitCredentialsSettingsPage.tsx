@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,6 +30,125 @@ import {
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 const GIT_SYNC_SECTION_HASH = '#git-repository-sync';
 const ORG_SYNC_RUNS_SECTION_ID = 'org-git-sync-runs';
+
+type OverviewLinkedFilter = 'all' | 'linked' | 'unlinked';
+type OverviewEnabledFilter = 'all' | 'enabled' | 'disabled';
+type OverviewScheduledFilter = 'all' | 'scheduled' | 'manual';
+type OverviewIntervalFilter = 'all' | 'custom' | 'default';
+type OverviewProviderFilter = 'all' | 'github' | 'gitlab' | 'bitbucket';
+type OverviewStatusFilter = 'all' | 'success' | 'failed' | 'never';
+
+type OverviewFilterPreset = {
+  id: string;
+  label: string;
+  filters: {
+    linked: OverviewLinkedFilter;
+    enabled: OverviewEnabledFilter;
+    scheduled: OverviewScheduledFilter;
+    interval: OverviewIntervalFilter;
+    provider: OverviewProviderFilter;
+    status: OverviewStatusFilter;
+  };
+};
+
+const OVERVIEW_FILTER_PRESETS: OverviewFilterPreset[] = [
+  {
+    id: 'failed-enabled',
+    label: 'Failed (enabled)',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'all',
+      status: 'failed',
+    },
+  },
+  {
+    id: 'manual-enabled',
+    label: 'Manual only',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'manual',
+      interval: 'all',
+      provider: 'all',
+      status: 'all',
+    },
+  },
+  {
+    id: 'scheduled-enabled',
+    label: 'Scheduled',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'scheduled',
+      interval: 'all',
+      provider: 'all',
+      status: 'all',
+    },
+  },
+  {
+    id: 'failed-scheduled',
+    label: 'Failed scheduled',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'scheduled',
+      interval: 'all',
+      provider: 'all',
+      status: 'failed',
+    },
+  },
+  {
+    id: 'custom-interval',
+    label: 'Custom interval',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'custom',
+      provider: 'all',
+      status: 'all',
+    },
+  },
+  {
+    id: 'never-synced',
+    label: 'Never synced',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'all',
+      status: 'never',
+    },
+  },
+  {
+    id: 'unlinked',
+    label: 'Unlinked',
+    filters: {
+      linked: 'unlinked',
+      enabled: 'all',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'all',
+      status: 'all',
+    },
+  },
+  {
+    id: 'github-enabled',
+    label: 'GitHub',
+    filters: {
+      linked: 'linked',
+      enabled: 'enabled',
+      scheduled: 'all',
+      interval: 'all',
+      provider: 'github',
+      status: 'all',
+    },
+  },
+];
 
 function projectGitSettingsPath(projectId: string) {
   return `/projects/${projectId}/settings${GIT_SYNC_SECTION_HASH}`;
@@ -247,6 +367,27 @@ export function GitCredentialsSettingsPage() {
       || overviewIntervalFilter !== 'all'
       || overviewProviderFilter !== 'all'
       || overviewStatusFilter !== 'all';
+  }
+
+  function isOverviewPresetActive(preset: OverviewFilterPreset) {
+    const f = preset.filters;
+    return overviewLinkedFilter === f.linked
+      && overviewEnabledFilter === f.enabled
+      && overviewScheduledSyncFilter === f.scheduled
+      && overviewIntervalFilter === f.interval
+      && overviewProviderFilter === f.provider
+      && overviewStatusFilter === f.status;
+  }
+
+  async function applyOverviewPreset(preset: OverviewFilterPreset) {
+    const f = preset.filters;
+    setOverviewLinkedFilter(f.linked);
+    setOverviewEnabledFilter(f.enabled);
+    setOverviewScheduledSyncFilter(f.scheduled);
+    setOverviewIntervalFilter(f.interval);
+    setOverviewProviderFilter(f.provider);
+    setOverviewStatusFilter(f.status);
+    await loadSyncOverview(f.linked, f.enabled, f.scheduled, f.interval, f.provider, f.status);
   }
 
   async function exportSyncOverview(format: 'csv' | 'json') {
@@ -566,6 +707,11 @@ export function GitCredentialsSettingsPage() {
   }
 
   async function filterOverviewToFailed() {
+    const preset = OVERVIEW_FILTER_PRESETS.find((p) => p.id === 'failed-enabled');
+    if (preset) {
+      await applyOverviewPreset(preset);
+      return;
+    }
     setOverviewStatusFilter('failed');
     await loadSyncOverview(
       overviewLinkedFilter,
@@ -594,27 +740,18 @@ export function GitCredentialsSettingsPage() {
   }
 
   async function filterOverviewToScheduledSync() {
-    setOverviewLinkedFilter('linked');
-    setOverviewEnabledFilter('enabled');
-    setOverviewScheduledSyncFilter('scheduled');
-    setOverviewIntervalFilter('all');
-    await loadSyncOverview('linked', 'enabled', 'scheduled', 'all', overviewProviderFilter, overviewStatusFilter);
+    const preset = OVERVIEW_FILTER_PRESETS.find((p) => p.id === 'scheduled-enabled');
+    if (preset) await applyOverviewPreset(preset);
   }
 
   async function filterOverviewToManualSync() {
-    setOverviewLinkedFilter('linked');
-    setOverviewEnabledFilter('enabled');
-    setOverviewScheduledSyncFilter('manual');
-    setOverviewIntervalFilter('all');
-    await loadSyncOverview('linked', 'enabled', 'manual', 'all', overviewProviderFilter, overviewStatusFilter);
+    const preset = OVERVIEW_FILTER_PRESETS.find((p) => p.id === 'manual-enabled');
+    if (preset) await applyOverviewPreset(preset);
   }
 
   async function filterOverviewToCustomInterval() {
-    setOverviewLinkedFilter('linked');
-    setOverviewEnabledFilter('enabled');
-    setOverviewScheduledSyncFilter('all');
-    setOverviewIntervalFilter('custom');
-    await loadSyncOverview('linked', 'enabled', 'all', 'custom', overviewProviderFilter, overviewStatusFilter);
+    const preset = OVERVIEW_FILTER_PRESETS.find((p) => p.id === 'custom-interval');
+    if (preset) await applyOverviewPreset(preset);
   }
 
   const selectedCredential = credentialsQuery.data?.find((c) => c.provider === selectedProvider);
@@ -772,6 +909,25 @@ export function GitCredentialsSettingsPage() {
             ) : null}
             · showing {syncOverviewQuery.data.items.length} matching filter
           </Typography>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ flexWrap: 'wrap', gap: 0.5 }}
+            data-testid="git-sync-overview-filter-presets"
+          >
+            {OVERVIEW_FILTER_PRESETS.map((preset) => (
+              <Chip
+                key={preset.id}
+                label={preset.label}
+                size="small"
+                clickable
+                color={isOverviewPresetActive(preset) ? 'primary' : 'default'}
+                variant={isOverviewPresetActive(preset) ? 'filled' : 'outlined'}
+                onClick={() => void applyOverviewPreset(preset)}
+                data-testid={`git-sync-overview-preset-${preset.id}`}
+              />
+            ))}
+          </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'flex-start' }}>
             <TextField
               select

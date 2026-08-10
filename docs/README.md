@@ -106,6 +106,7 @@ Read in order; each document builds on the previous.
 | 99 | [99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md](99-ORG-GIT-BULK-CLEAR-INTERVAL-FILTER-SCOPE-GUIDE.md) | Org bulk clear interval filter scope |
 | 100 | [100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md](100-ORG-GIT-BULK-SET-INTERVAL-FILTER-SCOPE-GUIDE.md) | Org bulk set interval filter scope |
 | 101 | [101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md](101-ORG-GIT-BULK-ACTIONS-SUMMARY-GUIDE.md) | Org bulk actions summary preview |
+| 102 | [102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md](102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md) | Org overview filter preset chips |
 
 **MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.96-beta** adds org bulk actions summary preview — see [CHANGELOG.md](../CHANGELOG.md).
 

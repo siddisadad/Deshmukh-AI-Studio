@@ -350,6 +350,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 37. Phase 34 — Org overview filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter preset chips | Combined overview filter quick-apply chips ([102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md](102-ORG-GIT-SYNC-OVERVIEW-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

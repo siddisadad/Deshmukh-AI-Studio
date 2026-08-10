@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.99-beta] — 2026-08-10
+
+### Added
+
+- Org git sync overview active filter chips — removable per-dimension filter indicators
+- `docs/104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md`, Phase 36 roadmap
+
 ## [0.2.98-beta] — 2026-08-10
 
 ### Added

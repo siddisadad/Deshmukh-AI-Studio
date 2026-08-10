@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
-import { authApi } from '../../features/auth/api/authApi';
+import { bootstrapAuthSession } from '../../features/auth/bootstrapAuth';
 import { useAuthStore } from '../../features/auth/store/authStore';
 import { ThemeProvider } from './ThemeProvider';
 
@@ -9,8 +9,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
   const hydrateRefreshToken = useAuthStore((s) => s.hydrateRefreshToken);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const setSession = useAuthStore((s) => s.setSession);
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const authStatus = useAuthStore((s) => s.authStatus);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -20,33 +19,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    let cancelled = false;
-    async function bootstrap() {
-      if (!refreshToken || accessToken) {
-        return;
+    if (!refreshToken || accessToken || authStatus === 'authenticated') {
+      if (!refreshToken && authStatus === 'unknown') {
+        useAuthStore.getState().setAuthStatus('unauthenticated');
       }
-      try {
-        const { default: axios } = await import('axios');
-        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
-        const { data } = await axios.post(`${baseURL}/auth/refresh`, { refreshToken });
-        if (!cancelled) {
-          setSession({
-            user: data.user,
-            organization: data.organization,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-          });
-          await authApi.me().catch(() => undefined);
-        }
-      } catch {
-        if (!cancelled) clearSession();
-      }
+      return;
     }
-    void bootstrap();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, refreshToken, accessToken, setSession, clearSession]);
+    void bootstrapAuthSession();
+  }, [ready, refreshToken, accessToken, authStatus]);
 
   return (
     <QueryClientProvider client={queryClient}>

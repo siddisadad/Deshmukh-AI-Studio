@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../shared/api/types';
 import { useAuthStore } from '../../auth/store/authStore';
 import { organizationsApi } from '../../projects/api/organizationsApi';
@@ -38,17 +38,33 @@ import {
   type SavedOverviewFilterPreset,
   type SavedRunFilterPreset,
 } from '../gitSyncSavedFilterPresets';
+import {
+  ORG_SYNC_RUNS_SECTION_ID,
+  buildGitSyncOverviewFilterUrl,
+  buildGitSyncPageFilterUrl,
+  buildGitSyncRunFilterUrl,
+  countActiveOverviewFilterDimensions,
+  countActiveRunFilterDimensions,
+  gitSyncRunsSectionHash,
+  readOverviewFiltersFromSearchParams,
+  readRunFiltersFromSearchParams,
+  writeOverviewFiltersToSearchParams,
+  writeRunFiltersToSearchParams,
+  type OverviewEnabledFilter,
+  type OverviewFilterState,
+  type OverviewIntervalFilter,
+  type OverviewLinkedFilter,
+  type OverviewProviderFilter,
+  type OverviewScheduledFilter,
+  type OverviewStatusFilter,
+  type RunFilterState,
+  type RunProjectFilter,
+  type RunSourceFilter,
+  type RunStatusFilter,
+} from '../gitSyncFilterUrl';
 
 const PROVIDERS = ['github', 'gitlab', 'bitbucket'] as const;
 const GIT_SYNC_SECTION_HASH = '#git-repository-sync';
-const ORG_SYNC_RUNS_SECTION_ID = 'org-git-sync-runs';
-
-type OverviewLinkedFilter = 'all' | 'linked' | 'unlinked';
-type OverviewEnabledFilter = 'all' | 'enabled' | 'disabled';
-type OverviewScheduledFilter = 'all' | 'scheduled' | 'manual';
-type OverviewIntervalFilter = 'all' | 'custom' | 'default';
-type OverviewProviderFilter = 'all' | 'github' | 'gitlab' | 'bitbucket';
-type OverviewStatusFilter = 'all' | 'success' | 'failed' | 'never';
 
 type OverviewFilterPreset = {
   id: string;
@@ -186,167 +202,6 @@ const OVERVIEW_FILTER_PRESETS: OverviewFilterPreset[] = [
   },
 ];
 
-type OverviewFilterState = {
-  linked: OverviewLinkedFilter;
-  enabled: OverviewEnabledFilter;
-  scheduled: OverviewScheduledFilter;
-  interval: OverviewIntervalFilter;
-  provider: OverviewProviderFilter;
-  status: OverviewStatusFilter;
-};
-
-const OVERVIEW_FILTER_URL_KEYS = [
-  'linked',
-  'enabled',
-  'scheduled',
-  'interval',
-  'provider',
-  'lastSync',
-] as const;
-
-function parseOverviewLinkedParam(value: string | null): OverviewLinkedFilter {
-  if (value === 'linked' || value === 'unlinked') return value;
-  return 'all';
-}
-
-function parseOverviewEnabledParam(value: string | null): OverviewEnabledFilter {
-  if (value === 'enabled' || value === 'disabled') return value;
-  return 'all';
-}
-
-function parseOverviewScheduledParam(value: string | null): OverviewScheduledFilter {
-  if (value === 'scheduled' || value === 'manual') return value;
-  return 'all';
-}
-
-function parseOverviewIntervalParam(value: string | null): OverviewIntervalFilter {
-  if (value === 'custom' || value === 'default') return value;
-  return 'all';
-}
-
-function parseOverviewProviderParam(value: string | null): OverviewProviderFilter {
-  if (value === 'github' || value === 'gitlab' || value === 'bitbucket') return value;
-  return 'all';
-}
-
-function parseOverviewStatusParam(value: string | null): OverviewStatusFilter {
-  if (value === 'success' || value === 'failed' || value === 'never') return value;
-  return 'all';
-}
-
-function hasOverviewFilterUrlParams(params: URLSearchParams) {
-  return OVERVIEW_FILTER_URL_KEYS.some((key) => params.get(key) != null);
-}
-
-function readOverviewFiltersFromSearchParams(params: URLSearchParams): OverviewFilterState | null {
-  if (!hasOverviewFilterUrlParams(params)) return null;
-  return {
-    linked: parseOverviewLinkedParam(params.get('linked')),
-    enabled: parseOverviewEnabledParam(params.get('enabled')),
-    scheduled: parseOverviewScheduledParam(params.get('scheduled')),
-    interval: parseOverviewIntervalParam(params.get('interval')),
-    provider: parseOverviewProviderParam(params.get('provider')),
-    status: parseOverviewStatusParam(params.get('lastSync')),
-  };
-}
-
-function writeOverviewFiltersToSearchParams(params: URLSearchParams, filters: OverviewFilterState) {
-  for (const key of OVERVIEW_FILTER_URL_KEYS) {
-    params.delete(key);
-  }
-  if (filters.linked !== 'all') params.set('linked', filters.linked);
-  if (filters.enabled !== 'all') params.set('enabled', filters.enabled);
-  if (filters.scheduled !== 'all') params.set('scheduled', filters.scheduled);
-  if (filters.interval !== 'all') params.set('interval', filters.interval);
-  if (filters.provider !== 'all') params.set('provider', filters.provider);
-  if (filters.status !== 'all') params.set('lastSync', filters.status);
-}
-
-type RunSourceFilter = 'all' | 'manual' | 'scheduled' | 'webhook';
-type RunStatusFilter = 'all' | 'success' | 'failed';
-type RunProjectFilter = 'all' | string;
-
-type RunFilterState = {
-  source: RunSourceFilter;
-  status: RunStatusFilter;
-  project: RunProjectFilter;
-};
-
-const RUN_FILTER_URL_KEYS = ['runSource', 'runStatus', 'runProject'] as const;
-
-function parseRunSourceParam(value: string | null): RunSourceFilter {
-  if (value === 'manual' || value === 'scheduled' || value === 'webhook') return value;
-  return 'all';
-}
-
-function parseRunStatusParam(value: string | null): RunStatusFilter {
-  if (value === 'success' || value === 'failed') return value;
-  return 'all';
-}
-
-function parseRunProjectParam(value: string | null): RunProjectFilter {
-  if (value && value.trim().length > 0) return value.trim();
-  return 'all';
-}
-
-function hasRunFilterUrlParams(params: URLSearchParams) {
-  return RUN_FILTER_URL_KEYS.some((key) => params.get(key) != null);
-}
-
-function readRunFiltersFromSearchParams(params: URLSearchParams): RunFilterState | null {
-  if (!hasRunFilterUrlParams(params)) return null;
-  return {
-    source: parseRunSourceParam(params.get('runSource')),
-    status: parseRunStatusParam(params.get('runStatus')),
-    project: parseRunProjectParam(params.get('runProject')),
-  };
-}
-
-function writeRunFiltersToSearchParams(params: URLSearchParams, filters: RunFilterState) {
-  for (const key of RUN_FILTER_URL_KEYS) {
-    params.delete(key);
-  }
-  if (filters.source !== 'all') params.set('runSource', filters.source);
-  if (filters.status !== 'all') params.set('runStatus', filters.status);
-  if (filters.project !== 'all') params.set('runProject', filters.project);
-}
-
-function countActiveOverviewFilterDimensions(filters: OverviewFilterState): number {
-  let count = 0;
-  if (filters.linked !== 'all') count += 1;
-  if (filters.enabled !== 'all') count += 1;
-  if (filters.scheduled !== 'all') count += 1;
-  if (filters.interval !== 'all') count += 1;
-  if (filters.provider !== 'all') count += 1;
-  if (filters.status !== 'all') count += 1;
-  return count;
-}
-
-function countActiveRunFilterDimensions(filters: RunFilterState): number {
-  let count = 0;
-  if (filters.source !== 'all') count += 1;
-  if (filters.status !== 'all') count += 1;
-  if (filters.project !== 'all') count += 1;
-  return count;
-}
-
-function buildGitSyncPageFilterUrl(
-  pathname: string,
-  overview: OverviewFilterState,
-  run: RunFilterState,
-  existingParams: URLSearchParams
-): string {
-  const params = new URLSearchParams(existingParams);
-  writeOverviewFiltersToSearchParams(params, overview);
-  writeRunFiltersToSearchParams(params, run);
-  const query = params.toString();
-  let url = `${window.location.origin}${pathname}${query ? `?${query}` : ''}`;
-  if (countActiveRunFilterDimensions(run) > 0) {
-    url += `#${ORG_SYNC_RUNS_SECTION_ID}`;
-  }
-  return url;
-}
-
 type RunFilterPreset = {
   id: string;
   label: string;
@@ -399,7 +254,9 @@ export function GitCredentialsSettingsPage() {
   const org = useAuthStore((s) => s.organization);
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const overviewUrlInitializedRef = useRef(false);
   const runUrlInitializedRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -539,6 +396,7 @@ export function GitCredentialsSettingsPage() {
     }
 
     void (async () => {
+      let migrationFailed = false;
       for (const preset of localOverview) {
         try {
           await gitCredentialsApi.createFilterPreset(org.id, {
@@ -547,7 +405,7 @@ export function GitCredentialsSettingsPage() {
             filters: preset.filters,
           });
         } catch {
-          // skip duplicates or limits during migration
+          migrationFailed = true;
         }
       }
       for (const preset of localRun) {
@@ -558,9 +416,10 @@ export function GitCredentialsSettingsPage() {
             filters: preset.filters,
           });
         } catch {
-          // skip duplicates or limits during migration
+          migrationFailed = true;
         }
       }
+      if (migrationFailed) return;
       clearLocalSavedOverviewPresets(org.id);
       clearLocalSavedRunPresets(org.id);
       localStorage.setItem(migrateKey, '1');
@@ -668,6 +527,25 @@ export function GitCredentialsSettingsPage() {
     return runSourceFilter !== 'all' || runStatusFilter !== 'all' || runProjectFilter !== 'all';
   }
 
+  function currentRunFilterStateForUrl(): RunFilterState {
+    return {
+      source: runSourceFilter,
+      status: runStatusFilter,
+      project: runProjectFilter,
+    };
+  }
+
+  function syncFilterNavigate(nextParams: URLSearchParams, runForHash: RunFilterState) {
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextParams.toString(),
+        hash: gitSyncRunsSectionHash(runForHash),
+      },
+      { replace: true }
+    );
+  }
+
   async function applyRunFilterState(
     source: RunSourceFilter,
     status: RunStatusFilter,
@@ -679,7 +557,7 @@ export function GitCredentialsSettingsPage() {
     setRunProjectFilter(project);
     const nextParams = new URLSearchParams(searchParams);
     writeRunFiltersToSearchParams(nextParams, { source, status, project });
-    setSearchParams(nextParams, { replace: true });
+    syncFilterNavigate(nextParams, { source, status, project });
     await loadSyncRuns(source, status, project);
     if (scrollToRuns) {
       document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -693,7 +571,14 @@ export function GitCredentialsSettingsPage() {
   async function copyRunFilterLink() {
     setError(null);
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const url = buildGitSyncRunFilterUrl(
+        location.pathname,
+        currentOverviewFilterState(),
+        currentRunFilterState(),
+        searchParams,
+        window.location.origin
+      );
+      await navigator.clipboard.writeText(url);
       setMessage('Filtered sync runs link copied to clipboard');
     } catch {
       setMessage(null);
@@ -948,7 +833,7 @@ export function GitCredentialsSettingsPage() {
       provider,
       status,
     });
-    setSearchParams(nextParams, { replace: true });
+    syncFilterNavigate(nextParams, currentRunFilterStateForUrl());
     await loadSyncOverview(linked, enabled, scheduled, interval, provider, status);
   }
 
@@ -965,7 +850,13 @@ export function GitCredentialsSettingsPage() {
     setOverviewStatusFilter(fromUrl.status);
     const nextParams = new URLSearchParams(searchParams);
     writeOverviewFiltersToSearchParams(nextParams, fromUrl);
-    setSearchParams(nextParams, { replace: true });
+    const runForHash =
+      readRunFiltersFromSearchParams(searchParams) ?? {
+        source: 'all',
+        status: 'all',
+        project: 'all',
+      };
+    syncFilterNavigate(nextParams, runForHash);
     void loadSyncOverview(
       fromUrl.linked,
       fromUrl.enabled,
@@ -974,7 +865,7 @@ export function GitCredentialsSettingsPage() {
       fromUrl.provider,
       fromUrl.status
     );
-  }, [org?.id, searchParams, setSearchParams]);
+  }, [org?.id, searchParams, navigate, location.pathname]);
 
   useEffect(() => {
     if (!org?.id || runUrlInitializedRef.current) return;
@@ -986,10 +877,10 @@ export function GitCredentialsSettingsPage() {
     setRunProjectFilter(fromUrl.project);
     const nextParams = new URLSearchParams(searchParams);
     writeRunFiltersToSearchParams(nextParams, fromUrl);
-    setSearchParams(nextParams, { replace: true });
+    syncFilterNavigate(nextParams, fromUrl);
     void loadSyncRuns(fromUrl.source, fromUrl.status, fromUrl.project);
     document.getElementById(ORG_SYNC_RUNS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [org?.id, searchParams, setSearchParams]);
+  }, [org?.id, searchParams, navigate, location.pathname]);
 
   async function applyOverviewPreset(preset: OverviewFilterPreset) {
     const f = preset.filters;
@@ -1153,7 +1044,13 @@ export function GitCredentialsSettingsPage() {
   async function copyOverviewFilterLink() {
     setError(null);
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const url = buildGitSyncOverviewFilterUrl(
+        location.pathname,
+        currentOverviewFilterState(),
+        searchParams,
+        window.location.origin
+      );
+      await navigator.clipboard.writeText(url);
       setMessage('Filtered overview link copied to clipboard');
     } catch {
       setMessage(null);
@@ -1241,7 +1138,7 @@ export function GitCredentialsSettingsPage() {
       status: 'all',
     });
     writeRunFiltersToSearchParams(nextParams, { source: 'all', status: 'all', project: 'all' });
-    setSearchParams(nextParams, { replace: true });
+    syncFilterNavigate(nextParams, { source: 'all', status: 'all', project: 'all' });
     await loadSyncOverview('all', 'all', 'all', 'all', 'all', 'all');
     await loadSyncRuns('all', 'all', 'all');
   }
@@ -1250,10 +1147,11 @@ export function GitCredentialsSettingsPage() {
     setError(null);
     try {
       const url = buildGitSyncPageFilterUrl(
-        window.location.pathname,
+        location.pathname,
         currentOverviewFilterState(),
         currentRunFilterState(),
-        searchParams
+        searchParams,
+        window.location.origin
       );
       await navigator.clipboard.writeText(url);
       setMessage('Page link with overview and run filters copied to clipboard');

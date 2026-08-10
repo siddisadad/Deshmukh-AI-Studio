@@ -366,6 +366,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 39. Phase 36 — Org overview active filter chips (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Active filter chips | Removable per-dimension filter chips ([104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md](104-ORG-GIT-SYNC-OVERVIEW-ACTIVE-FILTER-CHIPS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

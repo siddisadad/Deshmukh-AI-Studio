@@ -99,12 +99,20 @@ class OrgGitSyncRunsControllerIT {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.presets.length()").value(7))
-                .andExpect(jsonPath("$.presets[?(@.id == 'failed')].count[0]").value(1))
-                .andExpect(jsonPath("$.presets[?(@.id == 'success')].count[0]").value(1))
-                .andExpect(jsonPath("$.presets[?(@.id == 'manual')].count[0]").value(1))
-                .andExpect(jsonPath("$.presets[?(@.id == 'scheduled')].count[0]").value(1))
-                .andExpect(jsonPath("$.presets[?(@.id == 'failed-scheduled')].count[0]").value(1))
-                .andExpect(jsonPath("$.presets[?(@.id == 'webhook')].count[0]").value(0));
+                .andExpect(jsonPath("$.presets[0].id").value("failed"))
+                .andExpect(jsonPath("$.presets[0].count").value(1))
+                .andExpect(jsonPath("$.presets[1].id").value("success"))
+                .andExpect(jsonPath("$.presets[1].count").value(1))
+                .andExpect(jsonPath("$.presets[2].id").value("manual"))
+                .andExpect(jsonPath("$.presets[2].count").value(1))
+                .andExpect(jsonPath("$.presets[3].id").value("scheduled"))
+                .andExpect(jsonPath("$.presets[3].count").value(1))
+                .andExpect(jsonPath("$.presets[4].id").value("webhook"))
+                .andExpect(jsonPath("$.presets[4].count").value(0))
+                .andExpect(jsonPath("$.presets[5].id").value("failed-manual"))
+                .andExpect(jsonPath("$.presets[5].count").value(0))
+                .andExpect(jsonPath("$.presets[6].id").value("failed-scheduled"))
+                .andExpect(jsonPath("$.presets[6].count").value(1));
     }
 
     @Test

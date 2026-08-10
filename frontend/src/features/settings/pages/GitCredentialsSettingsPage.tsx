@@ -55,6 +55,7 @@ export function GitCredentialsSettingsPage() {
   const [runLoadingMore, setRunLoadingMore] = useState(false);
   const [runExporting, setRunExporting] = useState<'csv' | 'json' | null>(null);
   const [retryingProjectId, setRetryingProjectId] = useState<string | null>(null);
+  const [togglingScheduledProjectId, setTogglingScheduledProjectId] = useState<string | null>(null);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -289,6 +290,46 @@ export function GitCredentialsSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to retry sync');
     } finally {
       setRetryingProjectId(null);
+    }
+  }
+
+  async function enableScheduledSyncForProject(projectId: string, projectKey: string) {
+    if (!org?.id) return;
+    setTogglingScheduledProjectId(projectId);
+    setError(null);
+    try {
+      const result = await gitCredentialsApi.enableScheduledSyncForProject(org.id, projectId);
+      setMessage(
+        result.updated
+          ? `Enabled scheduled sync for ${projectKey}`
+          : `${projectKey} already has scheduled sync enabled`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to enable scheduled sync');
+    } finally {
+      setTogglingScheduledProjectId(null);
+    }
+  }
+
+  async function disableScheduledSyncForProject(projectId: string, projectKey: string) {
+    if (!org?.id) return;
+    setTogglingScheduledProjectId(projectId);
+    setError(null);
+    try {
+      const result = await gitCredentialsApi.disableScheduledSyncForProject(org.id, projectId);
+      setMessage(
+        result.updated
+          ? `Disabled scheduled sync for ${projectKey}`
+          : `${projectKey} already set to manual only`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to disable scheduled sync');
+    } finally {
+      setTogglingScheduledProjectId(null);
     }
   }
 
@@ -717,6 +758,38 @@ export function GitCredentialsSettingsPage() {
                   data-testid={`git-sync-overview-retry-${item.projectKey}`}
                 >
                   {retryingProjectId === item.projectId ? 'Retrying…' : 'Retry sync'}
+                </Button>
+              )}
+              {canRetryFailedSyncs && item.linked && item.enabled && !item.scheduledSyncEnabled && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  disabled={
+                    togglingScheduledProjectId === item.projectId
+                    || enableScheduledSyncs.isPending
+                    || disableScheduledSyncs.isPending
+                  }
+                  onClick={() => void enableScheduledSyncForProject(item.projectId, item.projectKey)}
+                  data-testid={`git-sync-overview-enable-scheduled-${item.projectKey}`}
+                >
+                  {togglingScheduledProjectId === item.projectId ? 'Updating…' : 'Enable scheduled'}
+                </Button>
+              )}
+              {canRetryFailedSyncs && item.linked && item.enabled && item.scheduledSyncEnabled && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  disabled={
+                    togglingScheduledProjectId === item.projectId
+                    || enableScheduledSyncs.isPending
+                    || disableScheduledSyncs.isPending
+                  }
+                  onClick={() => void disableScheduledSyncForProject(item.projectId, item.projectKey)}
+                  data-testid={`git-sync-overview-disable-scheduled-${item.projectKey}`}
+                >
+                  {togglingScheduledProjectId === item.projectId ? 'Updating…' : 'Disable scheduled'}
                 </Button>
               )}
             </Stack>

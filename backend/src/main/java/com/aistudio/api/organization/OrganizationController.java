@@ -32,7 +32,7 @@ import com.aistudio.api.organization.dto.OrgGitSyncRunExport;
 import com.aistudio.api.organization.dto.OrgGitSyncRunPageResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewExport;
 import com.aistudio.api.organization.dto.OrgGitSyncOverviewResponse;
-import com.aistudio.api.organization.dto.OrgGitSyncRetryProjectResponse;
+import com.aistudio.api.organization.dto.OrgGitSyncScheduledProjectResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncDisableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncEnableScheduledResponse;
 import com.aistudio.api.organization.dto.OrgGitSyncRetryFailedResponse;
@@ -478,6 +478,26 @@ public class OrganizationController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return orgGitSyncOverviewService.retryFailedSyncForProject(orgId, projectId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/enable-scheduled-project/{projectId}")
+    @Operation(summary = "Enable scheduled sync for one enabled git link (OWNER/ADMIN)")
+    public OrgGitSyncScheduledProjectResponse enableScheduledSyncForProject(
+            @PathVariable UUID orgId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.enableScheduledSyncForProject(orgId, projectId, user.getId());
+    }
+
+    @PostMapping("/{orgId}/git-sync-overview/disable-scheduled-project/{projectId}")
+    @Operation(summary = "Disable scheduled sync for one enabled git link (OWNER/ADMIN)")
+    public OrgGitSyncScheduledProjectResponse disableScheduledSyncForProject(
+            @PathVariable UUID orgId,
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return orgGitSyncOverviewService.disableScheduledSyncForProject(orgId, projectId, user.getId());
     }
 
     @GetMapping("/{orgId}/git-sync-runs")

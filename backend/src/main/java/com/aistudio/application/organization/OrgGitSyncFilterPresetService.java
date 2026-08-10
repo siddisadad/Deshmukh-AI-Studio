@@ -4,9 +4,15 @@ import com.aistudio.api.organization.dto.CreateOrgGitSyncFilterPresetRequest;
 import com.aistudio.api.organization.dto.OrgGitSyncFilterPresetResponse;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
+import com.aistudio.domain.organization.OrgRole;
+import com.aistudio.infrastructure.persistence.entity.MembershipEntity;
 import com.aistudio.infrastructure.persistence.entity.OrgGitSyncFilterPresetEntity;
+import com.aistudio.infrastructure.persistence.entity.UserEntity;
 import com.aistudio.infrastructure.persistence.repository.OrgGitSyncFilterPresetRepository;
+import com.aistudio.infrastructure.persistence.repository.UserRepository;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,7 +26,12 @@ public class OrgGitSyncFilterPresetService {
 
     private static final int MAX_PRESETS_PER_SCOPE = 12;
 
+    private static final String VISIBILITY_PRIVATE = "private";
+    private static final String VISIBILITY_ORG = "org";
+
     private static final Set<String> ALLOWED_SCOPES = Set.of("overview", "runs");
+
+    private static final Set<String> ALLOWED_VISIBILITY = Set.of(VISIBILITY_PRIVATE, VISIBILITY_ORG);
 
     private static final Set<String> OVERVIEW_FILTER_KEYS = Set.of(
             "linked", "enabled", "scheduled", "interval", "provider", "status"
@@ -47,25 +58,53 @@ public class OrgGitSyncFilterPresetService {
     private final ProjectAuthorizationService authorizationService;
     private final OrgGitSyncOverviewService overviewService;
     private final OrgGitSyncRunsService runsService;
+    private final UserRepository userRepository;
 
     public OrgGitSyncFilterPresetService(
             OrgGitSyncFilterPresetRepository presetRepository,
             ProjectAuthorizationService authorizationService,
             OrgGitSyncOverviewService overviewService,
-            OrgGitSyncRunsService runsService
+            OrgGitSyncRunsService runsService,
+            UserRepository userRepository
     ) {
         this.presetRepository = presetRepository;
         this.authorizationService = authorizationService;
         this.overviewService = overviewService;
         this.runsService = runsService;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
     public List<OrgGitSyncFilterPresetResponse> listPresets(UUID organizationId, UUID userId) {
         authorizationService.requireOrgMember(organizationId, userId);
-        return presetRepository.findByOrganizationIdAndUserIdOrderByCreatedAtAsc(organizationId, userId)
-                .stream()
-                .map(this::toResponse)
+
+        List<OrgGitSyncFilterPresetEntity> privatePresets =
+                presetRepository.findByOrganizationIdAndUserIdAndVisibilityOrderByCreatedAtAsc(
+                        organizationId,
+                        userId,
+                        VISIBILITY_PRIVATE
+                );
+        List<OrgGitSyncFilterPresetEntity> orgPresets =
+                presetRepository.findByOrganizationIdAndVisibilityOrderByCreatedAtAsc(
+                        organizationId,
+                        VISIBILITY_ORG
+                );
+
+        List<OrgGitSyncFilterPresetEntity> merged = new ArrayList<>(privatePresets.size() + orgPresets.size());
+        merged.addAll(privatePresets);
+        merged.addAll(orgPresets);
+
+        Set<UUID> userIds = new HashSet<>();
+        for (OrgGitSyncFilterPresetEntity preset : merged) {
+            userIds.add(preset.getUserId());
+        }
+        Map<UUID, String> displayNames = new HashMap<>();
+        for (UserEntity user : userRepository.findAllById(userIds)) {
+            displayNames.put(user.getId(), user.getDisplayName());
+        }
+
+        return merged.stream()
+                .map(entity -> toResponse(entity, displayNames.get(entity.getUserId())))
                 .toList();
     }
 
@@ -78,17 +117,41 @@ public class OrgGitSyncFilterPresetService {
         authorizationService.requireOrgMember(organizationId, userId);
         String scope = normalizeScope(request.scope());
         String label = normalizeLabel(request.label());
+        String visibility = normalizeVisibility(request.visibility());
         Map<String, String> filters = normalizeFilters(scope, request.filters());
 
-        if (presetRepository.countByOrganizationIdAndUserIdAndScope(organizationId, userId, scope)
-                >= MAX_PRESETS_PER_SCOPE) {
-            throw new DomainException(
-                    "VALIDATION_ERROR",
-                    "Maximum " + MAX_PRESETS_PER_SCOPE + " saved " + scope + " presets");
+        if (VISIBILITY_ORG.equals(visibility)) {
+            authorizationService.requireOrgOwner(organizationId, userId);
         }
 
-        List<OrgGitSyncFilterPresetEntity> existing =
-                presetRepository.findByOrganizationIdAndUserIdOrderByCreatedAtAsc(organizationId, userId);
+        if (VISIBILITY_ORG.equals(visibility)) {
+            if (presetRepository.countByOrganizationIdAndScopeAndVisibility(organizationId, scope, VISIBILITY_ORG)
+                    >= MAX_PRESETS_PER_SCOPE) {
+                throw new DomainException(
+                        "VALIDATION_ERROR",
+                        "Maximum " + MAX_PRESETS_PER_SCOPE + " org-shared " + scope + " presets");
+            }
+        } else {
+            if (presetRepository.countByOrganizationIdAndUserIdAndScopeAndVisibility(
+                    organizationId,
+                    userId,
+                    scope,
+                    VISIBILITY_PRIVATE
+            ) >= MAX_PRESETS_PER_SCOPE) {
+                throw new DomainException(
+                        "VALIDATION_ERROR",
+                        "Maximum " + MAX_PRESETS_PER_SCOPE + " saved " + scope + " presets");
+            }
+        }
+
+        List<OrgGitSyncFilterPresetEntity> existing = VISIBILITY_ORG.equals(visibility)
+                ? presetRepository.findByOrganizationIdAndVisibilityOrderByCreatedAtAsc(organizationId, VISIBILITY_ORG)
+                : presetRepository.findByOrganizationIdAndUserIdAndVisibilityOrderByCreatedAtAsc(
+                        organizationId,
+                        userId,
+                        VISIBILITY_PRIVATE
+                );
+
         for (OrgGitSyncFilterPresetEntity preset : existing) {
             if (preset.getScope().equals(scope) && filtersEqual(preset.getFilters(), filters)) {
                 throw new DomainException("VALIDATION_ERROR", "These filters are already saved");
@@ -104,20 +167,35 @@ public class OrgGitSyncFilterPresetService {
         entity.setScope(scope);
         entity.setLabel(label);
         entity.setFilters(filters);
+        entity.setVisibility(visibility);
         presetRepository.save(entity);
-        return toResponse(entity);
+
+        String displayName = userRepository.findById(userId).map(UserEntity::getDisplayName).orElse(null);
+        return toResponse(entity, displayName);
     }
 
     @Transactional
     public void deletePreset(UUID organizationId, UUID userId, UUID presetId) {
         authorizationService.requireOrgMember(organizationId, userId);
         OrgGitSyncFilterPresetEntity entity = presetRepository
-                .findByIdAndOrganizationIdAndUserId(presetId, organizationId, userId)
+                .findByIdAndOrganizationId(presetId, organizationId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Filter preset not found"));
+
+        if (VISIBILITY_PRIVATE.equals(entity.getVisibility())) {
+            if (!entity.getUserId().equals(userId)) {
+                throw new DomainException("NOT_FOUND", "Filter preset not found");
+            }
+        } else if (!entity.getUserId().equals(userId)) {
+            MembershipEntity membership = authorizationService.requireOrgMember(organizationId, userId);
+            if (membership.getRole() != OrgRole.OWNER && membership.getRole() != OrgRole.ADMIN) {
+                throw new DomainException("NOT_FOUND", "Filter preset not found");
+            }
+        }
+
         presetRepository.delete(entity);
     }
 
-    private OrgGitSyncFilterPresetResponse toResponse(OrgGitSyncFilterPresetEntity entity) {
+    private OrgGitSyncFilterPresetResponse toResponse(OrgGitSyncFilterPresetEntity entity, String createdByDisplayName) {
         long count = entity.getScope().equals("overview")
                 ? overviewService.countSavedPresetMatches(entity.getOrganizationId(), entity.getFilters())
                 : runsService.countSavedPresetMatches(entity.getOrganizationId(), entity.getFilters());
@@ -127,8 +205,22 @@ public class OrgGitSyncFilterPresetService {
                 entity.getLabel(),
                 new HashMap<>(entity.getFilters()),
                 count,
+                entity.getVisibility(),
+                entity.getUserId(),
+                createdByDisplayName,
                 entity.getCreatedAt()
         );
+    }
+
+    private String normalizeVisibility(String visibility) {
+        if (visibility == null || visibility.isBlank()) {
+            return VISIBILITY_PRIVATE;
+        }
+        String normalized = visibility.trim().toLowerCase(Locale.ROOT);
+        if (!ALLOWED_VISIBILITY.contains(normalized)) {
+            throw new DomainException("VALIDATION_ERROR", "visibility must be private or org");
+        }
+        return normalized;
     }
 
     private String normalizeScope(String scope) {

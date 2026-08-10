@@ -10,5 +10,8 @@ public record OrgGitSyncFilterPresetResponse(
         String label,
         Map<String, String> filters,
         long count,
+        String visibility,
+        UUID createdByUserId,
+        String createdByDisplayName,
         Instant createdAt
 ) {}

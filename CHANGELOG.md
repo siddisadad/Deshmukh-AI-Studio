@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.98-beta] — 2026-08-10
+
+### Added
+
+- Shareable org git sync overview filter URLs — query param sync + copy link
+- GitLab and Bitbucket provider preset chips
+- `docs/103-ORG-GIT-SYNC-OVERVIEW-FILTER-URL-GUIDE.md`, Phase 35 roadmap
+
 ## [0.2.97-beta] — 2026-08-10
 
 ### Added

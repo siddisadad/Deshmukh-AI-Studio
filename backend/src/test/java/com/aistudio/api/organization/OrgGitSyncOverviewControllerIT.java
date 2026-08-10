@@ -600,6 +600,44 @@ class OrgGitSyncOverviewControllerIT {
     }
 
     @Test
+    void orgOwnerCanBulkSetCustomSyncIntervalScopedToOverviewFilters() throws Exception {
+        JsonNode user = register("org-set-interval-filter" + System.currentTimeMillis() + "@example.com");
+        String token = user.get("accessToken").asText();
+        UUID orgId = UUID.fromString(user.get("organization").get("id").asText());
+
+        UUID githubProjectId = createProject(token, orgId, "Github Set", "GS");
+        UUID gitlabProjectId = createProject(token, orgId, "Gitlab Set", "LS");
+
+        mockMvc.perform(put("/api/v1/projects/" + githubProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"github","repository":"acme/gh-set","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/projects/" + gitlabProjectId + "/git-link")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"provider":"gitlab","repository":"acme/gl-set","branch":"main","enabled":true}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/organizations/" + orgId
+                        + "/git-sync-overview/set-interval?scheduledSyncIntervalMinutes=360&provider=github")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targeted").value(1))
+                .andExpect(jsonPath("$.updated").value(1))
+                .andExpect(jsonPath("$.updatedProjectIds[0]").value(githubProjectId.toString()));
+
+        ProjectGitLinkEntity githubLink = gitLinkRepository.findByProjectId(githubProjectId).orElseThrow();
+        ProjectGitLinkEntity gitlabLink = gitLinkRepository.findByProjectId(gitlabProjectId).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(360, githubLink.getScheduledSyncIntervalMinutes());
+        org.junit.jupiter.api.Assertions.assertNull(gitlabLink.getScheduledSyncIntervalMinutes());
+    }
+
+    @Test
     void orgOwnerCanRetryFailedGitSyncs() throws Exception {
         JsonNode user = register("org-retry-failed" + System.currentTimeMillis() + "@example.com");
         String token = user.get("accessToken").asText();

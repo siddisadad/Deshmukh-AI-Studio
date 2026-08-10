@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.109-beta] — 2026-08-10
+
+### Added
+
+- Org-shared git sync filter presets — OWNER/ADMIN can share presets with all members
+- `visibility` field on filter presets (`private` | `org`)
+- `docs/114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md`, Phase 46 roadmap
+
 ## [0.2.108-beta] — 2026-08-10
 
 ### Added

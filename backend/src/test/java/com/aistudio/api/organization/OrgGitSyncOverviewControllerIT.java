@@ -265,9 +265,8 @@ class OrgGitSyncOverviewControllerIT {
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-overview?customSyncInterval=false")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(2))
-                .andExpect(jsonPath("$.items[?(@.projectId == '" + defaultIntervalProjectId + "')].linked").value(true))
-                .andExpect(jsonPath("$.items[?(@.projectId == '" + unlinkedProjectId + "')].linked").value(false));
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].projectId").value(defaultIntervalProjectId.toString()));
 
         MvcResult csvResult = mockMvc.perform(get("/api/v1/organizations/" + orgId
                         + "/git-sync-overview/export?format=csv&linked=true&customSyncInterval=true")

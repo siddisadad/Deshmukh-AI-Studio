@@ -35,6 +35,7 @@ test('org git sync filter URLs apply and copy links round-trip', async ({ page, 
   await page.goto(
     '/settings/git?linked=linked&lastSync=failed&runSource=manual&runStatus=failed#org-git-sync-runs'
   );
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 20_000 });
   await expect(page).toHaveURL(/linked=linked/);
   await expect(page).toHaveURL(/lastSync=failed/);
   await expect(page).toHaveURL(/runSource=manual/);

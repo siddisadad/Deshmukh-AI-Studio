@@ -783,6 +783,9 @@ export function GitCredentialsSettingsPage() {
                   {item.provider} · {item.repository} ({item.branch})
                   · {item.enabled ? 'enabled' : 'disabled'}
                   · {item.scheduledSyncEnabled ? 'scheduled' : 'manual only'}
+                  {item.scheduledSyncIntervalMinutes != null
+                    ? ` · interval ${item.scheduledSyncIntervalMinutes}m`
+                    : ''}
                   · last sync {item.lastSyncStatus}
                   {item.lastSyncedAt ? ` · ${new Date(item.lastSyncedAt).toLocaleString()}` : ''}
                 </Typography>

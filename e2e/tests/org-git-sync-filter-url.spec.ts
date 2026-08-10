@@ -74,7 +74,15 @@ test('browser back and forward restore filter chips from URL', async ({ page, co
   test.setTimeout(180_000);
 
   await grantClipboard(context);
-  await register(page);
+  const navStamp = Date.now();
+  const navEmail = `e2e.git.nav.url.${navStamp}@example.com`;
+
+  await page.goto('/register');
+  await page.getByTestId('register-display-name').fill(`Git Nav URL ${navStamp}`);
+  await page.getByTestId('register-email').fill(navEmail);
+  await page.getByTestId('register-password').fill(password);
+  await page.getByTestId('register-submit').click();
+  await expect(page).toHaveURL(/\/dashboard/);
 
   await page.goto('/settings/git?linked=linked');
   await waitForGitOverview(page);

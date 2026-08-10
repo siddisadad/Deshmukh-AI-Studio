@@ -454,6 +454,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 50. Phase 47 — Org git sync filter URL E2E (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Filter URL E2E | Playwright coverage for shareable filter URLs ([115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md](115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -166,8 +166,9 @@ test('overview saved filter preset filters can be updated', async ({ page }) => 
   const savedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName });
   await expect(savedChip).toBeVisible();
 
-  await page.getByRole('combobox', { name: 'Provider' }).click();
-  await page.getByRole('option', { name: 'GitHub' }).click();
+  const overview = page.getByTestId('git-sync-overview');
+  await overview.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'GitHub', exact: true }).click();
   await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toBeVisible();
 
   const updateButton = page.locator('[data-testid^="git-sync-overview-update-preset-"]');
@@ -176,7 +177,7 @@ test('overview saved filter preset filters can be updated', async ({ page }) => 
   await expect(page.getByText(`Overview preset "${presetName}" updated to current filters`)).toBeVisible();
 
   await clearOverviewLinkedFilter(page);
-  await page.getByRole('combobox', { name: 'Provider' }).click();
+  await overview.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByRole('option', { name: 'All providers' }).click();
   await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toHaveCount(0);
   await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toHaveCount(0);

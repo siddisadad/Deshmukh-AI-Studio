@@ -138,12 +138,12 @@ class OrgGitSyncFilterPresetControllerIT {
                                   "scope": "overview",
                                   "label": "Duplicate filters",
                                   "filters": {
-                                    "linked": "linked",
-                                    "enabled": "enabled",
+                                    "linked": "unlinked",
+                                    "enabled": "all",
                                     "scheduled": "all",
                                     "interval": "all",
-                                    "provider": "github",
-                                    "status": "failed"
+                                    "provider": "gitlab",
+                                    "status": "success"
                                   }
                                 }
                                 """))

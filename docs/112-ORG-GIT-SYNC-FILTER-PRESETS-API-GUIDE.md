@@ -10,7 +10,7 @@ Server-synced saved git sync filter presets per user and organization.
 |---|---|---|
 | GET | `/api/v1/organizations/{orgId}/git-sync-filter-presets` | List current user's presets |
 | POST | `/api/v1/organizations/{orgId}/git-sync-filter-presets` | Create preset |
-| PATCH | `/api/v1/organizations/{orgId}/git-sync-filter-presets/{presetId}` | Rename preset ([118](118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md)) |
+| PATCH | `/api/v1/organizations/{orgId}/git-sync-filter-presets/{presetId}` | Update preset name and/or filters ([118](118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md), [119](119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md)) |
 | DELETE | `/api/v1/organizations/{orgId}/git-sync-filter-presets/{presetId}` | Delete preset |
 
 ### Create body

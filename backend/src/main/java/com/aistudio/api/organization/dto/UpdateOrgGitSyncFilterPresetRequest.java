@@ -1,3 +1,5 @@
 package com.aistudio.api.organization.dto;
 
-public record UpdateOrgGitSyncFilterPresetRequest(String label) {}
+import java.util.Map;
+
+public record UpdateOrgGitSyncFilterPresetRequest(String label, Map<String, String> filters) {}

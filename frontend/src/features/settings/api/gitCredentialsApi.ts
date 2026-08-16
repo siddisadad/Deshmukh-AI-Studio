@@ -237,7 +237,8 @@ export interface CreateOrgGitSyncFilterPresetBody {
 }
 
 export interface UpdateOrgGitSyncFilterPresetBody {
-  label: string;
+  label?: string;
+  filters?: Record<string, string>;
 }
 
 export const gitCredentialsApi = {
@@ -449,6 +450,10 @@ export const gitCredentialsApi = {
       .post<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets`, body)
       .then((r) => r.data),
   renameFilterPreset: (orgId: string, presetId: string, body: UpdateOrgGitSyncFilterPresetBody) =>
+    http
+      .patch<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets/${presetId}`, body)
+      .then((r) => r.data),
+  updateFilterPreset: (orgId: string, presetId: string, body: UpdateOrgGitSyncFilterPresetBody) =>
     http
       .patch<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets/${presetId}`, body)
       .then((r) => r.data),

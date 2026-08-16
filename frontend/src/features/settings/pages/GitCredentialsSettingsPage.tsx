@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import SyncOutlinedIcon from '@mui/icons-material/SyncOutlined';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -1103,6 +1104,38 @@ export function GitCredentialsSettingsPage() {
     }
   }
 
+  async function updateSavedOverviewPresetFilters(preset: SavedOverviewFilterPreset) {
+    if (!org?.id) return;
+    setError(null);
+    try {
+      await gitCredentialsApi.updateFilterPreset(org.id, preset.id, {
+        filters: currentOverviewFilterState(),
+      });
+      setMessage(`Overview preset "${preset.label}" updated to current filters`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-overview-filter-counts', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to update overview preset filters');
+    }
+  }
+
+  async function updateSavedRunPresetFilters(preset: SavedRunFilterPreset) {
+    if (!org?.id) return;
+    setError(null);
+    try {
+      await gitCredentialsApi.updateFilterPreset(org.id, preset.id, {
+        filters: currentRunFilterState(),
+      });
+      setMessage(`Run preset "${preset.label}" updated to current filters`);
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-runs-filter-counts', org.id] });
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to update run preset filters');
+    }
+  }
+
   async function applySavedOverviewPreset(preset: SavedOverviewFilterPreset) {
     const f = preset.filters;
     await applyOverviewFilterState(
@@ -1828,6 +1861,18 @@ export function GitCredentialsSettingsPage() {
                       <EditOutlinedIcon fontSize="inherit" />
                     </IconButton>
                   )}
+                  {canDeleteSavedPreset(preset.id)
+                    && overviewFiltersActive
+                    && !isSavedOverviewPresetActive(preset) && (
+                    <IconButton
+                      size="small"
+                      aria-label={`Update ${preset.label} to current filters`}
+                      onClick={() => void updateSavedOverviewPresetFilters(preset)}
+                      data-testid={`git-sync-overview-update-preset-${preset.id}`}
+                    >
+                      <SyncOutlinedIcon fontSize="inherit" />
+                    </IconButton>
+                  )}
                 </Stack>
               ))}
               {overviewFiltersActive && (
@@ -2364,6 +2409,18 @@ export function GitCredentialsSettingsPage() {
                     data-testid={`org-git-sync-runs-rename-preset-${preset.id}`}
                   >
                     <EditOutlinedIcon fontSize="inherit" />
+                  </IconButton>
+                )}
+                {canDeleteSavedPreset(preset.id)
+                  && hasActiveRunFilters()
+                  && !isSavedRunPresetActive(preset) && (
+                  <IconButton
+                    size="small"
+                    aria-label={`Update ${preset.label} to current filters`}
+                    onClick={() => void updateSavedRunPresetFilters(preset)}
+                    data-testid={`org-git-sync-runs-update-preset-${preset.id}`}
+                  >
+                    <SyncOutlinedIcon fontSize="inherit" />
                   </IconButton>
                 )}
               </Stack>

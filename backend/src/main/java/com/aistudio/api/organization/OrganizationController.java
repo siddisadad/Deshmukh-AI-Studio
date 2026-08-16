@@ -758,14 +758,14 @@ public class OrganizationController {
     }
 
     @PatchMapping("/{orgId}/git-sync-filter-presets/{presetId}")
-    @Operation(summary = "Rename a saved git sync filter preset")
-    public OrgGitSyncFilterPresetResponse renameGitSyncFilterPreset(
+    @Operation(summary = "Update a saved git sync filter preset name and/or filters")
+    public OrgGitSyncFilterPresetResponse updateGitSyncFilterPreset(
             @PathVariable UUID orgId,
             @PathVariable UUID presetId,
             @RequestBody UpdateOrgGitSyncFilterPresetRequest request,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return orgGitSyncFilterPresetService.renamePreset(orgId, user.getId(), presetId, request);
+        return orgGitSyncFilterPresetService.updatePreset(orgId, user.getId(), presetId, request);
     }
 
     @DeleteMapping("/{orgId}/git-sync-filter-presets/{presetId}")

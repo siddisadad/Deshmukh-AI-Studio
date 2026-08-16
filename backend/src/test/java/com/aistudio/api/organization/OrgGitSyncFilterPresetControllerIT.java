@@ -86,10 +86,32 @@ class OrgGitSyncFilterPresetControllerIT {
                 .andExpect(jsonPath("$.label").value("Renamed failed enabled"))
                 .andExpect(jsonPath("$.filters.status").value("failed"));
 
+        mockMvc.perform(patch("/api/v1/organizations/" + orgId + "/git-sync-filter-presets/" + presetId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "filters": {
+                                    "linked": "unlinked",
+                                    "enabled": "all",
+                                    "scheduled": "all",
+                                    "interval": "all",
+                                    "provider": "gitlab",
+                                    "status": "success"
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.label").value("Renamed failed enabled"))
+                .andExpect(jsonPath("$.filters.linked").value("unlinked"))
+                .andExpect(jsonPath("$.filters.provider").value("gitlab"))
+                .andExpect(jsonPath("$.filters.status").value("success"));
+
         mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-filter-presets")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].label").value("Renamed failed enabled"));
+                .andExpect(jsonPath("$[0].label").value("Renamed failed enabled"))
+                .andExpect(jsonPath("$[0].filters.provider").value("gitlab"));
 
         mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-filter-presets")
                         .header("Authorization", "Bearer " + token)

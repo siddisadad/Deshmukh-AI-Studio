@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.115-beta] — 2026-08-16
+
+### Added
+
+- Update saved org git sync filter preset filters via `PATCH` (label and/or filters)
+- Sync control on overview/run saved chips to overwrite filters from the current selection
+- `docs/119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md`, Phase 51 roadmap
+
 ## [0.2.114-beta] — 2026-08-16
 
 ### Added

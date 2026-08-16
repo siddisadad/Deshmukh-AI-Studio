@@ -176,7 +176,7 @@ public class OrgGitSyncFilterPresetService {
     }
 
     @Transactional
-    public OrgGitSyncFilterPresetResponse renamePreset(
+    public OrgGitSyncFilterPresetResponse updatePreset(
             UUID organizationId,
             UUID userId,
             UUID presetId,
@@ -184,11 +184,11 @@ public class OrgGitSyncFilterPresetService {
     ) {
         authorizationService.requireOrgMember(organizationId, userId);
         OrgGitSyncFilterPresetEntity entity = requireEditablePreset(organizationId, userId, presetId);
-        String label = normalizeLabel(request.label());
 
-        if (entity.getLabel().equalsIgnoreCase(label)) {
-            String displayName = userRepository.findById(entity.getUserId()).map(UserEntity::getDisplayName).orElse(null);
-            return toResponse(entity, displayName);
+        boolean hasLabel = request.label() != null && !request.label().isBlank();
+        boolean hasFilters = request.filters() != null && !request.filters().isEmpty();
+        if (!hasLabel && !hasFilters) {
+            throw new DomainException("VALIDATION_ERROR", "Provide a new name and/or filters to update");
         }
 
         List<OrgGitSyncFilterPresetEntity> siblings = VISIBILITY_ORG.equals(entity.getVisibility())
@@ -197,16 +197,36 @@ public class OrgGitSyncFilterPresetService {
                 : presetRepository.findByOrganizationIdAndUserIdAndVisibilityOrderByCreatedAtAsc(
                         organizationId, entity.getUserId(), VISIBILITY_PRIVATE);
 
-        for (OrgGitSyncFilterPresetEntity sibling : siblings) {
-            if (sibling.getId().equals(entity.getId())) {
-                continue;
-            }
-            if (sibling.getScope().equals(entity.getScope()) && sibling.getLabel().equalsIgnoreCase(label)) {
-                throw new DomainException("VALIDATION_ERROR", "A preset with this name already exists");
+        if (hasLabel) {
+            String label = normalizeLabel(request.label());
+            if (!entity.getLabel().equalsIgnoreCase(label)) {
+                for (OrgGitSyncFilterPresetEntity sibling : siblings) {
+                    if (sibling.getId().equals(entity.getId())) {
+                        continue;
+                    }
+                    if (sibling.getScope().equals(entity.getScope()) && sibling.getLabel().equalsIgnoreCase(label)) {
+                        throw new DomainException("VALIDATION_ERROR", "A preset with this name already exists");
+                    }
+                }
+                entity.setLabel(label);
             }
         }
 
-        entity.setLabel(label);
+        if (hasFilters) {
+            Map<String, String> filters = normalizeFilters(entity.getScope(), request.filters());
+            if (!filtersEqual(entity.getFilters(), filters)) {
+                for (OrgGitSyncFilterPresetEntity sibling : siblings) {
+                    if (sibling.getId().equals(entity.getId())) {
+                        continue;
+                    }
+                    if (sibling.getScope().equals(entity.getScope()) && filtersEqual(sibling.getFilters(), filters)) {
+                        throw new DomainException("VALIDATION_ERROR", "These filters are already saved");
+                    }
+                }
+                entity.setFilters(filters);
+            }
+        }
+
         presetRepository.save(entity);
 
         String displayName = userRepository.findById(entity.getUserId()).map(UserEntity::getDisplayName).orElse(null);

@@ -123,8 +123,9 @@ Read in order; each document builds on the previous.
 | 116 | [116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md](116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md) | Org git sync filter URL navigation |
 | 117 | [117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md](117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md) | Org git sync saved filter presets E2E |
 | 118 | [118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md](118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md) | Org git sync rename filter presets |
+| 119 | [119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md](119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md) | Org git sync update filter presets |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.114-beta** adds rename for saved git sync filter presets — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.115-beta** adds update-filters for saved git sync presets — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

@@ -151,6 +151,43 @@ test('overview saved filter preset can be renamed', async ({ page }) => {
   await expect(savedChip).toHaveCount(0);
 });
 
+test('overview saved filter preset filters can be updated', async ({ page }) => {
+  test.setTimeout(180_000);
+
+  const stamp = Date.now();
+  const presetName = `E2E Update ${stamp}`;
+
+  await register(page, stamp + 11, `Git Update Preset ${stamp}`);
+  await page.goto('/settings/git');
+  await waitForGitOverview(page);
+
+  await page.getByTestId('git-sync-overview-preset-unlinked').click();
+  await saveOverviewPreset(page, presetName);
+  const savedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName });
+  await expect(savedChip).toBeVisible();
+
+  await page.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'GitHub' }).click();
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toBeVisible();
+
+  const updateButton = page.locator('[data-testid^="git-sync-overview-update-preset-"]');
+  await expect(updateButton).toBeVisible();
+  await updateButton.click();
+  await expect(page.getByText(`Overview preset "${presetName}" updated to current filters`)).toBeVisible();
+
+  await clearOverviewLinkedFilter(page);
+  await page.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'All providers' }).click();
+  await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toHaveCount(0);
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toHaveCount(0);
+
+  await savedChip.click();
+  await expect(page.getByTestId('git-sync-overview-active-filter-linked')).toBeVisible();
+  await expect(page.getByTestId('git-sync-overview-active-filter-provider')).toBeVisible();
+  await expect(page).toHaveURL(/linked=unlinked/);
+  await expect(page).toHaveURL(/provider=github/);
+});
+
 test('org-shared overview preset shows org suffix', async ({ page }) => {
   test.setTimeout(120_000);
 

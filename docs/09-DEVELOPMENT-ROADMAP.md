@@ -486,6 +486,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 54. Phase 51 — Org git sync update filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Update preset filters | PATCH filters + sync control on saved chips ([119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md](119-ORG-GIT-UPDATE-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

@@ -9,12 +9,14 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   Link,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -309,6 +311,13 @@ export function GitCredentialsSettingsPage() {
   const [savePresetNameInput, setSavePresetNameInput] = useState('');
   const [savePresetShareWithOrg, setSavePresetShareWithOrg] = useState(false);
   const [savingFilterPreset, setSavingFilterPreset] = useState(false);
+  const [renamePreset, setRenamePreset] = useState<{
+    id: string;
+    scope: 'overview' | 'run';
+    label: string;
+  } | null>(null);
+  const [renamePresetNameInput, setRenamePresetNameInput] = useState('');
+  const [renamingFilterPreset, setRenamingFilterPreset] = useState(false);
 
   const orgQuery = useQuery({
     queryKey: ['organization', org?.id],
@@ -990,6 +999,42 @@ export function GitCredentialsSettingsPage() {
     setSavePresetDialog(null);
     setSavePresetNameInput('');
     setSavePresetShareWithOrg(false);
+  }
+
+  function openRenamePresetDialog(
+    preset: SavedOverviewFilterPreset | SavedRunFilterPreset,
+    scope: 'overview' | 'run'
+  ) {
+    setRenamePreset({ id: preset.id, scope, label: preset.label });
+    setRenamePresetNameInput(preset.label);
+  }
+
+  function closeRenamePresetDialog() {
+    setRenamePreset(null);
+    setRenamePresetNameInput('');
+  }
+
+  async function submitRenamePreset() {
+    if (!org?.id || !renamePreset) return;
+    const nextLabel = normalizeSavePresetName(renamePresetNameInput);
+    if (!nextLabel) return;
+    setRenamingFilterPreset(true);
+    setError(null);
+    try {
+      await gitCredentialsApi.renameFilterPreset(org.id, renamePreset.id, { label: nextLabel });
+      setMessage(
+        renamePreset.scope === 'overview'
+          ? `Overview preset renamed to "${nextLabel}"`
+          : `Run preset renamed to "${nextLabel}"`
+      );
+      await queryClient.invalidateQueries({ queryKey: ['org-git-sync-filter-presets', org.id] });
+      closeRenamePresetDialog();
+    } catch (err) {
+      setMessage(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to rename filter preset');
+    } finally {
+      setRenamingFilterPreset(false);
+    }
   }
 
   async function submitSavePreset() {
@@ -1753,21 +1798,37 @@ export function GitCredentialsSettingsPage() {
               data-testid="git-sync-overview-saved-presets"
             >
               {savedOverviewPresets.map((preset) => (
-                <Chip
+                <Stack
                   key={preset.id}
-                  label={formatSavedOverviewPresetLabel(preset)}
-                  size="small"
-                  clickable
-                  color={savedPresetChipColor(preset, isSavedOverviewPresetActive(preset))}
-                  variant={isSavedOverviewPresetActive(preset) ? 'filled' : 'outlined'}
-                  onClick={() => void applySavedOverviewPreset(preset)}
-                  onDelete={
-                    canDeleteSavedPreset(preset.id)
-                      ? () => void deleteSavedOverviewPreset(preset.id)
-                      : undefined
-                  }
-                  data-testid={`git-sync-overview-saved-preset-${preset.id}`}
-                />
+                  direction="row"
+                  spacing={0}
+                  sx={{ alignItems: 'center' }}
+                >
+                  <Chip
+                    label={formatSavedOverviewPresetLabel(preset)}
+                    size="small"
+                    clickable
+                    color={savedPresetChipColor(preset, isSavedOverviewPresetActive(preset))}
+                    variant={isSavedOverviewPresetActive(preset) ? 'filled' : 'outlined'}
+                    onClick={() => void applySavedOverviewPreset(preset)}
+                    onDelete={
+                      canDeleteSavedPreset(preset.id)
+                        ? () => void deleteSavedOverviewPreset(preset.id)
+                        : undefined
+                    }
+                    data-testid={`git-sync-overview-saved-preset-${preset.id}`}
+                  />
+                  {canDeleteSavedPreset(preset.id) && (
+                    <IconButton
+                      size="small"
+                      aria-label={`Rename ${preset.label}`}
+                      onClick={() => openRenamePresetDialog(preset, 'overview')}
+                      data-testid={`git-sync-overview-rename-preset-${preset.id}`}
+                    >
+                      <EditOutlinedIcon fontSize="inherit" />
+                    </IconButton>
+                  )}
+                </Stack>
               ))}
               {overviewFiltersActive && (
                 <Button
@@ -2275,21 +2336,37 @@ export function GitCredentialsSettingsPage() {
             data-testid="org-git-sync-runs-saved-presets"
           >
             {savedRunPresets.map((preset) => (
-              <Chip
+              <Stack
                 key={preset.id}
-                label={formatSavedRunPresetLabel(preset)}
-                size="small"
-                clickable
-                color={savedPresetChipColor(preset, isSavedRunPresetActive(preset))}
-                variant={isSavedRunPresetActive(preset) ? 'filled' : 'outlined'}
-                onClick={() => void applySavedRunPreset(preset)}
-                onDelete={
-                  canDeleteSavedPreset(preset.id)
-                    ? () => void deleteSavedRunPreset(preset.id)
-                    : undefined
-                }
-                data-testid={`org-git-sync-runs-saved-preset-${preset.id}`}
-              />
+                direction="row"
+                spacing={0}
+                sx={{ alignItems: 'center' }}
+              >
+                <Chip
+                  label={formatSavedRunPresetLabel(preset)}
+                  size="small"
+                  clickable
+                  color={savedPresetChipColor(preset, isSavedRunPresetActive(preset))}
+                  variant={isSavedRunPresetActive(preset) ? 'filled' : 'outlined'}
+                  onClick={() => void applySavedRunPreset(preset)}
+                  onDelete={
+                    canDeleteSavedPreset(preset.id)
+                      ? () => void deleteSavedRunPreset(preset.id)
+                      : undefined
+                  }
+                  data-testid={`org-git-sync-runs-saved-preset-${preset.id}`}
+                />
+                {canDeleteSavedPreset(preset.id) && (
+                  <IconButton
+                    size="small"
+                    aria-label={`Rename ${preset.label}`}
+                    onClick={() => openRenamePresetDialog(preset, 'run')}
+                    data-testid={`org-git-sync-runs-rename-preset-${preset.id}`}
+                  >
+                    <EditOutlinedIcon fontSize="inherit" />
+                  </IconButton>
+                )}
+              </Stack>
             ))}
             {hasActiveRunFilters() && (
               <Button
@@ -2655,6 +2732,44 @@ export function GitCredentialsSettingsPage() {
             data-testid="git-sync-save-preset-confirm"
           >
             {savingFilterPreset ? 'Saving…' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={renamePreset != null}
+        onClose={closeRenamePresetDialog}
+        data-testid="git-sync-rename-preset-dialog"
+      >
+        <DialogTitle>
+          Rename {renamePreset?.scope === 'overview' ? 'overview' : 'run'} filter preset
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Preset name"
+            size="small"
+            fullWidth
+            margin="dense"
+            value={renamePresetNameInput}
+            onChange={(e) => setRenamePresetNameInput(e.target.value)}
+            helperText="Filters stay the same; only the display name changes."
+            slotProps={{ htmlInput: { 'data-testid': 'git-sync-rename-preset-name-input' } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRenamePresetDialog} disabled={renamingFilterPreset}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void submitRenamePreset()}
+            disabled={
+              renamingFilterPreset
+              || normalizeSavePresetName(renamePresetNameInput).length === 0
+              || normalizeSavePresetName(renamePresetNameInput) === renamePreset?.label
+            }
+            data-testid="git-sync-rename-preset-confirm"
+          >
+            {renamingFilterPreset ? 'Renaming…' : 'Rename'}
           </Button>
         </DialogActions>
       </Dialog>

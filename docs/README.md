@@ -120,8 +120,11 @@ Read in order; each document builds on the previous.
 | 113 | [113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md](113-ORG-GIT-SAVED-PRESET-COUNTS-GUIDE.md) | Org saved preset counts |
 | 114 | [114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md](114-ORG-GIT-SHARED-FILTER-PRESETS-GUIDE.md) | Org shared filter presets |
 | 115 | [115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md](115-ORG-GIT-SYNC-FILTER-URL-E2E-GUIDE.md) | Org git sync filter URL E2E |
+| 116 | [116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md](116-ORG-GIT-SYNC-FILTER-URL-NAVIGATION-GUIDE.md) | Org git sync filter URL navigation |
+| 117 | [117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md](117-ORG-GIT-SYNC-SAVED-FILTER-PRESETS-E2E-GUIDE.md) | Org git sync saved filter presets E2E |
+| 118 | [118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md](118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md) | Org git sync rename filter presets |
 
-**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.113-beta** adds saved filter preset E2E — see [CHANGELOG.md](../CHANGELOG.md).
+**MVP beta milestone (2026-08-07):** Phases 0–5 complete on `main`. **v0.2.114-beta** adds rename for saved git sync filter presets — see [CHANGELOG.md](../CHANGELOG.md).
 
 ## Related prototype docs
 

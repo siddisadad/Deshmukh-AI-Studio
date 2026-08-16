@@ -2,6 +2,7 @@ package com.aistudio.api.organization;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,6 +74,22 @@ class OrgGitSyncFilterPresetControllerIT {
                 .andExpect(jsonPath("$[0].id").value(presetId.toString()))
                 .andExpect(jsonPath("$[0].count").value(0))
                 .andExpect(jsonPath("$[0].visibility").value("private"));
+
+        mockMvc.perform(patch("/api/v1/organizations/" + orgId + "/git-sync-filter-presets/" + presetId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"label": "Renamed failed enabled"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(presetId.toString()))
+                .andExpect(jsonPath("$.label").value("Renamed failed enabled"))
+                .andExpect(jsonPath("$.filters.status").value("failed"));
+
+        mockMvc.perform(get("/api/v1/organizations/" + orgId + "/git-sync-filter-presets")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].label").value("Renamed failed enabled"));
 
         mockMvc.perform(post("/api/v1/organizations/" + orgId + "/git-sync-filter-presets")
                         .header("Authorization", "Bearer " + token)

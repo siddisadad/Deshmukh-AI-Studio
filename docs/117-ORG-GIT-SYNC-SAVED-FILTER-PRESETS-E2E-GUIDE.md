@@ -12,6 +12,7 @@ Playwright coverage for server-synced saved filter presets on Settings → **Git
 |---|---|
 | Overview preset lifecycle | Save overview filters → apply saved chip → delete |
 | Run preset lifecycle | Save run filters → apply saved chip → delete |
+| Overview preset rename | Save → rename via edit control → chip label updates |
 | Org-shared preset | OWNER saves with **Share with organization** → chip shows `· Org` |
 
 ## 2. Run locally

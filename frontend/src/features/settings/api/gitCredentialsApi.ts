@@ -236,6 +236,10 @@ export interface CreateOrgGitSyncFilterPresetBody {
   visibility?: 'private' | 'org';
 }
 
+export interface UpdateOrgGitSyncFilterPresetBody {
+  label: string;
+}
+
 export const gitCredentialsApi = {
   list: (orgId: string) =>
     http.get<OrgGitCredential[]>(`/organizations/${orgId}/git-credentials`).then((r) => r.data),
@@ -443,6 +447,10 @@ export const gitCredentialsApi = {
   createFilterPreset: (orgId: string, body: CreateOrgGitSyncFilterPresetBody) =>
     http
       .post<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets`, body)
+      .then((r) => r.data),
+  renameFilterPreset: (orgId: string, presetId: string, body: UpdateOrgGitSyncFilterPresetBody) =>
+    http
+      .patch<OrgGitSyncFilterPreset>(`/organizations/${orgId}/git-sync-filter-presets/${presetId}`, body)
       .then((r) => r.data),
   deleteFilterPreset: (orgId: string, presetId: string) =>
     http.delete(`/organizations/${orgId}/git-sync-filter-presets/${presetId}`).then(() => undefined),

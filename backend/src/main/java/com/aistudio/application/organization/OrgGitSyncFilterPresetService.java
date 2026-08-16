@@ -2,6 +2,7 @@ package com.aistudio.application.organization;
 
 import com.aistudio.api.organization.dto.CreateOrgGitSyncFilterPresetRequest;
 import com.aistudio.api.organization.dto.OrgGitSyncFilterPresetResponse;
+import com.aistudio.api.organization.dto.UpdateOrgGitSyncFilterPresetRequest;
 import com.aistudio.application.security.ProjectAuthorizationService;
 import com.aistudio.domain.common.DomainException;
 import com.aistudio.domain.organization.OrgRole;
@@ -175,8 +176,55 @@ public class OrgGitSyncFilterPresetService {
     }
 
     @Transactional
+    public OrgGitSyncFilterPresetResponse renamePreset(
+            UUID organizationId,
+            UUID userId,
+            UUID presetId,
+            UpdateOrgGitSyncFilterPresetRequest request
+    ) {
+        authorizationService.requireOrgMember(organizationId, userId);
+        OrgGitSyncFilterPresetEntity entity = requireEditablePreset(organizationId, userId, presetId);
+        String label = normalizeLabel(request.label());
+
+        if (entity.getLabel().equalsIgnoreCase(label)) {
+            String displayName = userRepository.findById(entity.getUserId()).map(UserEntity::getDisplayName).orElse(null);
+            return toResponse(entity, displayName);
+        }
+
+        List<OrgGitSyncFilterPresetEntity> siblings = VISIBILITY_ORG.equals(entity.getVisibility())
+                ? presetRepository.findByOrganizationIdAndVisibilityOrderByCreatedAtAsc(
+                        organizationId, VISIBILITY_ORG)
+                : presetRepository.findByOrganizationIdAndUserIdAndVisibilityOrderByCreatedAtAsc(
+                        organizationId, entity.getUserId(), VISIBILITY_PRIVATE);
+
+        for (OrgGitSyncFilterPresetEntity sibling : siblings) {
+            if (sibling.getId().equals(entity.getId())) {
+                continue;
+            }
+            if (sibling.getScope().equals(entity.getScope()) && sibling.getLabel().equalsIgnoreCase(label)) {
+                throw new DomainException("VALIDATION_ERROR", "A preset with this name already exists");
+            }
+        }
+
+        entity.setLabel(label);
+        presetRepository.save(entity);
+
+        String displayName = userRepository.findById(entity.getUserId()).map(UserEntity::getDisplayName).orElse(null);
+        return toResponse(entity, displayName);
+    }
+
+    @Transactional
     public void deletePreset(UUID organizationId, UUID userId, UUID presetId) {
         authorizationService.requireOrgMember(organizationId, userId);
+        OrgGitSyncFilterPresetEntity entity = requireEditablePreset(organizationId, userId, presetId);
+        presetRepository.delete(entity);
+    }
+
+    private OrgGitSyncFilterPresetEntity requireEditablePreset(
+            UUID organizationId,
+            UUID userId,
+            UUID presetId
+    ) {
         OrgGitSyncFilterPresetEntity entity = presetRepository
                 .findByIdAndOrganizationId(presetId, organizationId)
                 .orElseThrow(() -> new DomainException("NOT_FOUND", "Filter preset not found"));
@@ -185,14 +233,18 @@ public class OrgGitSyncFilterPresetService {
             if (!entity.getUserId().equals(userId)) {
                 throw new DomainException("NOT_FOUND", "Filter preset not found");
             }
-        } else if (!entity.getUserId().equals(userId)) {
-            MembershipEntity membership = authorizationService.requireOrgMember(organizationId, userId);
-            if (membership.getRole() != OrgRole.OWNER && membership.getRole() != OrgRole.ADMIN) {
-                throw new DomainException("NOT_FOUND", "Filter preset not found");
-            }
+            return entity;
         }
 
-        presetRepository.delete(entity);
+        if (entity.getUserId().equals(userId)) {
+            return entity;
+        }
+
+        MembershipEntity membership = authorizationService.requireOrgMember(organizationId, userId);
+        if (membership.getRole() != OrgRole.OWNER && membership.getRole() != OrgRole.ADMIN) {
+            throw new DomainException("NOT_FOUND", "Filter preset not found");
+        }
+        return entity;
     }
 
     private OrgGitSyncFilterPresetResponse toResponse(OrgGitSyncFilterPresetEntity entity, String createdByDisplayName) {

@@ -478,6 +478,14 @@ Shipped on `main` (v0.1.0-beta baseline); remaining work is production hardening
 
 ---
 
+## 53. Phase 50 — Org git sync rename filter presets (started)
+
+| Item | Status on `main` | Next depth |
+|---|---|---|
+| Rename saved presets | PATCH rename + edit control on saved chips ([118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md](118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md)) | — |
+
+---
+
 ## 13. Dependency Graph (simplified)
 
 ```

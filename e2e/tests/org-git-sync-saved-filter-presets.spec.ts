@@ -121,6 +121,36 @@ test('run saved filter preset save apply and delete', async ({ page }) => {
   await expect(savedChip).toHaveCount(0);
 });
 
+test('overview saved filter preset can be renamed', async ({ page }) => {
+  test.setTimeout(180_000);
+
+  const stamp = Date.now();
+  const presetName = `E2E Rename ${stamp}`;
+  const renamed = `E2E Renamed ${stamp}`;
+
+  await register(page, stamp + 7, `Git Rename Preset ${stamp}`);
+  await page.goto('/settings/git');
+  await waitForGitOverview(page);
+
+  await page.getByTestId('git-sync-overview-preset-unlinked').click();
+  await saveOverviewPreset(page, presetName);
+
+  const savedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: presetName });
+  await expect(savedChip).toBeVisible();
+
+  const renameButton = page.locator('[data-testid^="git-sync-overview-rename-preset-"]');
+  await renameButton.click();
+  await expect(page.getByTestId('git-sync-rename-preset-dialog')).toBeVisible();
+  await page.getByTestId('git-sync-rename-preset-name-input').fill(renamed);
+  await page.getByTestId('git-sync-rename-preset-confirm').click();
+  await expect(page.getByTestId('git-sync-rename-preset-dialog')).toHaveCount(0);
+  await expect(page.getByText(`Overview preset renamed to "${renamed}"`)).toBeVisible();
+
+  const renamedChip = page.locator('[data-testid^="git-sync-overview-saved-preset-"]', { hasText: renamed });
+  await expect(renamedChip).toBeVisible();
+  await expect(savedChip).toHaveCount(0);
+});
+
 test('org-shared overview preset shows org suffix', async ({ page }) => {
   test.setTimeout(120_000);
 

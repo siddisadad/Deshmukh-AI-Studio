@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ## [Unreleased]
 
+## [0.2.114-beta] — 2026-08-16
+
+### Added
+
+- Rename saved org git sync filter presets — `PATCH .../git-sync-filter-presets/{presetId}`
+- Edit control on overview and run saved preset chips
+- `docs/118-ORG-GIT-RENAME-FILTER-PRESETS-GUIDE.md`, Phase 50 roadmap
+
 ## [0.2.113-beta] — 2026-08-10
 
 ### Added

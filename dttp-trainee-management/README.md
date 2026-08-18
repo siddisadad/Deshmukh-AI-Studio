@@ -22,6 +22,14 @@ Supporting tools: Git + GitHub · Postman · Docker · GitHub Actions
 
 ---
 
+## Single PDF
+
+Download the combined curriculum:
+
+**[DTTP-TMS-Curriculum.pdf](docs/DTTP-TMS-Curriculum.pdf)**
+
+---
+
 ## Document index
 
 | # | Document | Description |
